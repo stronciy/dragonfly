@@ -4,6 +4,7 @@ import { ApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { enqueueMatchNewOrder } from "@/queues/jobs";
+import { makePage, parsePagination } from "@/lib/pagination";
 
 const postSchema = z.object({
   serviceCategoryId: z.string().min(1),
@@ -22,6 +23,100 @@ const postSchema = z.object({
   budget: z.number().positive(),
   status: z.enum(["draft", "published"]).optional(),
 });
+
+const listQuerySchema = z.object({
+  status: z
+    .enum([
+      "draft",
+      "published",
+      "accepted",
+      "pending_deposit",
+      "requires_confirmation",
+      "confirmed",
+      "started",
+      "completed",
+      "arbitration",
+      "cancelled",
+    ])
+    .optional(),
+  group: z.enum(["all", "active", "closed"]).optional(),
+});
+
+export async function GET(req: Request) {
+  try {
+    const user = await requireUser(req);
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+
+    const url = new URL(req.url);
+    const { limit, offset } = parsePagination(url);
+    const { status, group } = listQuerySchema.parse({
+      status: url.searchParams.get("status") ?? undefined,
+      group: url.searchParams.get("group") ?? undefined,
+    });
+
+    const activeStatuses = ["draft", "published", "accepted", "requires_confirmation", "pending_deposit", "confirmed", "started", "arbitration"];
+    const closedStatuses = ["completed", "cancelled"];
+
+    const statusFilter =
+      status ??
+      (group === "active" ? (activeStatuses as any) : group === "closed" ? (closedStatuses as any) : undefined);
+
+    const where = {
+      customerUserId: user.id,
+      ...(Array.isArray(statusFilter) ? { status: { in: statusFilter } } : statusFilter ? { status: statusFilter } : {}),
+    };
+
+    const [items, totalCount] = await prisma.$transaction([
+      prisma.order.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        skip: offset,
+        select: {
+          id: true,
+          status: true,
+          areaHa: true,
+          locationLabel: true,
+          lat: true,
+          lng: true,
+          dateFrom: true,
+          dateTo: true,
+          budget: true,
+          currency: true,
+          acceptedAt: true,
+          depositDeadline: true,
+          createdAt: true,
+        },
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    return ok(req, {
+      items: items.map((o) => ({
+        id: o.id,
+        title: o.locationLabel,
+        status: o.status,
+        areaHa: Number(o.areaHa),
+        locationLabel: o.locationLabel,
+        location: { lat: Number(o.lat), lng: Number(o.lng) },
+        dateFrom: o.dateFrom,
+        dateTo: o.dateTo,
+        budget: Number(o.budget),
+        acceptedAt: o.acceptedAt,
+        depositDeadline: o.depositDeadline,
+        depositAmount: Number(o.budget) * 0.1,
+        escrowAmount: null,
+        createdAt: o.createdAt,
+      })),
+      page: makePage(limit, offset, totalCount),
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+    }
+    return fail(req, err);
+  }
+}
 
 export async function POST(req: Request) {
   try {

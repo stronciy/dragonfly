@@ -18,6 +18,26 @@ export { Prisma }
 export * as $Enums from './enums'
 export * from './enums';
 /**
+ * Model ServiceCategory
+ * 
+ */
+export type ServiceCategory = Prisma.ServiceCategoryModel
+/**
+ * Model ServiceSubcategory
+ * 
+ */
+export type ServiceSubcategory = Prisma.ServiceSubcategoryModel
+/**
+ * Model ServiceType
+ * 
+ */
+export type ServiceType = Prisma.ServiceTypeModel
+/**
+ * Model Crop
+ * 
+ */
+export type Crop = Prisma.CropModel
+/**
  * Model User
  * 
  */

@@ -1,6 +1,7 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -79,6 +80,68 @@ enum PayoutStatus {
   pending
   paid
   failed
+}
+
+model ServiceCategory {
+  id   String @id @default(cuid())
+  name String
+  sort Int @default(0)
+
+  subcategories ServiceSubcategory[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([sort, name])
+  @@map("service_categories")
+}
+
+model ServiceSubcategory {
+  id         String @id @default(cuid())
+  categoryId String @map("category_id")
+  name       String
+  sort       Int @default(0)
+
+  category ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  types    ServiceType[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([categoryId, sort, name])
+  @@map("service_subcategories")
+}
+
+model ServiceType {
+  id            String  @id @default(cuid())
+  subcategoryId String  @map("subcategory_id")
+  name          String
+  sort          Int     @default(0)
+
+  pricePerHa Decimal? @db.Decimal(12, 2) @map("price_per_ha")
+  minPrice   Decimal? @db.Decimal(12, 2) @map("min_price")
+  currency   String   @default("UAH") @db.VarChar(8)
+
+  subcategory ServiceSubcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([subcategoryId, sort, name])
+  @@map("service_types")
+}
+
+model Crop {
+  id      String @id @default(cuid())
+  name    String
+  iconKey String? @map("icon_key")
+  sort    Int @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([sort, name])
+  @@map("crops")
 }
 
 model User {

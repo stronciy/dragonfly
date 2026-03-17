@@ -51,6 +51,10 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  ServiceCategory: 'ServiceCategory',
+  ServiceSubcategory: 'ServiceSubcategory',
+  ServiceType: 'ServiceType',
+  Crop: 'Crop',
   User: 'User',
   RefreshToken: 'RefreshToken',
   CustomerProfile: 'CustomerProfile',
@@ -88,6 +92,56 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 } as const)
 
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
+
+
+export const ServiceCategoryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  sort: 'sort',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ServiceCategoryScalarFieldEnum = (typeof ServiceCategoryScalarFieldEnum)[keyof typeof ServiceCategoryScalarFieldEnum]
+
+
+export const ServiceSubcategoryScalarFieldEnum = {
+  id: 'id',
+  categoryId: 'categoryId',
+  name: 'name',
+  sort: 'sort',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ServiceSubcategoryScalarFieldEnum = (typeof ServiceSubcategoryScalarFieldEnum)[keyof typeof ServiceSubcategoryScalarFieldEnum]
+
+
+export const ServiceTypeScalarFieldEnum = {
+  id: 'id',
+  subcategoryId: 'subcategoryId',
+  name: 'name',
+  sort: 'sort',
+  pricePerHa: 'pricePerHa',
+  minPrice: 'minPrice',
+  currency: 'currency',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ServiceTypeScalarFieldEnum = (typeof ServiceTypeScalarFieldEnum)[keyof typeof ServiceTypeScalarFieldEnum]
+
+
+export const CropScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  iconKey: 'iconKey',
+  sort: 'sort',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CropScalarFieldEnum = (typeof CropScalarFieldEnum)[keyof typeof CropScalarFieldEnum]
 
 
 export const UserScalarFieldEnum = {

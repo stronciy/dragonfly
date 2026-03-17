@@ -4,8 +4,9 @@
     "noEmit": false,
     "outDir": "./dist",
     "rootDir": "./src",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "incremental": false,
     "lib": ["dom", "esnext"],
     "jsx": "preserve"
   },
