@@ -1,0 +1,65 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.startMatchNewExecutorWorker = startMatchNewExecutorWorker;
+const bullmq_1 = require("bullmq");
+const prisma_1 = require("../lib/prisma");
+const connection_1 = require("../queues/connection");
+const expoPush_service_1 = require("../services/expoPush.service");
+function startMatchNewExecutorWorker() {
+    const expo = new expoPush_service_1.ExpoPushService(prisma_1.prisma);
+    return new bullmq_1.Worker("match-new-executor", async (job) => {
+        const { performerUserId } = job.data;
+        const settings = await prisma_1.prisma.performerSettings.findUnique({
+            where: { performerUserId },
+            select: { coverageMode: true, radiusKm: true },
+        });
+        if (!settings || settings.coverageMode !== "radius" || !settings.radiusKm)
+            return;
+        const matches = (await prisma_1.prisma.$queryRaw `
+        SELECT
+          o.id AS order_id,
+          (ST_Distance(ps.base_geo, o.location_geo) / 1000.0) AS distance_km
+        FROM orders o
+        JOIN performer_settings ps
+          ON ps.performer_user_id = ${performerUserId}
+        JOIN performer_services psvc
+          ON psvc.performer_user_id = ps.performer_user_id
+        WHERE
+          o.status = 'published'
+          AND psvc.service_category_id = o.service_category_id
+          AND psvc.service_subcategory_id = o.service_subcategory_id
+          AND (
+            psvc.service_type_id IS NULL
+            OR o.service_type_id IS NULL
+            OR psvc.service_type_id = o.service_type_id
+          )
+          AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+      `);
+        if (matches.length === 0)
+            return;
+        await prisma_1.prisma.$transaction(matches.map((m) => prisma_1.prisma.orderMatch.upsert({
+            where: {
+                uniq_performer_order_match: { performerUserId, orderId: m.order_id },
+            },
+            create: {
+                performerUserId,
+                orderId: m.order_id,
+                distanceKm: m.distance_km,
+            },
+            update: { distanceKm: m.distance_km },
+        })));
+        const tokens = (await prisma_1.prisma.device.findMany({
+            where: { userId: performerUserId, revokedAt: null },
+            select: { expoPushToken: true, userId: true },
+        }));
+        if (tokens.length === 0)
+            return;
+        await expo.sendBatch(tokens.map((t) => ({
+            toUserId: t.userId,
+            toExpoToken: t.expoPushToken,
+            title: "Для вас есть новые заказы",
+            body: `Найдено: ${matches.length}`,
+            data: { type: "marketplace", count: matches.length },
+        })));
+    }, { connection: (0, connection_1.getRedisConnectionOptions)(), concurrency: 10 });
+}

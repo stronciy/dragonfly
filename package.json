@@ -5,13 +5,26 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:worker": "tsc -p tsconfig.worker.json",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "next lint",
+    "worker": "node dist/workers/run.js",
+    "prisma:generate": "prisma generate"
   },
   "dependencies": {
-    "next": "16.1.7",
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
+    "bcryptjs": "^3.0.3",
+    "bullmq": "^5.71.0",
+    "dotenv": "^17.3.1",
+    "expo-server-sdk": "^6.1.0",
+    "ioredis": "^5.10.0",
+    "jose": "^6.2.1",
+    "next": "^15.5.13",
+    "pg": "^8.20.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -19,7 +32,8 @@
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.7",
+    "eslint-config-next": "^15.5.13",
+    "prisma": "^7.5.0",
     "typescript": "^5"
   }
 }

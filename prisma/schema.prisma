@@ -1,0 +1,532 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  customer
+  performer
+  admin
+}
+
+enum OrderStatus {
+  draft
+  published
+  accepted
+  pending_deposit
+  requires_confirmation
+  confirmed
+  started
+  completed
+  arbitration
+  cancelled
+}
+
+enum EscrowStatus {
+  locked
+  released
+  forfeited
+}
+
+enum EscrowRole {
+  customer
+  performer
+}
+
+enum PaymentProvider {
+  stripe
+}
+
+enum PaymentStatus {
+  requires_action
+  processing
+  succeeded
+  failed
+  canceled
+}
+
+enum NotificationType {
+  system
+  order
+  deposit
+  marketplace
+  arbitration
+  payout
+}
+
+enum DevicePlatform {
+  ios
+  android
+}
+
+enum CoverageMode {
+  radius
+  country
+}
+
+enum ArbitrationStatus {
+  opened
+  in_review
+  resolved
+  cancelled
+}
+
+enum PayoutStatus {
+  pending
+  paid
+  failed
+}
+
+model User {
+  id           String   @id @default(cuid())
+  role         UserRole @default(customer)
+  name         String
+  email        String   @unique
+  phone        String?  @db.VarChar(32)
+  passwordHash String   @map("password_hash")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  customerProfile  CustomerProfile?
+  performerProfile PerformerProfile?
+
+  refreshTokens RefreshToken[]
+  devices       Device[]
+  notifications Notification[]
+
+  customerOrders  Order[] @relation("CustomerOrders")
+  performerOrders Order[] @relation("PerformerOrders")
+
+  escrowLocks EscrowLock[]
+  payments   Payment[]
+  payouts     Payout[]
+  reserveTx   ReserveTransaction[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model CustomerProfile {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
+  companyName  String? @map("company_name")
+  companyEdrpou String? @map("company_edrpou")
+  billingEmail String? @map("billing_email")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fields Field[]
+
+  @@map("customer_profiles")
+}
+
+model PerformerProfile {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
+  companyName String?  @map("company_name")
+  rating      Decimal  @default(0) @db.Decimal(3, 2)
+  jobsDone    Int      @default(0) @map("jobs_done")
+
+  settings PerformerSettings?
+  services PerformerService[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("performer_profiles")
+}
+
+model PerformerSettings {
+  id              String @id @default(cuid())
+  performerUserId String @unique @map("performer_user_id")
+
+  baseLocationLabel String  @map("base_location_label")
+  baseLat           Decimal @db.Decimal(9, 6) @map("base_lat")
+  baseLng           Decimal @db.Decimal(9, 6) @map("base_lng")
+  baseGeo           Unsupported("geography(Point,4326)")? @map("base_geo")
+
+  coverageMode CoverageMode @default(radius) @map("coverage_mode")
+  radiusKm     Int?         @map("radius_km")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  performer PerformerProfile @relation(fields: [performerUserId], references: [userId], onDelete: Cascade)
+
+  @@index([coverageMode])
+  @@index([baseGeo], type: Gist, map: "idx_performer_settings_base_geo_gist")
+  @@map("performer_settings")
+}
+
+model PerformerService {
+  id               String  @id @default(cuid())
+  performerUserId  String  @map("performer_user_id")
+  serviceCategoryId String @map("service_category_id")
+  serviceSubCategoryId String @map("service_subcategory_id")
+  serviceTypeId    String? @map("service_type_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  performer PerformerProfile @relation(fields: [performerUserId], references: [userId], onDelete: Cascade)
+
+  @@unique([performerUserId, serviceCategoryId, serviceSubCategoryId, serviceTypeId], name: "uniq_performer_service")
+  @@index([performerUserId])
+  @@index([serviceCategoryId, serviceSubCategoryId, serviceTypeId])
+  @@map("performer_services")
+}
+
+model Field {
+  id          String @id @default(cuid())
+  ownerUserId String @map("owner_user_id")
+
+  name       String
+  areaHa     Decimal @db.Decimal(10, 2) @map("area_ha")
+  regionName String? @map("region_name")
+
+  geometry Json? @map("geometry")
+
+  centroidLat Decimal? @db.Decimal(9, 6) @map("centroid_lat")
+  centroidLng Decimal? @db.Decimal(9, 6) @map("centroid_lng")
+  centroidGeo Unsupported("geography(Point,4326)")? @map("centroid_geo")
+
+  status String? @db.VarChar(32)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner CustomerProfile @relation(fields: [ownerUserId], references: [userId], onDelete: Cascade)
+
+  @@index([ownerUserId])
+  @@index([centroidGeo], type: Gist, map: "idx_fields_centroid_geo_gist")
+  @@map("fields")
+}
+
+model Order {
+  id String @id @default(cuid())
+
+  customerUserId  String  @map("customer_user_id")
+  performerUserId String? @map("performer_user_id")
+
+  serviceCategoryId    String  @map("service_category_id")
+  serviceSubCategoryId String  @map("service_subcategory_id")
+  serviceTypeId        String? @map("service_type_id")
+
+  areaHa Decimal @db.Decimal(10, 2) @map("area_ha")
+
+  dateFrom DateTime? @map("date_from")
+  dateTo   DateTime? @map("date_to")
+
+  locationLabel String  @map("location_label")
+  regionName    String? @map("region_name")
+
+  lat         Decimal @db.Decimal(9, 6) @map("lat")
+  lng         Decimal @db.Decimal(9, 6) @map("lng")
+  locationGeo Unsupported("geography(Point,4326)")? @map("location_geo")
+
+  comment String? @db.Text
+
+  budget   Decimal @db.Decimal(12, 2)
+  currency String  @default("UAH") @db.VarChar(8)
+
+  status OrderStatus @default(draft)
+
+  acceptedAt      DateTime? @map("accepted_at")
+  depositDeadline DateTime? @map("deposit_deadline")
+
+  evidencePhotos Json? @map("evidence_photos")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  customer  User  @relation("CustomerOrders", fields: [customerUserId], references: [id], onDelete: Restrict)
+  performer User? @relation("PerformerOrders", fields: [performerUserId], references: [id], onDelete: Restrict)
+
+  escrowLocks     EscrowLock[]
+  statusEvents    OrderStatusEvent[]
+  matches         OrderMatch[]
+  arbitrationCase ArbitrationCase?
+  payments        Payment[]
+  reportMedia     OrderReportMedia[]
+  agreement       Agreement?
+
+  @@index([customerUserId, status, createdAt])
+  @@index([performerUserId, status, createdAt])
+  @@index([status, createdAt])
+  @@index([serviceCategoryId, serviceSubCategoryId, serviceTypeId])
+  @@index([locationGeo], type: Gist, map: "idx_orders_location_geo_gist")
+  @@map("orders")
+}
+
+model EscrowLock {
+  id      String @id @default(cuid())
+  orderId String @map("order_id")
+  userId  String @map("user_id")
+
+  role   EscrowRole
+  status EscrowStatus @default(locked)
+
+  amount   Decimal @db.Decimal(12, 2)
+  currency String  @default("UAH") @db.VarChar(8)
+
+  provider    PaymentProvider? @map("provider")
+  providerRef String?          @map("provider_ref")
+
+  createdAt  DateTime  @default(now()) @map("created_at")
+  releasedAt DateTime? @map("released_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, role], name: "uniq_order_role_lock")
+  @@index([userId, status])
+  @@index([orderId, status])
+  @@map("escrow_locks")
+}
+
+model Payment {
+  id String @id @default(cuid())
+
+  orderId String @map("order_id")
+  userId  String @map("user_id")
+
+  provider         PaymentProvider
+  providerIntentId String @map("provider_intent_id")
+  status           PaymentStatus
+
+  amount   Decimal @db.Decimal(12, 2)
+  currency String  @default("UAH") @db.VarChar(8)
+
+  raw Json? @map("raw")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  paidAt    DateTime? @map("paid_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerIntentId], name: "uniq_provider_intent")
+  @@index([orderId])
+  @@index([userId, createdAt])
+  @@map("payments")
+}
+
+model OrderStatusEvent {
+  id      String @id @default(cuid())
+  orderId String @map("order_id")
+
+  fromStatus OrderStatus? @map("from_status")
+  toStatus   OrderStatus  @map("to_status")
+
+  note String? @db.Text
+  at   DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, at])
+  @@map("order_status_events")
+}
+
+model OrderMatch {
+  id String @id @default(cuid())
+
+  performerUserId String @map("performer_user_id")
+  orderId         String @map("order_id")
+
+  distanceKm Decimal @db.Decimal(10, 2) @map("distance_km")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([performerUserId, orderId], name: "uniq_performer_order_match")
+  @@index([performerUserId, createdAt])
+  @@index([orderId])
+  @@map("order_matches")
+}
+
+model ArbitrationCase {
+  id      String @id @default(cuid())
+  orderId String @unique @map("order_id")
+
+  openedByUserId String @map("opened_by_user_id")
+  reason         String @db.Text
+  status         ArbitrationStatus @default(opened)
+
+  createdAt  DateTime  @default(now()) @map("created_at")
+  resolvedAt DateTime? @map("resolved_at")
+
+  media ArbitrationMedia[]
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@map("arbitration_cases")
+}
+
+model ArbitrationMedia {
+  id     String @id @default(cuid())
+  caseId String @map("case_id")
+
+  url      String
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  case ArbitrationCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, createdAt])
+  @@map("arbitration_media")
+}
+
+model Notification {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+
+  type    NotificationType
+  title   String
+  message String
+  data    Json?
+
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model Device {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+
+  expoPushToken String @map("expo_push_token")
+  platform      DevicePlatform
+  deviceId      String? @map("device_id")
+  appVersion    String? @map("app_version")
+
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([expoPushToken], name: "uniq_expo_token")
+  @@index([userId, revokedAt])
+  @@map("devices")
+}
+
+model OrderReportMedia {
+  id      String @id @default(cuid())
+  orderId String @map("order_id")
+
+  url     String
+  caption String? @db.Text
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@map("order_report_media")
+}
+
+model Agreement {
+  id      String @id @default(cuid())
+  orderId String @unique @map("order_id")
+
+  customerUserId  String @map("customer_user_id")
+  performerUserId String @map("performer_user_id")
+
+  amountTotal Decimal @db.Decimal(12, 2) @map("amount_total")
+  currency    String  @default("UAH") @db.VarChar(8)
+
+  performedAt DateTime? @map("performed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  documents AgreementDocument[]
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([customerUserId, createdAt])
+  @@index([performerUserId, createdAt])
+  @@map("agreements")
+}
+
+model AgreementDocument {
+  id          String @id @default(cuid())
+  agreementId String @map("agreement_id")
+
+  type String @db.VarChar(32)
+  url  String
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  agreement Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+
+  @@index([agreementId, createdAt])
+  @@map("agreement_documents")
+}
+
+model Payout {
+  id              String @id @default(cuid())
+  performerUserId String @map("performer_user_id")
+
+  amount   Decimal @db.Decimal(12, 2)
+  currency String  @default("UAH") @db.VarChar(8)
+
+  status      PayoutStatus @default(pending)
+  providerRef String?      @map("provider_ref")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  paidAt    DateTime? @map("paid_at")
+
+  performer User @relation(fields: [performerUserId], references: [id], onDelete: Cascade)
+
+  @@index([performerUserId, createdAt])
+  @@index([status, createdAt])
+  @@map("payouts")
+}
+
+model ReserveTransaction {
+  id              String @id @default(cuid())
+  performerUserId String @map("performer_user_id")
+  orderId         String? @map("order_id")
+
+  title     String
+  amount    Decimal @db.Decimal(12, 2)
+  direction String  @db.VarChar(8)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  performer User @relation(fields: [performerUserId], references: [id], onDelete: Cascade)
+
+  @@index([performerUserId, createdAt])
+  @@index([orderId])
+  @@map("reserve_transactions")
+}
