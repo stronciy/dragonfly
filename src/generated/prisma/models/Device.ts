@@ -234,7 +234,7 @@ export type DeviceWhereUniqueInput = Prisma.AtLeast<{
   revokedAt?: Prisma.DateTimeNullableFilter<"Device"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Device"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-}, "id" | "uniq_expo_token">
+}, "id" | "expoPushToken">
 
 export type DeviceOrderByWithAggregationInput = {
   id?: Prisma.SortOrder

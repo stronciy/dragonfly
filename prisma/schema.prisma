@@ -488,7 +488,7 @@ model Device {
   id     String @id @default(cuid())
   userId String @map("user_id")
 
-  expoPushToken String @map("expo_push_token")
+  expoPushToken String @unique @map("expo_push_token")
   platform      DevicePlatform
   deviceId      String? @map("device_id")
   appVersion    String? @map("app_version")
@@ -498,7 +498,6 @@ model Device {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([expoPushToken], name: "uniq_expo_token")
   @@index([userId, revokedAt])
   @@map("devices")
 }
