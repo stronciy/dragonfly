@@ -4,6 +4,7 @@ import { ApiError } from "@/lib/errors";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/lib/prisma";
 import { makePage, parsePagination } from "@/lib/pagination";
+import type * as Prisma from "@/generated/prisma/internal/prismaNamespace";
 
 const querySchema = z.object({
   status: z.enum(["pending", "paid", "failed"]).optional(),
@@ -18,8 +19,7 @@ export async function GET(req: Request) {
     const { limit, offset } = parsePagination(url);
     const { status } = querySchema.parse({ status: url.searchParams.get("status") ?? undefined });
 
-    const where: any = { performerUserId: user.id };
-    if (status) where.status = status;
+    const where = ({ performerUserId: user.id, ...(status ? { status } : {}) } as Prisma.PayoutWhereInput);
 
     const [items, totalCount] = await prisma.$transaction([
       prisma.payout.findMany({ where, orderBy: { createdAt: "desc" }, take: limit, skip: offset }),

@@ -4,6 +4,7 @@ import { ApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { getStripe } from "@/services/stripe.service";
+import type { InputJsonValue } from "@/generated/prisma/internal/prismaNamespace";
 
 const schema = z.object({
   providerPayload: z.record(z.string(), z.any()),
@@ -31,11 +32,26 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
 
     const updated = await prisma.payment.update({
       where: { id: paymentIntentId },
-      data: { status: nextStatus as any, paidAt: nextStatus === "succeeded" ? new Date() : null, raw: pi as any },
+      data: {
+        status: nextStatus,
+        paidAt: nextStatus === "succeeded" ? new Date() : null,
+        raw: pi as unknown as InputJsonValue,
+      },
       select: { id: true, status: true, amount: true, currency: true, paidAt: true, orderId: true },
     });
 
-    const response: any = { payment: { id: updated.id, status: updated.status, amount: Number(updated.amount), currency: updated.currency, paidAt: updated.paidAt } };
+    const response: {
+      payment: { id: string; status: string; amount: number; currency: string; paidAt: Date | null };
+      order?: { id: string; status: string };
+    } = {
+      payment: {
+        id: updated.id,
+        status: updated.status,
+        amount: Number(updated.amount),
+        currency: updated.currency,
+        paidAt: updated.paidAt,
+      },
+    };
 
     if (updated.status === "succeeded") {
       const [order, dbUser] = await prisma.$transaction([
@@ -44,14 +60,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
       ]);
 
       if (order && dbUser) {
-        const role = dbUser.role === "performer" ? "performer" : "customer";
+        const role: "performer" | "customer" = dbUser.role === "performer" ? "performer" : "customer";
         await prisma.escrowLock.upsert({
-          where: { uniq_order_role_lock: { orderId: order.id, role: role as any } },
+          where: { uniq_order_role_lock: { orderId: order.id, role } },
           update: { status: "locked" },
           create: {
             orderId: order.id,
             userId: user.id,
-            role: role as any,
+            role,
             status: "locked",
             amount: updated.amount,
             currency: updated.currency,

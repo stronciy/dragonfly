@@ -4,6 +4,7 @@ import { ApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { getStripe } from "@/services/stripe.service";
+import type { InputJsonValue } from "@/generated/prisma/internal/prismaNamespace";
 
 const schema = z.object({
   method: z.enum(["card", "apple-pay", "google-pay", "bank-transfer"]),
@@ -40,7 +41,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         status: "requires_action",
         amount,
         currency: order.currency,
-        raw: pi as any,
+        raw: pi as unknown as InputJsonValue,
       },
       select: { id: true, amount: true, currency: true },
     });
