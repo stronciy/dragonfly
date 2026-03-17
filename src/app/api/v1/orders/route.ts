@@ -54,17 +54,18 @@ export async function GET(req: Request) {
       group: url.searchParams.get("group") ?? undefined,
     });
 
-    const activeStatuses = ["draft", "published", "accepted", "requires_confirmation", "pending_deposit", "confirmed", "started", "arbitration"];
-    const closedStatuses = ["completed", "cancelled"];
+    const activeStatuses = ["draft", "published", "accepted", "requires_confirmation", "pending_deposit", "confirmed", "started", "arbitration"] as const;
+    const closedStatuses = ["completed", "cancelled"] as const;
 
-    const statusFilter =
-      status ??
-      (group === "active" ? (activeStatuses as any) : group === "closed" ? (closedStatuses as any) : undefined);
-
-    const where = {
-      customerUserId: user.id,
-      ...(Array.isArray(statusFilter) ? { status: { in: statusFilter } } : statusFilter ? { status: statusFilter } : {}),
-    };
+    const whereBase = { customerUserId: user.id };
+    const where =
+      status
+        ? { ...whereBase, status }
+        : group === "active"
+          ? { ...whereBase, status: { in: [...activeStatuses] } }
+          : group === "closed"
+            ? { ...whereBase, status: { in: [...closedStatuses] } }
+            : whereBase;
 
     const [items, totalCount] = await prisma.$transaction([
       prisma.order.findMany({

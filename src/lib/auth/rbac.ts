@@ -5,5 +5,7 @@ export function requireRole(user: { role: string }, role: "customer" | "performe
 }
 
 export function requireAnyRole(user: { role: string }, roles: Array<"customer" | "performer" | "admin">) {
-  if (!roles.includes(user.role as any)) throw new ApiError(403, "FORBIDDEN", "Insufficient permissions");
+  if (!roles.includes(user.role as "customer" | "performer" | "admin")) {
+    throw new ApiError(403, "FORBIDDEN", "Insufficient permissions");
+  }
 }
