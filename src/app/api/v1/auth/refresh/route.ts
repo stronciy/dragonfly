@@ -12,13 +12,35 @@ export async function POST(req: Request) {
       .find((c) => c.startsWith("refreshToken="))
       ?.slice("refreshToken=".length);
 
-    if (!refreshToken) throw new ApiError(401, "UNAUTHORIZED", "Missing refresh token");
+    if (!refreshToken) {
+      const res = fail(req, new ApiError(401, "UNAUTHORIZED", "Missing refresh token"));
+      res.cookies.set({
+        name: "refreshToken",
+        value: "",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/api/v1/auth",
+        maxAge: 0,
+      });
+      return res;
+    }
 
     let payload: Awaited<ReturnType<typeof verifyRefreshToken>>;
     try {
       payload = await verifyRefreshToken(refreshToken);
     } catch {
-      throw new ApiError(401, "UNAUTHORIZED", "Invalid refresh token");
+      const res = fail(req, new ApiError(401, "UNAUTHORIZED", "Invalid refresh token"));
+      res.cookies.set({
+        name: "refreshToken",
+        value: "",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/api/v1/auth",
+        maxAge: 0,
+      });
+      return res;
     }
 
     const tokenHash = await sha256(refreshToken);
@@ -28,7 +50,17 @@ export async function POST(req: Request) {
     });
 
     if (!tokenRow || tokenRow.revokedAt || tokenRow.expiresAt <= new Date()) {
-      throw new ApiError(401, "UNAUTHORIZED", "Refresh token expired");
+      const res = fail(req, new ApiError(401, "UNAUTHORIZED", "Refresh token expired"));
+      res.cookies.set({
+        name: "refreshToken",
+        value: "",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/api/v1/auth",
+        maxAge: 0,
+      });
+      return res;
     }
 
     const user = await prisma.user.findUnique({

@@ -15,9 +15,25 @@ export type PushRequest = {
 };
 
 export class ExpoPushService {
-  private expo = new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN || undefined });
+  private expo = new Expo({ accessToken: this.getAccessToken() });
 
   constructor(private prisma: PrismaClient) {}
+
+  private getAccessToken() {
+    const token = process.env.EXPO_ACCESS_TOKEN;
+    if (!token) return undefined;
+    const t = token.trim();
+    if (!t) return undefined;
+
+    const looksLikeJwt = t.split(".").length === 3;
+    const looksLikeExpoToken = t.startsWith("expo_");
+    if (looksLikeJwt || looksLikeExpoToken) return t;
+
+    if (process.env.NODE_ENV !== "production") {
+      process.stdout.write(JSON.stringify({ level: "warn", msg: "expo_access_token_ignored_invalid_format" }) + "\n");
+    }
+    return undefined;
+  }
 
   async sendPush(req: PushRequest) {
     await this.sendBatch([req]);
@@ -27,6 +43,18 @@ export class ExpoPushService {
     const valid = reqs.filter((r) => Expo.isExpoPushToken(r.toExpoToken));
     const invalid = reqs.filter((r) => !Expo.isExpoPushToken(r.toExpoToken));
 
+    if (process.env.NODE_ENV !== "production") {
+      process.stdout.write(
+        JSON.stringify({
+          level: "info",
+          msg: "expo_push_send_begin",
+          requestCount: reqs.length,
+          validCount: valid.length,
+          invalidCount: invalid.length,
+        }) + "\n"
+      );
+    }
+
     if (invalid.length) {
       await this.prisma.device.updateMany({
         where: { expoPushToken: { in: invalid.map((i) => i.toExpoToken) } },
@@ -34,7 +62,12 @@ export class ExpoPushService {
       });
     }
 
-    if (valid.length === 0) return;
+    if (valid.length === 0) {
+      if (process.env.NODE_ENV !== "production") {
+        process.stdout.write(JSON.stringify({ level: "info", msg: "expo_push_no_valid_tokens" }) + "\n");
+      }
+      return;
+    }
 
     const messages: ExpoPushMessage[] = valid.map((v) => ({
       to: v.toExpoToken,
@@ -46,9 +79,34 @@ export class ExpoPushService {
 
     const chunks = this.expo.chunkPushNotifications(messages);
     const ticketsByIndex: ExpoTicket[] = [];
-    for (const chunk of chunks) {
-      const tickets = (await this.expo.sendPushNotificationsAsync(chunk)) as ExpoTicket[];
-      ticketsByIndex.push(...tickets);
+    try {
+      for (const chunk of chunks) {
+        const tickets = (await this.expo.sendPushNotificationsAsync(chunk)) as ExpoTicket[];
+        ticketsByIndex.push(...tickets);
+      }
+    } catch (err) {
+      process.stdout.write(
+        JSON.stringify({
+          level: "error",
+          msg: "expo_push_send_error",
+          error: err instanceof Error ? err.message : String(err),
+        }) + "\n"
+      );
+      throw err;
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      const okCount = ticketsByIndex.filter((t) => t?.status === "ok").length;
+      const errorCount = ticketsByIndex.filter((t) => t?.status === "error").length;
+      process.stdout.write(
+        JSON.stringify({
+          level: "info",
+          msg: "expo_push_send_result",
+          ticketCount: ticketsByIndex.length,
+          okCount,
+          errorCount,
+        }) + "\n"
+      );
     }
 
     await this.prisma.notification.createMany({

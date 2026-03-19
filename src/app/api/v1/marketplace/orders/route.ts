@@ -92,6 +92,7 @@ export async function GET(req: Request) {
         dateFrom: m.order.dateFrom,
         dateTo: m.order.dateTo,
         locationLabel: m.order.locationLabel,
+        addressLabel: m.order.locationLabel,
         regionName: m.order.regionName,
         location: { lat: Number(m.order.lat), lng: Number(m.order.lng) },
         status: m.order.status,

@@ -10,7 +10,7 @@ exports.isUserOnline = isUserOnline;
 exports.getOnlineUserIds = getOnlineUserIds;
 const ioredis_1 = __importDefault(require("ioredis"));
 const KEY_PREFIX = "ws:online:";
-const TTL_SECONDS = 120;
+const TTL_SECONDS = 60;
 let redis = null;
 function getRedis() {
     if (redis)

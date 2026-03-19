@@ -15,12 +15,22 @@ const patchSchema = z
     dateFrom: z.string().datetime().nullable().optional(),
     dateTo: z.string().datetime().nullable().optional(),
     location: z
-      .object({
-        lat: z.number().min(-90).max(90),
-        lng: z.number().min(-180).max(180),
-        addressLabel: z.string().min(1),
-        regionName: z.string().min(1).optional(),
-      })
+      .preprocess(
+        (v) => {
+          if (!v || typeof v !== "object") return v;
+          const obj = v as Record<string, unknown>;
+          const addressLabel = typeof obj.addressLabel === "string" ? obj.addressLabel : undefined;
+          const locationLabel = typeof obj.locationLabel === "string" ? obj.locationLabel : undefined;
+          if (!addressLabel && locationLabel) return { ...obj, addressLabel: locationLabel };
+          return obj;
+        },
+        z.object({
+          lat: z.number().min(-90).max(90),
+          lng: z.number().min(-180).max(180),
+          addressLabel: z.string().min(1),
+          regionName: z.string().min(1).optional(),
+        })
+      )
       .optional(),
     comment: z.string().max(5000).nullable().optional(),
     budget: z.number().positive().optional(),
@@ -59,7 +69,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
         serviceSubCategoryId: order.serviceSubCategoryId,
         serviceTypeId: order.serviceTypeId,
         areaHa: Number(order.areaHa),
-        location: { lat: Number(order.lat), lng: Number(order.lng), locationLabel: order.locationLabel, regionName: order.regionName },
+        location: {
+          lat: Number(order.lat),
+          lng: Number(order.lng),
+          locationLabel: order.locationLabel,
+          addressLabel: order.locationLabel,
+          regionName: order.regionName,
+        },
         dateFrom: order.dateFrom,
         dateTo: order.dateTo,
         budget: Number(order.budget),

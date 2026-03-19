@@ -143,9 +143,11 @@ export function startMatchNewOrderWorker() {
         return;
       }
 
-      const online = await getOnlineUserIds(Array.from(new Set(tokens.map((t) => t.userId))));
-      const pushTokens = tokens.filter((t) => !online.has(t.userId));
-      if (pushTokens.length === 0) {
+      const uniqueUserIds = Array.from(new Set(tokens.map((t) => t.userId)));
+      const online = await getOnlineUserIds(uniqueUserIds);
+      const skipOnline = String(process.env.PUSH_SKIP_IF_ONLINE || "").toLowerCase() === "true";
+      const pushTokens = skipOnline ? tokens.filter((t) => !online.has(t.userId)) : tokens;
+      if (skipOnline && pushTokens.length === 0) {
         process.stdout.write(JSON.stringify({ level: "info", msg: "match_new_order_push_skipped_online", orderId, onlineCount: online.size }) + "\n");
         return;
       }
@@ -159,6 +161,9 @@ export function startMatchNewOrderWorker() {
           candidateCount: candidates.length,
           deviceCount: tokens.length,
           validTokenCount,
+          onlineCount: online.size,
+          skipOnline,
+          pushDeviceCount: pushTokens.length,
         }) + "\n"
       );
 
@@ -169,28 +174,40 @@ export function startMatchNewOrderWorker() {
       const title = serviceLabel ? `Новий заказ: ${serviceLabel}` : "Новий заказ поруч";
       const body = [location, `${Number(order.areaHa)} га`, budget, dateRange].filter(Boolean).join(" • ");
 
-      await expo.sendBatch(
-        pushTokens.map((t) => ({
-          toUserId: t.userId,
-          toExpoToken: t.expoPushToken,
-          title,
-          body,
-          data: {
-            type: "marketplace",
-            orderId: order.id,
-            serviceCategoryId: order.serviceCategoryId,
-            serviceSubCategoryId: order.serviceSubCategoryId,
-            serviceTypeId: order.serviceTypeId,
-            areaHa: Number(order.areaHa),
-            budget: Number(order.budget),
-            currency: order.currency,
-            dateFrom: order.dateFrom?.toISOString() ?? null,
-            dateTo: order.dateTo?.toISOString() ?? null,
-            locationLabel: order.locationLabel,
-            regionName: order.regionName ?? null,
-          },
-        }))
-      );
+      try {
+        await expo.sendBatch(
+          pushTokens.map((t) => ({
+            toUserId: t.userId,
+            toExpoToken: t.expoPushToken,
+            title,
+            body,
+            data: {
+              type: "marketplace",
+              orderId: order.id,
+              serviceCategoryId: order.serviceCategoryId,
+              serviceSubCategoryId: order.serviceSubCategoryId,
+              serviceTypeId: order.serviceTypeId,
+              areaHa: Number(order.areaHa),
+              budget: Number(order.budget),
+              currency: order.currency,
+              dateFrom: order.dateFrom?.toISOString() ?? null,
+              dateTo: order.dateTo?.toISOString() ?? null,
+              locationLabel: order.locationLabel,
+              regionName: order.regionName ?? null,
+            },
+          }))
+        );
+      } catch (err) {
+        process.stdout.write(
+          JSON.stringify({
+            level: "error",
+            msg: "match_new_order_push_failed",
+            orderId,
+            error: err instanceof Error ? err.message : String(err),
+          }) + "\n"
+        );
+        return;
+      }
 
       process.stdout.write(JSON.stringify({ level: "info", msg: "match_new_order_notified", orderId, sentTo: pushTokens.length }) + "\n");
     },

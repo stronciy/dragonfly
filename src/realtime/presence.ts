@@ -1,7 +1,7 @@
 import Redis from "ioredis";
 
 const KEY_PREFIX = "ws:online:";
-const TTL_SECONDS = 120;
+const TTL_SECONDS = 60;
 
 let redis: Redis | null = null;
 

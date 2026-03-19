@@ -119,17 +119,29 @@ export function startMatchNewExecutorWorker() {
       if (addedOrderIds.length === 0) return;
 
       const online = await getOnlineUserIds([performerUserId]);
-      if (online.has(performerUserId)) return;
+      const skipOnline = String(process.env.PUSH_SKIP_IF_ONLINE || "").toLowerCase() === "true";
+      if (skipOnline && online.has(performerUserId)) return;
 
-      await expo.sendBatch(
-        tokens.map((t) => ({
-          toUserId: t.userId,
-          toExpoToken: t.expoPushToken,
-          title: "Для вас есть новые заказы",
-          body: `Найдено: ${matches.length}`,
-          data: { type: "marketplace", count: matches.length },
-        }))
-      );
+      try {
+        await expo.sendBatch(
+          tokens.map((t) => ({
+            toUserId: t.userId,
+            toExpoToken: t.expoPushToken,
+            title: "Для вас есть новые заказы",
+            body: `Найдено: ${matches.length}`,
+            data: { type: "marketplace", count: matches.length },
+          }))
+        );
+      } catch (err) {
+        process.stdout.write(
+          JSON.stringify({
+            level: "error",
+            msg: "match_new_executor_push_failed",
+            performerUserId,
+            error: err instanceof Error ? err.message : String(err),
+          }) + "\n"
+        );
+      }
     },
     { connection: getRedisConnectionOptions(), concurrency: 10 }
   );

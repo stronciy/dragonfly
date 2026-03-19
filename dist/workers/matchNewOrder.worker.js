@@ -120,9 +120,11 @@ function startMatchNewOrderWorker() {
             process.stdout.write(JSON.stringify({ level: "info", msg: "match_new_order_no_devices", orderId, candidateCount: candidates.length }) + "\n");
             return;
         }
-        const online = await (0, presence_1.getOnlineUserIds)(Array.from(new Set(tokens.map((t) => t.userId))));
-        const pushTokens = tokens.filter((t) => !online.has(t.userId));
-        if (pushTokens.length === 0) {
+        const uniqueUserIds = Array.from(new Set(tokens.map((t) => t.userId)));
+        const online = await (0, presence_1.getOnlineUserIds)(uniqueUserIds);
+        const skipOnline = String(process.env.PUSH_SKIP_IF_ONLINE || "").toLowerCase() === "true";
+        const pushTokens = skipOnline ? tokens.filter((t) => !online.has(t.userId)) : tokens;
+        if (skipOnline && pushTokens.length === 0) {
             process.stdout.write(JSON.stringify({ level: "info", msg: "match_new_order_push_skipped_online", orderId, onlineCount: online.size }) + "\n");
             return;
         }
@@ -134,6 +136,9 @@ function startMatchNewOrderWorker() {
             candidateCount: candidates.length,
             deviceCount: tokens.length,
             validTokenCount,
+            onlineCount: online.size,
+            skipOnline,
+            pushDeviceCount: pushTokens.length,
         }) + "\n");
         const serviceLabel = [category === null || category === void 0 ? void 0 : category.name, subcategory === null || subcategory === void 0 ? void 0 : subcategory.name, type === null || type === void 0 ? void 0 : type.name].filter(Boolean).join(" / ");
         const dateRange = (0, matching_1.formatOrderDateRange)(order.dateFrom, order.dateTo);
@@ -141,29 +146,40 @@ function startMatchNewOrderWorker() {
         const location = [order.locationLabel, order.regionName].filter(Boolean).join(", ");
         const title = serviceLabel ? `Новий заказ: ${serviceLabel}` : "Новий заказ поруч";
         const body = [location, `${Number(order.areaHa)} га`, budget, dateRange].filter(Boolean).join(" • ");
-        await expo.sendBatch(pushTokens.map((t) => {
-            var _a, _b, _c, _d, _e;
-            return ({
-                toUserId: t.userId,
-                toExpoToken: t.expoPushToken,
-                title,
-                body,
-                data: {
-                    type: "marketplace",
-                    orderId: order.id,
-                    serviceCategoryId: order.serviceCategoryId,
-                    serviceSubCategoryId: order.serviceSubCategoryId,
-                    serviceTypeId: order.serviceTypeId,
-                    areaHa: Number(order.areaHa),
-                    budget: Number(order.budget),
-                    currency: order.currency,
-                    dateFrom: (_b = (_a = order.dateFrom) === null || _a === void 0 ? void 0 : _a.toISOString()) !== null && _b !== void 0 ? _b : null,
-                    dateTo: (_d = (_c = order.dateTo) === null || _c === void 0 ? void 0 : _c.toISOString()) !== null && _d !== void 0 ? _d : null,
-                    locationLabel: order.locationLabel,
-                    regionName: (_e = order.regionName) !== null && _e !== void 0 ? _e : null,
-                },
-            });
-        }));
+        try {
+            await expo.sendBatch(pushTokens.map((t) => {
+                var _a, _b, _c, _d, _e;
+                return ({
+                    toUserId: t.userId,
+                    toExpoToken: t.expoPushToken,
+                    title,
+                    body,
+                    data: {
+                        type: "marketplace",
+                        orderId: order.id,
+                        serviceCategoryId: order.serviceCategoryId,
+                        serviceSubCategoryId: order.serviceSubCategoryId,
+                        serviceTypeId: order.serviceTypeId,
+                        areaHa: Number(order.areaHa),
+                        budget: Number(order.budget),
+                        currency: order.currency,
+                        dateFrom: (_b = (_a = order.dateFrom) === null || _a === void 0 ? void 0 : _a.toISOString()) !== null && _b !== void 0 ? _b : null,
+                        dateTo: (_d = (_c = order.dateTo) === null || _c === void 0 ? void 0 : _c.toISOString()) !== null && _d !== void 0 ? _d : null,
+                        locationLabel: order.locationLabel,
+                        regionName: (_e = order.regionName) !== null && _e !== void 0 ? _e : null,
+                    },
+                });
+            }));
+        }
+        catch (err) {
+            process.stdout.write(JSON.stringify({
+                level: "error",
+                msg: "match_new_order_push_failed",
+                orderId,
+                error: err instanceof Error ? err.message : String(err),
+            }) + "\n");
+            return;
+        }
         process.stdout.write(JSON.stringify({ level: "info", msg: "match_new_order_notified", orderId, sentTo: pushTokens.length }) + "\n");
     }, { connection: (0, connection_1.getRedisConnectionOptions)(), concurrency: 10 });
 }

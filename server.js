@@ -1,3 +1,5 @@
+require("dotenv").config({ quiet: true });
+
 const http = require("http");
 const next = require("next");
 const Redis = require("ioredis");
@@ -6,7 +8,7 @@ const { jwtVerify } = require("jose");
 
 const DOMAIN_EVENTS_CHANNEL = "domain-events-v1";
 const PRESENCE_KEY_PREFIX = "ws:online:";
-const PRESENCE_TTL_SECONDS = 120;
+const PRESENCE_TTL_SECONDS = 60;
 
 function getJwtSecret() {
   const value = process.env.JWT_ACCESS_SECRET;
@@ -25,10 +27,11 @@ function getPresenceKey(userId) {
 }
 
 async function verifyBearerToken(authHeader) {
-  if (!authHeader || typeof authHeader !== "string" || !authHeader.startsWith("Bearer ")) {
+  const header = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+  if (!header || typeof header !== "string" || !header.startsWith("Bearer ")) {
     return null;
   }
-  const token = authHeader.slice("Bearer ".length).trim();
+  const token = header.slice("Bearer ".length).trim();
   if (!token) return null;
 
   const { payload } = await jwtVerify(token, getJwtSecret());
@@ -38,7 +41,7 @@ async function verifyBearerToken(authHeader) {
 
 async function main() {
   const dev = process.env.NODE_ENV !== "production";
-  const port = Number(process.env.PORT || 3001);
+  const port = Number(process.env.PORT || 3000);
 
   const app = next({ dev });
   const handle = app.getRequestHandler();
@@ -79,14 +82,37 @@ async function main() {
   server.on("upgrade", async (req, socket, head) => {
     try {
       const url = new URL(req.url || "", `http://${req.headers.host || "localhost"}`);
-      if (url.pathname !== "/ws") {
+      if (url.pathname !== "/ws" && url.pathname !== "/api/v1/ws") {
         socket.destroy();
         return;
       }
 
       const auth = req.headers["authorization"];
-      const identity = await verifyBearerToken(auth);
+      let identity = await verifyBearerToken(auth);
+      if (!identity && dev) {
+        const token = url.searchParams.get("token");
+        if (token) {
+          try {
+            const { payload } = await jwtVerify(token, getJwtSecret());
+            if (payload && typeof payload.userId === "string" && typeof payload.role === "string") {
+              identity = { userId: payload.userId, role: payload.role };
+            }
+          } catch {}
+        }
+      }
       if (!identity) {
+        if (dev) {
+          process.stdout.write(
+            JSON.stringify({
+              level: "info",
+              msg: "ws_rejected",
+              reason: "unauthorized",
+              path: url.pathname,
+              hasAuthHeader: Boolean(req.headers["authorization"]),
+              hasTokenQuery: Boolean(url.searchParams.get("token")),
+            }) + "\n"
+          );
+        }
         socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
         socket.destroy();
         return;
@@ -106,6 +132,18 @@ async function main() {
     const userId = ws.userId;
     addConn(userId, ws);
     await refreshPresence(userId);
+    if (dev) {
+      const count = connectionsByUserId.get(userId)?.size ?? 0;
+      process.stdout.write(
+        JSON.stringify({
+          level: "info",
+          msg: "ws_connected",
+          userId,
+          role: ws.role,
+          connectionsForUser: count,
+        }) + "\n"
+      );
+    }
 
     ws.isAlive = true;
     ws.on("pong", () => {
@@ -134,6 +172,17 @@ async function main() {
       try {
         await clearPresenceIfNoConnections(userId);
       } catch {}
+      if (dev) {
+        const count = connectionsByUserId.get(userId)?.size ?? 0;
+        process.stdout.write(
+          JSON.stringify({
+            level: "info",
+            msg: "ws_closed",
+            userId,
+            connectionsForUser: count,
+          }) + "\n"
+        );
+      }
     });
   });
 
@@ -147,19 +196,50 @@ async function main() {
     }
 
     const targets = evt && evt.targets && Array.isArray(evt.targets.userIds) ? evt.targets.userIds : [];
+    let delivered = 0;
+    let deliveredUsers = 0;
     for (const userId of targets) {
       const conns = connectionsByUserId.get(userId);
       if (!conns) continue;
+      deliveredUsers += 1;
       for (const ws of conns) {
         try {
           ws.send(message);
+          delivered += 1;
         } catch {}
       }
+    }
+    if (dev && targets.length) {
+      process.stdout.write(
+        JSON.stringify({
+          level: "info",
+          msg: "ws_broadcast",
+          type: evt?.type,
+          targetUsers: targets.length,
+          usersWithConnections: deliveredUsers,
+          delivered,
+        }) + "\n"
+      );
     }
   });
 
   server.listen(port, () => {
-    process.stdout.write(JSON.stringify({ level: "info", msg: "server_ready", port }) + "\n");
+    let redis;
+    try {
+      const u = new URL(getRedisUrl());
+      redis = { host: u.hostname, port: u.port || "6379" };
+    } catch {
+      redis = { host: "unknown", port: "unknown" };
+    }
+    process.stdout.write(
+      JSON.stringify({
+        level: "info",
+        msg: "server_ready",
+        port,
+        wsPaths: ["/ws", "/api/v1/ws"],
+        redis,
+      }) + "\n"
+    );
   });
 }
 
@@ -167,4 +247,3 @@ main().catch((err) => {
   process.stderr.write(String(err?.stack || err?.message || err) + "\n");
   process.exit(1);
 });
-

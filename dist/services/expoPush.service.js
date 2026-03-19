@@ -5,7 +5,23 @@ const expo_server_sdk_1 = require("expo-server-sdk");
 class ExpoPushService {
     constructor(prisma) {
         this.prisma = prisma;
-        this.expo = new expo_server_sdk_1.Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN || undefined });
+        this.expo = new expo_server_sdk_1.Expo({ accessToken: this.getAccessToken() });
+    }
+    getAccessToken() {
+        const token = process.env.EXPO_ACCESS_TOKEN;
+        if (!token)
+            return undefined;
+        const t = token.trim();
+        if (!t)
+            return undefined;
+        const looksLikeJwt = t.split(".").length === 3;
+        const looksLikeExpoToken = t.startsWith("expo_");
+        if (looksLikeJwt || looksLikeExpoToken)
+            return t;
+        if (process.env.NODE_ENV !== "production") {
+            process.stdout.write(JSON.stringify({ level: "warn", msg: "expo_access_token_ignored_invalid_format" }) + "\n");
+        }
+        return undefined;
     }
     async sendPush(req) {
         await this.sendBatch([req]);
@@ -13,14 +29,27 @@ class ExpoPushService {
     async sendBatch(reqs) {
         const valid = reqs.filter((r) => expo_server_sdk_1.Expo.isExpoPushToken(r.toExpoToken));
         const invalid = reqs.filter((r) => !expo_server_sdk_1.Expo.isExpoPushToken(r.toExpoToken));
+        if (process.env.NODE_ENV !== "production") {
+            process.stdout.write(JSON.stringify({
+                level: "info",
+                msg: "expo_push_send_begin",
+                requestCount: reqs.length,
+                validCount: valid.length,
+                invalidCount: invalid.length,
+            }) + "\n");
+        }
         if (invalid.length) {
             await this.prisma.device.updateMany({
                 where: { expoPushToken: { in: invalid.map((i) => i.toExpoToken) } },
                 data: { revokedAt: new Date() },
             });
         }
-        if (valid.length === 0)
+        if (valid.length === 0) {
+            if (process.env.NODE_ENV !== "production") {
+                process.stdout.write(JSON.stringify({ level: "info", msg: "expo_push_no_valid_tokens" }) + "\n");
+            }
             return;
+        }
         const messages = valid.map((v) => ({
             to: v.toExpoToken,
             sound: "default",
@@ -30,9 +59,30 @@ class ExpoPushService {
         }));
         const chunks = this.expo.chunkPushNotifications(messages);
         const ticketsByIndex = [];
-        for (const chunk of chunks) {
-            const tickets = (await this.expo.sendPushNotificationsAsync(chunk));
-            ticketsByIndex.push(...tickets);
+        try {
+            for (const chunk of chunks) {
+                const tickets = (await this.expo.sendPushNotificationsAsync(chunk));
+                ticketsByIndex.push(...tickets);
+            }
+        }
+        catch (err) {
+            process.stdout.write(JSON.stringify({
+                level: "error",
+                msg: "expo_push_send_error",
+                error: err instanceof Error ? err.message : String(err),
+            }) + "\n");
+            throw err;
+        }
+        if (process.env.NODE_ENV !== "production") {
+            const okCount = ticketsByIndex.filter((t) => (t === null || t === void 0 ? void 0 : t.status) === "ok").length;
+            const errorCount = ticketsByIndex.filter((t) => (t === null || t === void 0 ? void 0 : t.status) === "error").length;
+            process.stdout.write(JSON.stringify({
+                level: "info",
+                msg: "expo_push_send_result",
+                ticketCount: ticketsByIndex.length,
+                okCount,
+                errorCount,
+            }) + "\n");
         }
         await this.prisma.notification.createMany({
             data: valid.map((v, i) => {
