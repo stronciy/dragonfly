@@ -5,8 +5,11 @@ import { ApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 
 const schema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
+  name: z.string().min(1).transform((s) => s.trim()),
+  email: z
+    .string()
+    .email()
+    .transform((s) => s.trim().toLowerCase()),
   password: z.string().min(6),
 });
 

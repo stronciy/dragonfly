@@ -6,9 +6,13 @@ import { prisma } from "@/lib/prisma";
 
 const patchSchema = z
   .object({
-    name: z.string().min(1).optional(),
+    name: z.string().min(1).transform((s) => s.trim()).optional(),
     phone: z.string().min(5).max(32).optional(),
-    email: z.string().email().optional(),
+    email: z
+      .string()
+      .email()
+      .transform((s) => s.trim().toLowerCase())
+      .optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "No fields to update" });
 

@@ -6,7 +6,10 @@ import { prisma } from "@/lib/prisma";
 import { sha256, signAccessToken, signRefreshToken } from "@/lib/auth/tokens";
 
 const schema = z.object({
-  email: z.string().email(),
+  email: z
+    .string()
+    .email()
+    .transform((s) => s.trim().toLowerCase()),
   password: z.string().min(1),
 });
 
