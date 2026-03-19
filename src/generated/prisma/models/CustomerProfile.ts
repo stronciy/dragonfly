@@ -30,6 +30,10 @@ export type CustomerProfileMinAggregateOutputType = {
   companyName: string | null
   companyEdrpou: string | null
   billingEmail: string | null
+  iban: string | null
+  taxSystem: $Enums.TaxSystem | null
+  vatPayer: boolean | null
+  legalAddress: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,6 +44,10 @@ export type CustomerProfileMaxAggregateOutputType = {
   companyName: string | null
   companyEdrpou: string | null
   billingEmail: string | null
+  iban: string | null
+  taxSystem: $Enums.TaxSystem | null
+  vatPayer: boolean | null
+  legalAddress: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,6 +58,10 @@ export type CustomerProfileCountAggregateOutputType = {
   companyName: number
   companyEdrpou: number
   billingEmail: number
+  iban: number
+  taxSystem: number
+  vatPayer: number
+  legalAddress: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -62,6 +74,10 @@ export type CustomerProfileMinAggregateInputType = {
   companyName?: true
   companyEdrpou?: true
   billingEmail?: true
+  iban?: true
+  taxSystem?: true
+  vatPayer?: true
+  legalAddress?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -72,6 +88,10 @@ export type CustomerProfileMaxAggregateInputType = {
   companyName?: true
   companyEdrpou?: true
   billingEmail?: true
+  iban?: true
+  taxSystem?: true
+  vatPayer?: true
+  legalAddress?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +102,10 @@ export type CustomerProfileCountAggregateInputType = {
   companyName?: true
   companyEdrpou?: true
   billingEmail?: true
+  iban?: true
+  taxSystem?: true
+  vatPayer?: true
+  legalAddress?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -165,6 +189,10 @@ export type CustomerProfileGroupByOutputType = {
   companyName: string | null
   companyEdrpou: string | null
   billingEmail: string | null
+  iban: string | null
+  taxSystem: $Enums.TaxSystem | null
+  vatPayer: boolean
+  legalAddress: string | null
   createdAt: Date
   updatedAt: Date
   _count: CustomerProfileCountAggregateOutputType | null
@@ -196,10 +224,15 @@ export type CustomerProfileWhereInput = {
   companyName?: Prisma.StringNullableFilter<"CustomerProfile"> | string | null
   companyEdrpou?: Prisma.StringNullableFilter<"CustomerProfile"> | string | null
   billingEmail?: Prisma.StringNullableFilter<"CustomerProfile"> | string | null
+  iban?: Prisma.StringNullableFilter<"CustomerProfile"> | string | null
+  taxSystem?: Prisma.EnumTaxSystemNullableFilter<"CustomerProfile"> | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFilter<"CustomerProfile"> | boolean
+  legalAddress?: Prisma.StringNullableFilter<"CustomerProfile"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CustomerProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CustomerProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   fields?: Prisma.FieldListRelationFilter
+  cropStats?: Prisma.CustomerCropStatListRelationFilter
 }
 
 export type CustomerProfileOrderByWithRelationInput = {
@@ -208,10 +241,15 @@ export type CustomerProfileOrderByWithRelationInput = {
   companyName?: Prisma.SortOrderInput | Prisma.SortOrder
   companyEdrpou?: Prisma.SortOrderInput | Prisma.SortOrder
   billingEmail?: Prisma.SortOrderInput | Prisma.SortOrder
+  iban?: Prisma.SortOrderInput | Prisma.SortOrder
+  taxSystem?: Prisma.SortOrderInput | Prisma.SortOrder
+  vatPayer?: Prisma.SortOrder
+  legalAddress?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   fields?: Prisma.FieldOrderByRelationAggregateInput
+  cropStats?: Prisma.CustomerCropStatOrderByRelationAggregateInput
 }
 
 export type CustomerProfileWhereUniqueInput = Prisma.AtLeast<{
@@ -223,10 +261,15 @@ export type CustomerProfileWhereUniqueInput = Prisma.AtLeast<{
   companyName?: Prisma.StringNullableFilter<"CustomerProfile"> | string | null
   companyEdrpou?: Prisma.StringNullableFilter<"CustomerProfile"> | string | null
   billingEmail?: Prisma.StringNullableFilter<"CustomerProfile"> | string | null
+  iban?: Prisma.StringNullableFilter<"CustomerProfile"> | string | null
+  taxSystem?: Prisma.EnumTaxSystemNullableFilter<"CustomerProfile"> | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFilter<"CustomerProfile"> | boolean
+  legalAddress?: Prisma.StringNullableFilter<"CustomerProfile"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CustomerProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CustomerProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   fields?: Prisma.FieldListRelationFilter
+  cropStats?: Prisma.CustomerCropStatListRelationFilter
 }, "id" | "userId">
 
 export type CustomerProfileOrderByWithAggregationInput = {
@@ -235,6 +278,10 @@ export type CustomerProfileOrderByWithAggregationInput = {
   companyName?: Prisma.SortOrderInput | Prisma.SortOrder
   companyEdrpou?: Prisma.SortOrderInput | Prisma.SortOrder
   billingEmail?: Prisma.SortOrderInput | Prisma.SortOrder
+  iban?: Prisma.SortOrderInput | Prisma.SortOrder
+  taxSystem?: Prisma.SortOrderInput | Prisma.SortOrder
+  vatPayer?: Prisma.SortOrder
+  legalAddress?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CustomerProfileCountOrderByAggregateInput
@@ -251,6 +298,10 @@ export type CustomerProfileScalarWhereWithAggregatesInput = {
   companyName?: Prisma.StringNullableWithAggregatesFilter<"CustomerProfile"> | string | null
   companyEdrpou?: Prisma.StringNullableWithAggregatesFilter<"CustomerProfile"> | string | null
   billingEmail?: Prisma.StringNullableWithAggregatesFilter<"CustomerProfile"> | string | null
+  iban?: Prisma.StringNullableWithAggregatesFilter<"CustomerProfile"> | string | null
+  taxSystem?: Prisma.EnumTaxSystemNullableWithAggregatesFilter<"CustomerProfile"> | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolWithAggregatesFilter<"CustomerProfile"> | boolean
+  legalAddress?: Prisma.StringNullableWithAggregatesFilter<"CustomerProfile"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CustomerProfile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"CustomerProfile"> | Date | string
 }
@@ -260,10 +311,15 @@ export type CustomerProfileCreateInput = {
   companyName?: string | null
   companyEdrpou?: string | null
   billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCustomerProfileInput
   fields?: Prisma.FieldCreateNestedManyWithoutOwnerInput
+  cropStats?: Prisma.CustomerCropStatCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerProfileUncheckedCreateInput = {
@@ -272,9 +328,14 @@ export type CustomerProfileUncheckedCreateInput = {
   companyName?: string | null
   companyEdrpou?: string | null
   billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   fields?: Prisma.FieldUncheckedCreateNestedManyWithoutOwnerInput
+  cropStats?: Prisma.CustomerCropStatUncheckedCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerProfileUpdateInput = {
@@ -282,10 +343,15 @@ export type CustomerProfileUpdateInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCustomerProfileNestedInput
   fields?: Prisma.FieldUpdateManyWithoutOwnerNestedInput
+  cropStats?: Prisma.CustomerCropStatUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerProfileUncheckedUpdateInput = {
@@ -294,9 +360,14 @@ export type CustomerProfileUncheckedUpdateInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fields?: Prisma.FieldUncheckedUpdateManyWithoutOwnerNestedInput
+  cropStats?: Prisma.CustomerCropStatUncheckedUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerProfileCreateManyInput = {
@@ -305,6 +376,10 @@ export type CustomerProfileCreateManyInput = {
   companyName?: string | null
   companyEdrpou?: string | null
   billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -314,6 +389,10 @@ export type CustomerProfileUpdateManyMutationInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -324,6 +403,10 @@ export type CustomerProfileUncheckedUpdateManyInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -339,6 +422,10 @@ export type CustomerProfileCountOrderByAggregateInput = {
   companyName?: Prisma.SortOrder
   companyEdrpou?: Prisma.SortOrder
   billingEmail?: Prisma.SortOrder
+  iban?: Prisma.SortOrder
+  taxSystem?: Prisma.SortOrder
+  vatPayer?: Prisma.SortOrder
+  legalAddress?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -349,6 +436,10 @@ export type CustomerProfileMaxOrderByAggregateInput = {
   companyName?: Prisma.SortOrder
   companyEdrpou?: Prisma.SortOrder
   billingEmail?: Prisma.SortOrder
+  iban?: Prisma.SortOrder
+  taxSystem?: Prisma.SortOrder
+  vatPayer?: Prisma.SortOrder
+  legalAddress?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -359,6 +450,10 @@ export type CustomerProfileMinOrderByAggregateInput = {
   companyName?: Prisma.SortOrder
   companyEdrpou?: Prisma.SortOrder
   billingEmail?: Prisma.SortOrder
+  iban?: Prisma.SortOrder
+  taxSystem?: Prisma.SortOrder
+  vatPayer?: Prisma.SortOrder
+  legalAddress?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -400,6 +495,24 @@ export type CustomerProfileUncheckedUpdateOneWithoutUserNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CustomerProfileUpdateToOneWithWhereWithoutUserInput, Prisma.CustomerProfileUpdateWithoutUserInput>, Prisma.CustomerProfileUncheckedUpdateWithoutUserInput>
 }
 
+export type NullableEnumTaxSystemFieldUpdateOperationsInput = {
+  set?: $Enums.TaxSystem | null
+}
+
+export type CustomerProfileCreateNestedOneWithoutCropStatsInput = {
+  create?: Prisma.XOR<Prisma.CustomerProfileCreateWithoutCropStatsInput, Prisma.CustomerProfileUncheckedCreateWithoutCropStatsInput>
+  connectOrCreate?: Prisma.CustomerProfileCreateOrConnectWithoutCropStatsInput
+  connect?: Prisma.CustomerProfileWhereUniqueInput
+}
+
+export type CustomerProfileUpdateOneRequiredWithoutCropStatsNestedInput = {
+  create?: Prisma.XOR<Prisma.CustomerProfileCreateWithoutCropStatsInput, Prisma.CustomerProfileUncheckedCreateWithoutCropStatsInput>
+  connectOrCreate?: Prisma.CustomerProfileCreateOrConnectWithoutCropStatsInput
+  upsert?: Prisma.CustomerProfileUpsertWithoutCropStatsInput
+  connect?: Prisma.CustomerProfileWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CustomerProfileUpdateToOneWithWhereWithoutCropStatsInput, Prisma.CustomerProfileUpdateWithoutCropStatsInput>, Prisma.CustomerProfileUncheckedUpdateWithoutCropStatsInput>
+}
+
 export type CustomerProfileCreateNestedOneWithoutFieldsInput = {
   create?: Prisma.XOR<Prisma.CustomerProfileCreateWithoutFieldsInput, Prisma.CustomerProfileUncheckedCreateWithoutFieldsInput>
   connectOrCreate?: Prisma.CustomerProfileCreateOrConnectWithoutFieldsInput
@@ -419,9 +532,14 @@ export type CustomerProfileCreateWithoutUserInput = {
   companyName?: string | null
   companyEdrpou?: string | null
   billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   fields?: Prisma.FieldCreateNestedManyWithoutOwnerInput
+  cropStats?: Prisma.CustomerCropStatCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerProfileUncheckedCreateWithoutUserInput = {
@@ -429,9 +547,14 @@ export type CustomerProfileUncheckedCreateWithoutUserInput = {
   companyName?: string | null
   companyEdrpou?: string | null
   billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   fields?: Prisma.FieldUncheckedCreateNestedManyWithoutOwnerInput
+  cropStats?: Prisma.CustomerCropStatUncheckedCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerProfileCreateOrConnectWithoutUserInput = {
@@ -455,9 +578,14 @@ export type CustomerProfileUpdateWithoutUserInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fields?: Prisma.FieldUpdateManyWithoutOwnerNestedInput
+  cropStats?: Prisma.CustomerCropStatUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerProfileUncheckedUpdateWithoutUserInput = {
@@ -465,6 +593,87 @@ export type CustomerProfileUncheckedUpdateWithoutUserInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  fields?: Prisma.FieldUncheckedUpdateManyWithoutOwnerNestedInput
+  cropStats?: Prisma.CustomerCropStatUncheckedUpdateManyWithoutCustomerNestedInput
+}
+
+export type CustomerProfileCreateWithoutCropStatsInput = {
+  id?: string
+  companyName?: string | null
+  companyEdrpou?: string | null
+  billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutCustomerProfileInput
+  fields?: Prisma.FieldCreateNestedManyWithoutOwnerInput
+}
+
+export type CustomerProfileUncheckedCreateWithoutCropStatsInput = {
+  id?: string
+  userId: string
+  companyName?: string | null
+  companyEdrpou?: string | null
+  billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  fields?: Prisma.FieldUncheckedCreateNestedManyWithoutOwnerInput
+}
+
+export type CustomerProfileCreateOrConnectWithoutCropStatsInput = {
+  where: Prisma.CustomerProfileWhereUniqueInput
+  create: Prisma.XOR<Prisma.CustomerProfileCreateWithoutCropStatsInput, Prisma.CustomerProfileUncheckedCreateWithoutCropStatsInput>
+}
+
+export type CustomerProfileUpsertWithoutCropStatsInput = {
+  update: Prisma.XOR<Prisma.CustomerProfileUpdateWithoutCropStatsInput, Prisma.CustomerProfileUncheckedUpdateWithoutCropStatsInput>
+  create: Prisma.XOR<Prisma.CustomerProfileCreateWithoutCropStatsInput, Prisma.CustomerProfileUncheckedCreateWithoutCropStatsInput>
+  where?: Prisma.CustomerProfileWhereInput
+}
+
+export type CustomerProfileUpdateToOneWithWhereWithoutCropStatsInput = {
+  where?: Prisma.CustomerProfileWhereInput
+  data: Prisma.XOR<Prisma.CustomerProfileUpdateWithoutCropStatsInput, Prisma.CustomerProfileUncheckedUpdateWithoutCropStatsInput>
+}
+
+export type CustomerProfileUpdateWithoutCropStatsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutCustomerProfileNestedInput
+  fields?: Prisma.FieldUpdateManyWithoutOwnerNestedInput
+}
+
+export type CustomerProfileUncheckedUpdateWithoutCropStatsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fields?: Prisma.FieldUncheckedUpdateManyWithoutOwnerNestedInput
@@ -475,9 +684,14 @@ export type CustomerProfileCreateWithoutFieldsInput = {
   companyName?: string | null
   companyEdrpou?: string | null
   billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCustomerProfileInput
+  cropStats?: Prisma.CustomerCropStatCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerProfileUncheckedCreateWithoutFieldsInput = {
@@ -486,8 +700,13 @@ export type CustomerProfileUncheckedCreateWithoutFieldsInput = {
   companyName?: string | null
   companyEdrpou?: string | null
   billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  cropStats?: Prisma.CustomerCropStatUncheckedCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerProfileCreateOrConnectWithoutFieldsInput = {
@@ -511,9 +730,14 @@ export type CustomerProfileUpdateWithoutFieldsInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCustomerProfileNestedInput
+  cropStats?: Prisma.CustomerCropStatUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerProfileUncheckedUpdateWithoutFieldsInput = {
@@ -522,8 +746,13 @@ export type CustomerProfileUncheckedUpdateWithoutFieldsInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cropStats?: Prisma.CustomerCropStatUncheckedUpdateManyWithoutCustomerNestedInput
 }
 
 
@@ -533,10 +762,12 @@ export type CustomerProfileUncheckedUpdateWithoutFieldsInput = {
 
 export type CustomerProfileCountOutputType = {
   fields: number
+  cropStats: number
 }
 
 export type CustomerProfileCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   fields?: boolean | CustomerProfileCountOutputTypeCountFieldsArgs
+  cropStats?: boolean | CustomerProfileCountOutputTypeCountCropStatsArgs
 }
 
 /**
@@ -556,6 +787,13 @@ export type CustomerProfileCountOutputTypeCountFieldsArgs<ExtArgs extends runtim
   where?: Prisma.FieldWhereInput
 }
 
+/**
+ * CustomerProfileCountOutputType without action
+ */
+export type CustomerProfileCountOutputTypeCountCropStatsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CustomerCropStatWhereInput
+}
+
 
 export type CustomerProfileSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -563,10 +801,15 @@ export type CustomerProfileSelect<ExtArgs extends runtime.Types.Extensions.Inter
   companyName?: boolean
   companyEdrpou?: boolean
   billingEmail?: boolean
+  iban?: boolean
+  taxSystem?: boolean
+  vatPayer?: boolean
+  legalAddress?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   fields?: boolean | Prisma.CustomerProfile$fieldsArgs<ExtArgs>
+  cropStats?: boolean | Prisma.CustomerProfile$cropStatsArgs<ExtArgs>
   _count?: boolean | Prisma.CustomerProfileCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["customerProfile"]>
 
@@ -576,6 +819,10 @@ export type CustomerProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   companyName?: boolean
   companyEdrpou?: boolean
   billingEmail?: boolean
+  iban?: boolean
+  taxSystem?: boolean
+  vatPayer?: boolean
+  legalAddress?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -587,6 +834,10 @@ export type CustomerProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   companyName?: boolean
   companyEdrpou?: boolean
   billingEmail?: boolean
+  iban?: boolean
+  taxSystem?: boolean
+  vatPayer?: boolean
+  legalAddress?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -598,14 +849,19 @@ export type CustomerProfileSelectScalar = {
   companyName?: boolean
   companyEdrpou?: boolean
   billingEmail?: boolean
+  iban?: boolean
+  taxSystem?: boolean
+  vatPayer?: boolean
+  legalAddress?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CustomerProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "companyName" | "companyEdrpou" | "billingEmail" | "createdAt" | "updatedAt", ExtArgs["result"]["customerProfile"]>
+export type CustomerProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "companyName" | "companyEdrpou" | "billingEmail" | "iban" | "taxSystem" | "vatPayer" | "legalAddress" | "createdAt" | "updatedAt", ExtArgs["result"]["customerProfile"]>
 export type CustomerProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   fields?: boolean | Prisma.CustomerProfile$fieldsArgs<ExtArgs>
+  cropStats?: boolean | Prisma.CustomerProfile$cropStatsArgs<ExtArgs>
   _count?: boolean | Prisma.CustomerProfileCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CustomerProfileIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -620,6 +876,7 @@ export type $CustomerProfilePayload<ExtArgs extends runtime.Types.Extensions.Int
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
     fields: Prisma.$FieldPayload<ExtArgs>[]
+    cropStats: Prisma.$CustomerCropStatPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -627,6 +884,10 @@ export type $CustomerProfilePayload<ExtArgs extends runtime.Types.Extensions.Int
     companyName: string | null
     companyEdrpou: string | null
     billingEmail: string | null
+    iban: string | null
+    taxSystem: $Enums.TaxSystem | null
+    vatPayer: boolean
+    legalAddress: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["customerProfile"]>
@@ -1025,6 +1286,7 @@ export interface Prisma__CustomerProfileClient<T, Null = never, ExtArgs extends 
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   fields<T extends Prisma.CustomerProfile$fieldsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CustomerProfile$fieldsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FieldPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  cropStats<T extends Prisma.CustomerProfile$cropStatsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CustomerProfile$cropStatsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CustomerCropStatPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1059,6 +1321,10 @@ export interface CustomerProfileFieldRefs {
   readonly companyName: Prisma.FieldRef<"CustomerProfile", 'String'>
   readonly companyEdrpou: Prisma.FieldRef<"CustomerProfile", 'String'>
   readonly billingEmail: Prisma.FieldRef<"CustomerProfile", 'String'>
+  readonly iban: Prisma.FieldRef<"CustomerProfile", 'String'>
+  readonly taxSystem: Prisma.FieldRef<"CustomerProfile", 'TaxSystem'>
+  readonly vatPayer: Prisma.FieldRef<"CustomerProfile", 'Boolean'>
+  readonly legalAddress: Prisma.FieldRef<"CustomerProfile", 'String'>
   readonly createdAt: Prisma.FieldRef<"CustomerProfile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"CustomerProfile", 'DateTime'>
 }
@@ -1483,6 +1749,30 @@ export type CustomerProfile$fieldsArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   distinct?: Prisma.FieldScalarFieldEnum | Prisma.FieldScalarFieldEnum[]
+}
+
+/**
+ * CustomerProfile.cropStats
+ */
+export type CustomerProfile$cropStatsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CustomerCropStat
+   */
+  select?: Prisma.CustomerCropStatSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CustomerCropStat
+   */
+  omit?: Prisma.CustomerCropStatOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CustomerCropStatInclude<ExtArgs> | null
+  where?: Prisma.CustomerCropStatWhereInput
+  orderBy?: Prisma.CustomerCropStatOrderByWithRelationInput | Prisma.CustomerCropStatOrderByWithRelationInput[]
+  cursor?: Prisma.CustomerCropStatWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CustomerCropStatScalarFieldEnum | Prisma.CustomerCropStatScalarFieldEnum[]
 }
 
 /**

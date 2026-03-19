@@ -58,6 +58,9 @@ export const ModelName = {
   User: 'User',
   RefreshToken: 'RefreshToken',
   CustomerProfile: 'CustomerProfile',
+  Review: 'Review',
+  TwoFactorSetup: 'TwoFactorSetup',
+  CustomerCropStat: 'CustomerCropStat',
   PerformerProfile: 'PerformerProfile',
   PerformerSettings: 'PerformerSettings',
   PerformerService: 'PerformerService',
@@ -151,6 +154,9 @@ export const UserScalarFieldEnum = {
   email: 'email',
   phone: 'phone',
   passwordHash: 'passwordHash',
+  biometricsEnabled: 'biometricsEnabled',
+  twoFactorSecret: 'twoFactorSecret',
+  twoFactorEnabledAt: 'twoFactorEnabledAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -176,11 +182,54 @@ export const CustomerProfileScalarFieldEnum = {
   companyName: 'companyName',
   companyEdrpou: 'companyEdrpou',
   billingEmail: 'billingEmail',
+  iban: 'iban',
+  taxSystem: 'taxSystem',
+  vatPayer: 'vatPayer',
+  legalAddress: 'legalAddress',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type CustomerProfileScalarFieldEnum = (typeof CustomerProfileScalarFieldEnum)[keyof typeof CustomerProfileScalarFieldEnum]
+
+
+export const ReviewScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  performerUserId: 'performerUserId',
+  authorUserId: 'authorUserId',
+  rating: 'rating',
+  text: 'text',
+  createdAt: 'createdAt'
+} as const
+
+export type ReviewScalarFieldEnum = (typeof ReviewScalarFieldEnum)[keyof typeof ReviewScalarFieldEnum]
+
+
+export const TwoFactorSetupScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  secret: 'secret',
+  createdAt: 'createdAt',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt'
+} as const
+
+export type TwoFactorSetupScalarFieldEnum = (typeof TwoFactorSetupScalarFieldEnum)[keyof typeof TwoFactorSetupScalarFieldEnum]
+
+
+export const CustomerCropStatScalarFieldEnum = {
+  id: 'id',
+  customerUserId: 'customerUserId',
+  season: 'season',
+  cropId: 'cropId',
+  areaHa: 'areaHa',
+  yieldT: 'yieldT',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CustomerCropStatScalarFieldEnum = (typeof CustomerCropStatScalarFieldEnum)[keyof typeof CustomerCropStatScalarFieldEnum]
 
 
 export const PerformerProfileScalarFieldEnum = {

@@ -114,3 +114,13 @@ export const PayoutStatus = {
 } as const
 
 export type PayoutStatus = (typeof PayoutStatus)[keyof typeof PayoutStatus]
+
+
+export const TaxSystem = {
+  FOP_2: 'FOP_2',
+  FOP_3: 'FOP_3',
+  LLC: 'LLC',
+  OTHER: 'OTHER'
+} as const
+
+export type TaxSystem = (typeof TaxSystem)[keyof typeof TaxSystem]

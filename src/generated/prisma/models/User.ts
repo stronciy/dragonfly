@@ -31,6 +31,9 @@ export type UserMinAggregateOutputType = {
   email: string | null
   phone: string | null
   passwordHash: string | null
+  biometricsEnabled: boolean | null
+  twoFactorSecret: string | null
+  twoFactorEnabledAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -42,6 +45,9 @@ export type UserMaxAggregateOutputType = {
   email: string | null
   phone: string | null
   passwordHash: string | null
+  biometricsEnabled: boolean | null
+  twoFactorSecret: string | null
+  twoFactorEnabledAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -53,6 +59,9 @@ export type UserCountAggregateOutputType = {
   email: number
   phone: number
   passwordHash: number
+  biometricsEnabled: number
+  twoFactorSecret: number
+  twoFactorEnabledAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -66,6 +75,9 @@ export type UserMinAggregateInputType = {
   email?: true
   phone?: true
   passwordHash?: true
+  biometricsEnabled?: true
+  twoFactorSecret?: true
+  twoFactorEnabledAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -77,6 +89,9 @@ export type UserMaxAggregateInputType = {
   email?: true
   phone?: true
   passwordHash?: true
+  biometricsEnabled?: true
+  twoFactorSecret?: true
+  twoFactorEnabledAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -88,6 +103,9 @@ export type UserCountAggregateInputType = {
   email?: true
   phone?: true
   passwordHash?: true
+  biometricsEnabled?: true
+  twoFactorSecret?: true
+  twoFactorEnabledAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -172,6 +190,9 @@ export type UserGroupByOutputType = {
   email: string
   phone: string | null
   passwordHash: string
+  biometricsEnabled: boolean
+  twoFactorSecret: string | null
+  twoFactorEnabledAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: UserCountAggregateOutputType | null
@@ -204,6 +225,9 @@ export type UserWhereInput = {
   email?: Prisma.StringFilter<"User"> | string
   phone?: Prisma.StringNullableFilter<"User"> | string | null
   passwordHash?: Prisma.StringFilter<"User"> | string
+  biometricsEnabled?: Prisma.BoolFilter<"User"> | boolean
+  twoFactorSecret?: Prisma.StringNullableFilter<"User"> | string | null
+  twoFactorEnabledAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   customerProfile?: Prisma.XOR<Prisma.CustomerProfileNullableScalarRelationFilter, Prisma.CustomerProfileWhereInput> | null
@@ -211,12 +235,15 @@ export type UserWhereInput = {
   refreshTokens?: Prisma.RefreshTokenListRelationFilter
   devices?: Prisma.DeviceListRelationFilter
   notifications?: Prisma.NotificationListRelationFilter
+  twoFactorSetups?: Prisma.TwoFactorSetupListRelationFilter
   customerOrders?: Prisma.OrderListRelationFilter
   performerOrders?: Prisma.OrderListRelationFilter
   escrowLocks?: Prisma.EscrowLockListRelationFilter
   payments?: Prisma.PaymentListRelationFilter
   payouts?: Prisma.PayoutListRelationFilter
   reserveTx?: Prisma.ReserveTransactionListRelationFilter
+  authoredReviews?: Prisma.ReviewListRelationFilter
+  performerReviews?: Prisma.ReviewListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -226,6 +253,9 @@ export type UserOrderByWithRelationInput = {
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
+  biometricsEnabled?: Prisma.SortOrder
+  twoFactorSecret?: Prisma.SortOrderInput | Prisma.SortOrder
+  twoFactorEnabledAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   customerProfile?: Prisma.CustomerProfileOrderByWithRelationInput
@@ -233,12 +263,15 @@ export type UserOrderByWithRelationInput = {
   refreshTokens?: Prisma.RefreshTokenOrderByRelationAggregateInput
   devices?: Prisma.DeviceOrderByRelationAggregateInput
   notifications?: Prisma.NotificationOrderByRelationAggregateInput
+  twoFactorSetups?: Prisma.TwoFactorSetupOrderByRelationAggregateInput
   customerOrders?: Prisma.OrderOrderByRelationAggregateInput
   performerOrders?: Prisma.OrderOrderByRelationAggregateInput
   escrowLocks?: Prisma.EscrowLockOrderByRelationAggregateInput
   payments?: Prisma.PaymentOrderByRelationAggregateInput
   payouts?: Prisma.PayoutOrderByRelationAggregateInput
   reserveTx?: Prisma.ReserveTransactionOrderByRelationAggregateInput
+  authoredReviews?: Prisma.ReviewOrderByRelationAggregateInput
+  performerReviews?: Prisma.ReviewOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -251,6 +284,9 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"User"> | string
   phone?: Prisma.StringNullableFilter<"User"> | string | null
   passwordHash?: Prisma.StringFilter<"User"> | string
+  biometricsEnabled?: Prisma.BoolFilter<"User"> | boolean
+  twoFactorSecret?: Prisma.StringNullableFilter<"User"> | string | null
+  twoFactorEnabledAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   customerProfile?: Prisma.XOR<Prisma.CustomerProfileNullableScalarRelationFilter, Prisma.CustomerProfileWhereInput> | null
@@ -258,12 +294,15 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   refreshTokens?: Prisma.RefreshTokenListRelationFilter
   devices?: Prisma.DeviceListRelationFilter
   notifications?: Prisma.NotificationListRelationFilter
+  twoFactorSetups?: Prisma.TwoFactorSetupListRelationFilter
   customerOrders?: Prisma.OrderListRelationFilter
   performerOrders?: Prisma.OrderListRelationFilter
   escrowLocks?: Prisma.EscrowLockListRelationFilter
   payments?: Prisma.PaymentListRelationFilter
   payouts?: Prisma.PayoutListRelationFilter
   reserveTx?: Prisma.ReserveTransactionListRelationFilter
+  authoredReviews?: Prisma.ReviewListRelationFilter
+  performerReviews?: Prisma.ReviewListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -273,6 +312,9 @@ export type UserOrderByWithAggregationInput = {
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
+  biometricsEnabled?: Prisma.SortOrder
+  twoFactorSecret?: Prisma.SortOrderInput | Prisma.SortOrder
+  twoFactorEnabledAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
@@ -290,6 +332,9 @@ export type UserScalarWhereWithAggregatesInput = {
   email?: Prisma.StringWithAggregatesFilter<"User"> | string
   phone?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   passwordHash?: Prisma.StringWithAggregatesFilter<"User"> | string
+  biometricsEnabled?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  twoFactorSecret?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  twoFactorEnabledAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
@@ -301,6 +346,9 @@ export type UserCreateInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
@@ -308,12 +356,15 @@ export type UserCreateInput = {
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -323,6 +374,9 @@ export type UserUncheckedCreateInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
@@ -330,12 +384,15 @@ export type UserUncheckedCreateInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUpdateInput = {
@@ -345,6 +402,9 @@ export type UserUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
@@ -352,12 +412,15 @@ export type UserUpdateInput = {
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -367,6 +430,9 @@ export type UserUncheckedUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -374,12 +440,15 @@ export type UserUncheckedUpdateInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -389,6 +458,9 @@ export type UserCreateManyInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -400,6 +472,9 @@ export type UserUpdateManyMutationInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -411,6 +486,9 @@ export type UserUncheckedUpdateManyInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -422,6 +500,9 @@ export type UserCountOrderByAggregateInput = {
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
+  biometricsEnabled?: Prisma.SortOrder
+  twoFactorSecret?: Prisma.SortOrder
+  twoFactorEnabledAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -433,6 +514,9 @@ export type UserMaxOrderByAggregateInput = {
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
+  biometricsEnabled?: Prisma.SortOrder
+  twoFactorSecret?: Prisma.SortOrder
+  twoFactorEnabledAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -444,6 +528,9 @@ export type UserMinOrderByAggregateInput = {
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
+  biometricsEnabled?: Prisma.SortOrder
+  twoFactorSecret?: Prisma.SortOrder
+  twoFactorEnabledAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -460,6 +547,14 @@ export type UserNullableScalarRelationFilter = {
 
 export type EnumUserRoleFieldUpdateOperationsInput = {
   set?: $Enums.UserRole
+}
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 export type UserCreateNestedOneWithoutRefreshTokensInput = {
@@ -488,6 +583,48 @@ export type UserUpdateOneRequiredWithoutCustomerProfileNestedInput = {
   upsert?: Prisma.UserUpsertWithoutCustomerProfileInput
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCustomerProfileInput, Prisma.UserUpdateWithoutCustomerProfileInput>, Prisma.UserUncheckedUpdateWithoutCustomerProfileInput>
+}
+
+export type UserCreateNestedOneWithoutPerformerReviewsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutPerformerReviewsInput, Prisma.UserUncheckedCreateWithoutPerformerReviewsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutPerformerReviewsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedOneWithoutAuthoredReviewsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAuthoredReviewsInput, Prisma.UserUncheckedCreateWithoutAuthoredReviewsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAuthoredReviewsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutPerformerReviewsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutPerformerReviewsInput, Prisma.UserUncheckedCreateWithoutPerformerReviewsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutPerformerReviewsInput
+  upsert?: Prisma.UserUpsertWithoutPerformerReviewsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutPerformerReviewsInput, Prisma.UserUpdateWithoutPerformerReviewsInput>, Prisma.UserUncheckedUpdateWithoutPerformerReviewsInput>
+}
+
+export type UserUpdateOneRequiredWithoutAuthoredReviewsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAuthoredReviewsInput, Prisma.UserUncheckedCreateWithoutAuthoredReviewsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAuthoredReviewsInput
+  upsert?: Prisma.UserUpsertWithoutAuthoredReviewsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAuthoredReviewsInput, Prisma.UserUpdateWithoutAuthoredReviewsInput>, Prisma.UserUncheckedUpdateWithoutAuthoredReviewsInput>
+}
+
+export type UserCreateNestedOneWithoutTwoFactorSetupsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutTwoFactorSetupsInput, Prisma.UserUncheckedCreateWithoutTwoFactorSetupsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutTwoFactorSetupsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutTwoFactorSetupsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutTwoFactorSetupsInput, Prisma.UserUncheckedCreateWithoutTwoFactorSetupsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutTwoFactorSetupsInput
+  upsert?: Prisma.UserUpsertWithoutTwoFactorSetupsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutTwoFactorSetupsInput, Prisma.UserUpdateWithoutTwoFactorSetupsInput>, Prisma.UserUncheckedUpdateWithoutTwoFactorSetupsInput>
 }
 
 export type UserCreateNestedOneWithoutPerformerProfileInput = {
@@ -625,18 +762,24 @@ export type UserCreateWithoutRefreshTokensInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
   performerProfile?: Prisma.PerformerProfileCreateNestedOneWithoutUserInput
   devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUncheckedCreateWithoutRefreshTokensInput = {
@@ -646,18 +789,24 @@ export type UserUncheckedCreateWithoutRefreshTokensInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
   performerProfile?: Prisma.PerformerProfileUncheckedCreateNestedOneWithoutUserInput
   devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
 }
 
 export type UserCreateOrConnectWithoutRefreshTokensInput = {
@@ -683,18 +832,24 @@ export type UserUpdateWithoutRefreshTokensInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
   performerProfile?: Prisma.PerformerProfileUpdateOneWithoutUserNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRefreshTokensInput = {
@@ -704,18 +859,24 @@ export type UserUncheckedUpdateWithoutRefreshTokensInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
   performerProfile?: Prisma.PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
   devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserCreateWithoutCustomerProfileInput = {
@@ -725,18 +886,24 @@ export type UserCreateWithoutCustomerProfileInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   performerProfile?: Prisma.PerformerProfileCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUncheckedCreateWithoutCustomerProfileInput = {
@@ -746,18 +913,24 @@ export type UserUncheckedCreateWithoutCustomerProfileInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   performerProfile?: Prisma.PerformerProfileUncheckedCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
 }
 
 export type UserCreateOrConnectWithoutCustomerProfileInput = {
@@ -783,8 +956,384 @@ export type UserUpdateWithoutCustomerProfileInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  performerProfile?: Prisma.PerformerProfileUpdateOneWithoutUserNestedInput
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
+  devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
+  customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
+  performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
+  escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+  payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
+  reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutCustomerProfileInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  performerProfile?: Prisma.PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
+  devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
+  customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
+  performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
+  escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
+  payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
+  reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
+}
+
+export type UserCreateWithoutPerformerReviewsInput = {
+  id?: string
+  role?: $Enums.UserRole
+  name: string
+  email: string
+  phone?: string | null
+  passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
+  performerProfile?: Prisma.PerformerProfileCreateNestedOneWithoutUserInput
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
+  devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
+  customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
+  performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
+  escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+  payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
+  reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+}
+
+export type UserUncheckedCreateWithoutPerformerReviewsInput = {
+  id?: string
+  role?: $Enums.UserRole
+  name: string
+  email: string
+  phone?: string | null
+  passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
+  performerProfile?: Prisma.PerformerProfileUncheckedCreateNestedOneWithoutUserInput
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
+  devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
+  customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
+  performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
+  escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+  payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
+  reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+}
+
+export type UserCreateOrConnectWithoutPerformerReviewsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutPerformerReviewsInput, Prisma.UserUncheckedCreateWithoutPerformerReviewsInput>
+}
+
+export type UserCreateWithoutAuthoredReviewsInput = {
+  id?: string
+  role?: $Enums.UserRole
+  name: string
+  email: string
+  phone?: string | null
+  passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
+  performerProfile?: Prisma.PerformerProfileCreateNestedOneWithoutUserInput
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
+  devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
+  customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
+  performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
+  escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+  payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
+  reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
+}
+
+export type UserUncheckedCreateWithoutAuthoredReviewsInput = {
+  id?: string
+  role?: $Enums.UserRole
+  name: string
+  email: string
+  phone?: string | null
+  passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
+  performerProfile?: Prisma.PerformerProfileUncheckedCreateNestedOneWithoutUserInput
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
+  devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
+  customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
+  performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
+  escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+  payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
+  reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
+}
+
+export type UserCreateOrConnectWithoutAuthoredReviewsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutAuthoredReviewsInput, Prisma.UserUncheckedCreateWithoutAuthoredReviewsInput>
+}
+
+export type UserUpsertWithoutPerformerReviewsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutPerformerReviewsInput, Prisma.UserUncheckedUpdateWithoutPerformerReviewsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutPerformerReviewsInput, Prisma.UserUncheckedCreateWithoutPerformerReviewsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutPerformerReviewsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutPerformerReviewsInput, Prisma.UserUncheckedUpdateWithoutPerformerReviewsInput>
+}
+
+export type UserUpdateWithoutPerformerReviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
+  performerProfile?: Prisma.PerformerProfileUpdateOneWithoutUserNestedInput
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
+  devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
+  customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
+  performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
+  escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+  payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
+  reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+}
+
+export type UserUncheckedUpdateWithoutPerformerReviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
+  performerProfile?: Prisma.PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
+  devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
+  customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
+  performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
+  escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
+  payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
+  reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+}
+
+export type UserUpsertWithoutAuthoredReviewsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutAuthoredReviewsInput, Prisma.UserUncheckedUpdateWithoutAuthoredReviewsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutAuthoredReviewsInput, Prisma.UserUncheckedCreateWithoutAuthoredReviewsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutAuthoredReviewsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutAuthoredReviewsInput, Prisma.UserUncheckedUpdateWithoutAuthoredReviewsInput>
+}
+
+export type UserUpdateWithoutAuthoredReviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
+  performerProfile?: Prisma.PerformerProfileUpdateOneWithoutUserNestedInput
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
+  devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
+  customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
+  performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
+  escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+  payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
+  reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutAuthoredReviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
+  performerProfile?: Prisma.PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
+  devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
+  customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
+  performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
+  escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
+  payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
+  reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
+}
+
+export type UserCreateWithoutTwoFactorSetupsInput = {
+  id?: string
+  role?: $Enums.UserRole
+  name: string
+  email: string
+  phone?: string | null
+  passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
+  performerProfile?: Prisma.PerformerProfileCreateNestedOneWithoutUserInput
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
+  devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
+  performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
+  escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+  payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
+  reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
+}
+
+export type UserUncheckedCreateWithoutTwoFactorSetupsInput = {
+  id?: string
+  role?: $Enums.UserRole
+  name: string
+  email: string
+  phone?: string | null
+  passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
+  performerProfile?: Prisma.PerformerProfileUncheckedCreateNestedOneWithoutUserInput
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
+  devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
+  performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
+  escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+  payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
+  reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
+}
+
+export type UserCreateOrConnectWithoutTwoFactorSetupsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutTwoFactorSetupsInput, Prisma.UserUncheckedCreateWithoutTwoFactorSetupsInput>
+}
+
+export type UserUpsertWithoutTwoFactorSetupsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutTwoFactorSetupsInput, Prisma.UserUncheckedUpdateWithoutTwoFactorSetupsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutTwoFactorSetupsInput, Prisma.UserUncheckedCreateWithoutTwoFactorSetupsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutTwoFactorSetupsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutTwoFactorSetupsInput, Prisma.UserUncheckedUpdateWithoutTwoFactorSetupsInput>
+}
+
+export type UserUpdateWithoutTwoFactorSetupsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
   performerProfile?: Prisma.PerformerProfileUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
@@ -795,17 +1344,23 @@ export type UserUpdateWithoutCustomerProfileInput = {
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
 }
 
-export type UserUncheckedUpdateWithoutCustomerProfileInput = {
+export type UserUncheckedUpdateWithoutTwoFactorSetupsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   name?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
   performerProfile?: Prisma.PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
@@ -816,6 +1371,8 @@ export type UserUncheckedUpdateWithoutCustomerProfileInput = {
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserCreateWithoutPerformerProfileInput = {
@@ -825,18 +1382,24 @@ export type UserCreateWithoutPerformerProfileInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUncheckedCreateWithoutPerformerProfileInput = {
@@ -846,18 +1409,24 @@ export type UserUncheckedCreateWithoutPerformerProfileInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
 }
 
 export type UserCreateOrConnectWithoutPerformerProfileInput = {
@@ -883,18 +1452,24 @@ export type UserUpdateWithoutPerformerProfileInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPerformerProfileInput = {
@@ -904,18 +1479,24 @@ export type UserUncheckedUpdateWithoutPerformerProfileInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserCreateWithoutCustomerOrdersInput = {
@@ -925,6 +1506,9 @@ export type UserCreateWithoutCustomerOrdersInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
@@ -932,11 +1516,14 @@ export type UserCreateWithoutCustomerOrdersInput = {
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
   performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUncheckedCreateWithoutCustomerOrdersInput = {
@@ -946,6 +1533,9 @@ export type UserUncheckedCreateWithoutCustomerOrdersInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
@@ -953,11 +1543,14 @@ export type UserUncheckedCreateWithoutCustomerOrdersInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
   performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
 }
 
 export type UserCreateOrConnectWithoutCustomerOrdersInput = {
@@ -972,6 +1565,9 @@ export type UserCreateWithoutPerformerOrdersInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
@@ -979,11 +1575,14 @@ export type UserCreateWithoutPerformerOrdersInput = {
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUncheckedCreateWithoutPerformerOrdersInput = {
@@ -993,6 +1592,9 @@ export type UserUncheckedCreateWithoutPerformerOrdersInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
@@ -1000,11 +1602,14 @@ export type UserUncheckedCreateWithoutPerformerOrdersInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
 }
 
 export type UserCreateOrConnectWithoutPerformerOrdersInput = {
@@ -1030,6 +1635,9 @@ export type UserUpdateWithoutCustomerOrdersInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
@@ -1037,11 +1645,14 @@ export type UserUpdateWithoutCustomerOrdersInput = {
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
   performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCustomerOrdersInput = {
@@ -1051,6 +1662,9 @@ export type UserUncheckedUpdateWithoutCustomerOrdersInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -1058,11 +1672,14 @@ export type UserUncheckedUpdateWithoutCustomerOrdersInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
   performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserUpsertWithoutPerformerOrdersInput = {
@@ -1083,6 +1700,9 @@ export type UserUpdateWithoutPerformerOrdersInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
@@ -1090,11 +1710,14 @@ export type UserUpdateWithoutPerformerOrdersInput = {
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
   escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPerformerOrdersInput = {
@@ -1104,6 +1727,9 @@ export type UserUncheckedUpdateWithoutPerformerOrdersInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -1111,11 +1737,14 @@ export type UserUncheckedUpdateWithoutPerformerOrdersInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
   escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserCreateWithoutEscrowLocksInput = {
@@ -1125,6 +1754,9 @@ export type UserCreateWithoutEscrowLocksInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
@@ -1132,11 +1764,14 @@ export type UserCreateWithoutEscrowLocksInput = {
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUncheckedCreateWithoutEscrowLocksInput = {
@@ -1146,6 +1781,9 @@ export type UserUncheckedCreateWithoutEscrowLocksInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
@@ -1153,11 +1791,14 @@ export type UserUncheckedCreateWithoutEscrowLocksInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
 }
 
 export type UserCreateOrConnectWithoutEscrowLocksInput = {
@@ -1183,6 +1824,9 @@ export type UserUpdateWithoutEscrowLocksInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
@@ -1190,11 +1834,14 @@ export type UserUpdateWithoutEscrowLocksInput = {
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEscrowLocksInput = {
@@ -1204,6 +1851,9 @@ export type UserUncheckedUpdateWithoutEscrowLocksInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -1211,11 +1861,14 @@ export type UserUncheckedUpdateWithoutEscrowLocksInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserCreateWithoutPaymentsInput = {
@@ -1225,6 +1878,9 @@ export type UserCreateWithoutPaymentsInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
@@ -1232,11 +1888,14 @@ export type UserCreateWithoutPaymentsInput = {
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUncheckedCreateWithoutPaymentsInput = {
@@ -1246,6 +1905,9 @@ export type UserUncheckedCreateWithoutPaymentsInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
@@ -1253,11 +1915,14 @@ export type UserUncheckedCreateWithoutPaymentsInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
 }
 
 export type UserCreateOrConnectWithoutPaymentsInput = {
@@ -1283,6 +1948,9 @@ export type UserUpdateWithoutPaymentsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
@@ -1290,11 +1958,14 @@ export type UserUpdateWithoutPaymentsInput = {
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPaymentsInput = {
@@ -1304,6 +1975,9 @@ export type UserUncheckedUpdateWithoutPaymentsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -1311,11 +1985,14 @@ export type UserUncheckedUpdateWithoutPaymentsInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserCreateWithoutNotificationsInput = {
@@ -1325,18 +2002,24 @@ export type UserCreateWithoutNotificationsInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
   performerProfile?: Prisma.PerformerProfileCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUncheckedCreateWithoutNotificationsInput = {
@@ -1346,18 +2029,24 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
   performerProfile?: Prisma.PerformerProfileUncheckedCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
 }
 
 export type UserCreateOrConnectWithoutNotificationsInput = {
@@ -1383,18 +2072,24 @@ export type UserUpdateWithoutNotificationsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
   performerProfile?: Prisma.PerformerProfileUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutNotificationsInput = {
@@ -1404,18 +2099,24 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
   performerProfile?: Prisma.PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserCreateWithoutDevicesInput = {
@@ -1425,18 +2126,24 @@ export type UserCreateWithoutDevicesInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
   performerProfile?: Prisma.PerformerProfileCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUncheckedCreateWithoutDevicesInput = {
@@ -1446,18 +2153,24 @@ export type UserUncheckedCreateWithoutDevicesInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
   performerProfile?: Prisma.PerformerProfileUncheckedCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
   reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
 }
 
 export type UserCreateOrConnectWithoutDevicesInput = {
@@ -1483,18 +2196,24 @@ export type UserUpdateWithoutDevicesInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
   performerProfile?: Prisma.PerformerProfileUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDevicesInput = {
@@ -1504,18 +2223,24 @@ export type UserUncheckedUpdateWithoutDevicesInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
   performerProfile?: Prisma.PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
   reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserCreateWithoutPayoutsInput = {
@@ -1525,6 +2250,9 @@ export type UserCreateWithoutPayoutsInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
@@ -1532,11 +2260,14 @@ export type UserCreateWithoutPayoutsInput = {
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   reserveTx?: Prisma.ReserveTransactionCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUncheckedCreateWithoutPayoutsInput = {
@@ -1546,6 +2277,9 @@ export type UserUncheckedCreateWithoutPayoutsInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
@@ -1553,11 +2287,14 @@ export type UserUncheckedCreateWithoutPayoutsInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   reserveTx?: Prisma.ReserveTransactionUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
 }
 
 export type UserCreateOrConnectWithoutPayoutsInput = {
@@ -1583,6 +2320,9 @@ export type UserUpdateWithoutPayoutsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
@@ -1590,11 +2330,14 @@ export type UserUpdateWithoutPayoutsInput = {
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   reserveTx?: Prisma.ReserveTransactionUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPayoutsInput = {
@@ -1604,6 +2347,9 @@ export type UserUncheckedUpdateWithoutPayoutsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -1611,11 +2357,14 @@ export type UserUncheckedUpdateWithoutPayoutsInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   reserveTx?: Prisma.ReserveTransactionUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserCreateWithoutReserveTxInput = {
@@ -1625,6 +2374,9 @@ export type UserCreateWithoutReserveTxInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileCreateNestedOneWithoutUserInput
@@ -1632,11 +2384,14 @@ export type UserCreateWithoutReserveTxInput = {
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewCreateNestedManyWithoutPerformerInput
 }
 
 export type UserUncheckedCreateWithoutReserveTxInput = {
@@ -1646,6 +2401,9 @@ export type UserUncheckedCreateWithoutReserveTxInput = {
   email: string
   phone?: string | null
   passwordHash: string
+  biometricsEnabled?: boolean
+  twoFactorSecret?: string | null
+  twoFactorEnabledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedCreateNestedOneWithoutUserInput
@@ -1653,11 +2411,14 @@ export type UserUncheckedCreateWithoutReserveTxInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedCreateNestedManyWithoutUserInput
   customerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
   performerOrders?: Prisma.OrderUncheckedCreateNestedManyWithoutPerformerInput
   escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   payouts?: Prisma.PayoutUncheckedCreateNestedManyWithoutPerformerInput
+  authoredReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutAuthorInput
+  performerReviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutPerformerInput
 }
 
 export type UserCreateOrConnectWithoutReserveTxInput = {
@@ -1683,6 +2444,9 @@ export type UserUpdateWithoutReserveTxInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUpdateOneWithoutUserNestedInput
@@ -1690,11 +2454,14 @@ export type UserUpdateWithoutReserveTxInput = {
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUpdateManyWithoutPerformerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReserveTxInput = {
@@ -1704,6 +2471,9 @@ export type UserUncheckedUpdateWithoutReserveTxInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  biometricsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customerProfile?: Prisma.CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -1711,11 +2481,14 @@ export type UserUncheckedUpdateWithoutReserveTxInput = {
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   devices?: Prisma.DeviceUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorSetups?: Prisma.TwoFactorSetupUncheckedUpdateManyWithoutUserNestedInput
   customerOrders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
   performerOrders?: Prisma.OrderUncheckedUpdateManyWithoutPerformerNestedInput
   escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   payouts?: Prisma.PayoutUncheckedUpdateManyWithoutPerformerNestedInput
+  authoredReviews?: Prisma.ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+  performerReviews?: Prisma.ReviewUncheckedUpdateManyWithoutPerformerNestedInput
 }
 
 
@@ -1727,24 +2500,30 @@ export type UserCountOutputType = {
   refreshTokens: number
   devices: number
   notifications: number
+  twoFactorSetups: number
   customerOrders: number
   performerOrders: number
   escrowLocks: number
   payments: number
   payouts: number
   reserveTx: number
+  authoredReviews: number
+  performerReviews: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   refreshTokens?: boolean | UserCountOutputTypeCountRefreshTokensArgs
   devices?: boolean | UserCountOutputTypeCountDevicesArgs
   notifications?: boolean | UserCountOutputTypeCountNotificationsArgs
+  twoFactorSetups?: boolean | UserCountOutputTypeCountTwoFactorSetupsArgs
   customerOrders?: boolean | UserCountOutputTypeCountCustomerOrdersArgs
   performerOrders?: boolean | UserCountOutputTypeCountPerformerOrdersArgs
   escrowLocks?: boolean | UserCountOutputTypeCountEscrowLocksArgs
   payments?: boolean | UserCountOutputTypeCountPaymentsArgs
   payouts?: boolean | UserCountOutputTypeCountPayoutsArgs
   reserveTx?: boolean | UserCountOutputTypeCountReserveTxArgs
+  authoredReviews?: boolean | UserCountOutputTypeCountAuthoredReviewsArgs
+  performerReviews?: boolean | UserCountOutputTypeCountPerformerReviewsArgs
 }
 
 /**
@@ -1776,6 +2555,13 @@ export type UserCountOutputTypeCountDevicesArgs<ExtArgs extends runtime.Types.Ex
  */
 export type UserCountOutputTypeCountNotificationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.NotificationWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountTwoFactorSetupsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TwoFactorSetupWhereInput
 }
 
 /**
@@ -1820,6 +2606,20 @@ export type UserCountOutputTypeCountReserveTxArgs<ExtArgs extends runtime.Types.
   where?: Prisma.ReserveTransactionWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountAuthoredReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ReviewWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountPerformerReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ReviewWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1828,6 +2628,9 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   email?: boolean
   phone?: boolean
   passwordHash?: boolean
+  biometricsEnabled?: boolean
+  twoFactorSecret?: boolean
+  twoFactorEnabledAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   customerProfile?: boolean | Prisma.User$customerProfileArgs<ExtArgs>
@@ -1835,12 +2638,15 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   refreshTokens?: boolean | Prisma.User$refreshTokensArgs<ExtArgs>
   devices?: boolean | Prisma.User$devicesArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
+  twoFactorSetups?: boolean | Prisma.User$twoFactorSetupsArgs<ExtArgs>
   customerOrders?: boolean | Prisma.User$customerOrdersArgs<ExtArgs>
   performerOrders?: boolean | Prisma.User$performerOrdersArgs<ExtArgs>
   escrowLocks?: boolean | Prisma.User$escrowLocksArgs<ExtArgs>
   payments?: boolean | Prisma.User$paymentsArgs<ExtArgs>
   payouts?: boolean | Prisma.User$payoutsArgs<ExtArgs>
   reserveTx?: boolean | Prisma.User$reserveTxArgs<ExtArgs>
+  authoredReviews?: boolean | Prisma.User$authoredReviewsArgs<ExtArgs>
+  performerReviews?: boolean | Prisma.User$performerReviewsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1851,6 +2657,9 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   phone?: boolean
   passwordHash?: boolean
+  biometricsEnabled?: boolean
+  twoFactorSecret?: boolean
+  twoFactorEnabledAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -1862,6 +2671,9 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   phone?: boolean
   passwordHash?: boolean
+  biometricsEnabled?: boolean
+  twoFactorSecret?: boolean
+  twoFactorEnabledAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -1873,23 +2685,29 @@ export type UserSelectScalar = {
   email?: boolean
   phone?: boolean
   passwordHash?: boolean
+  biometricsEnabled?: boolean
+  twoFactorSecret?: boolean
+  twoFactorEnabledAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "role" | "name" | "email" | "phone" | "passwordHash" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "role" | "name" | "email" | "phone" | "passwordHash" | "biometricsEnabled" | "twoFactorSecret" | "twoFactorEnabledAt" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customerProfile?: boolean | Prisma.User$customerProfileArgs<ExtArgs>
   performerProfile?: boolean | Prisma.User$performerProfileArgs<ExtArgs>
   refreshTokens?: boolean | Prisma.User$refreshTokensArgs<ExtArgs>
   devices?: boolean | Prisma.User$devicesArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
+  twoFactorSetups?: boolean | Prisma.User$twoFactorSetupsArgs<ExtArgs>
   customerOrders?: boolean | Prisma.User$customerOrdersArgs<ExtArgs>
   performerOrders?: boolean | Prisma.User$performerOrdersArgs<ExtArgs>
   escrowLocks?: boolean | Prisma.User$escrowLocksArgs<ExtArgs>
   payments?: boolean | Prisma.User$paymentsArgs<ExtArgs>
   payouts?: boolean | Prisma.User$payoutsArgs<ExtArgs>
   reserveTx?: boolean | Prisma.User$reserveTxArgs<ExtArgs>
+  authoredReviews?: boolean | Prisma.User$authoredReviewsArgs<ExtArgs>
+  performerReviews?: boolean | Prisma.User$performerReviewsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1903,12 +2721,15 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     refreshTokens: Prisma.$RefreshTokenPayload<ExtArgs>[]
     devices: Prisma.$DevicePayload<ExtArgs>[]
     notifications: Prisma.$NotificationPayload<ExtArgs>[]
+    twoFactorSetups: Prisma.$TwoFactorSetupPayload<ExtArgs>[]
     customerOrders: Prisma.$OrderPayload<ExtArgs>[]
     performerOrders: Prisma.$OrderPayload<ExtArgs>[]
     escrowLocks: Prisma.$EscrowLockPayload<ExtArgs>[]
     payments: Prisma.$PaymentPayload<ExtArgs>[]
     payouts: Prisma.$PayoutPayload<ExtArgs>[]
     reserveTx: Prisma.$ReserveTransactionPayload<ExtArgs>[]
+    authoredReviews: Prisma.$ReviewPayload<ExtArgs>[]
+    performerReviews: Prisma.$ReviewPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1917,6 +2738,9 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     email: string
     phone: string | null
     passwordHash: string
+    biometricsEnabled: boolean
+    twoFactorSecret: string | null
+    twoFactorEnabledAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["user"]>
@@ -2318,12 +3142,15 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   refreshTokens<T extends Prisma.User$refreshTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$refreshTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   devices<T extends Prisma.User$devicesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$devicesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   notifications<T extends Prisma.User$notificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  twoFactorSetups<T extends Prisma.User$twoFactorSetupsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$twoFactorSetupsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TwoFactorSetupPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   customerOrders<T extends Prisma.User$customerOrdersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$customerOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   performerOrders<T extends Prisma.User$performerOrdersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$performerOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   escrowLocks<T extends Prisma.User$escrowLocksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$escrowLocksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EscrowLockPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   payments<T extends Prisma.User$paymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   payouts<T extends Prisma.User$payoutsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$payoutsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PayoutPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   reserveTx<T extends Prisma.User$reserveTxArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$reserveTxArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReserveTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  authoredReviews<T extends Prisma.User$authoredReviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$authoredReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  performerReviews<T extends Prisma.User$performerReviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$performerReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2359,6 +3186,9 @@ export interface UserFieldRefs {
   readonly email: Prisma.FieldRef<"User", 'String'>
   readonly phone: Prisma.FieldRef<"User", 'String'>
   readonly passwordHash: Prisma.FieldRef<"User", 'String'>
+  readonly biometricsEnabled: Prisma.FieldRef<"User", 'Boolean'>
+  readonly twoFactorSecret: Prisma.FieldRef<"User", 'String'>
+  readonly twoFactorEnabledAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
 }
@@ -2864,6 +3694,30 @@ export type User$notificationsArgs<ExtArgs extends runtime.Types.Extensions.Inte
 }
 
 /**
+ * User.twoFactorSetups
+ */
+export type User$twoFactorSetupsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TwoFactorSetup
+   */
+  select?: Prisma.TwoFactorSetupSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TwoFactorSetup
+   */
+  omit?: Prisma.TwoFactorSetupOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TwoFactorSetupInclude<ExtArgs> | null
+  where?: Prisma.TwoFactorSetupWhereInput
+  orderBy?: Prisma.TwoFactorSetupOrderByWithRelationInput | Prisma.TwoFactorSetupOrderByWithRelationInput[]
+  cursor?: Prisma.TwoFactorSetupWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TwoFactorSetupScalarFieldEnum | Prisma.TwoFactorSetupScalarFieldEnum[]
+}
+
+/**
  * User.customerOrders
  */
 export type User$customerOrdersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3005,6 +3859,54 @@ export type User$reserveTxArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   distinct?: Prisma.ReserveTransactionScalarFieldEnum | Prisma.ReserveTransactionScalarFieldEnum[]
+}
+
+/**
+ * User.authoredReviews
+ */
+export type User$authoredReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Review
+   */
+  select?: Prisma.ReviewSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Review
+   */
+  omit?: Prisma.ReviewOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ReviewInclude<ExtArgs> | null
+  where?: Prisma.ReviewWhereInput
+  orderBy?: Prisma.ReviewOrderByWithRelationInput | Prisma.ReviewOrderByWithRelationInput[]
+  cursor?: Prisma.ReviewWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ReviewScalarFieldEnum | Prisma.ReviewScalarFieldEnum[]
+}
+
+/**
+ * User.performerReviews
+ */
+export type User$performerReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Review
+   */
+  select?: Prisma.ReviewSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Review
+   */
+  omit?: Prisma.ReviewOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ReviewInclude<ExtArgs> | null
+  where?: Prisma.ReviewWhereInput
+  orderBy?: Prisma.ReviewOrderByWithRelationInput | Prisma.ReviewOrderByWithRelationInput[]
+  cursor?: Prisma.ReviewWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ReviewScalarFieldEnum | Prisma.ReviewScalarFieldEnum[]
 }
 
 /**

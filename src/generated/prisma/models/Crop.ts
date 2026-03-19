@@ -224,6 +224,7 @@ export type CropWhereInput = {
   sort?: Prisma.IntFilter<"Crop"> | number
   createdAt?: Prisma.DateTimeFilter<"Crop"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Crop"> | Date | string
+  customerCropStats?: Prisma.CustomerCropStatListRelationFilter
 }
 
 export type CropOrderByWithRelationInput = {
@@ -233,6 +234,7 @@ export type CropOrderByWithRelationInput = {
   sort?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  customerCropStats?: Prisma.CustomerCropStatOrderByRelationAggregateInput
 }
 
 export type CropWhereUniqueInput = Prisma.AtLeast<{
@@ -245,6 +247,7 @@ export type CropWhereUniqueInput = Prisma.AtLeast<{
   sort?: Prisma.IntFilter<"Crop"> | number
   createdAt?: Prisma.DateTimeFilter<"Crop"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Crop"> | Date | string
+  customerCropStats?: Prisma.CustomerCropStatListRelationFilter
 }, "id">
 
 export type CropOrderByWithAggregationInput = {
@@ -280,6 +283,7 @@ export type CropCreateInput = {
   sort?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  customerCropStats?: Prisma.CustomerCropStatCreateNestedManyWithoutCropInput
 }
 
 export type CropUncheckedCreateInput = {
@@ -289,6 +293,7 @@ export type CropUncheckedCreateInput = {
   sort?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  customerCropStats?: Prisma.CustomerCropStatUncheckedCreateNestedManyWithoutCropInput
 }
 
 export type CropUpdateInput = {
@@ -298,6 +303,7 @@ export type CropUpdateInput = {
   sort?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customerCropStats?: Prisma.CustomerCropStatUpdateManyWithoutCropNestedInput
 }
 
 export type CropUncheckedUpdateInput = {
@@ -307,6 +313,7 @@ export type CropUncheckedUpdateInput = {
   sort?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customerCropStats?: Prisma.CustomerCropStatUncheckedUpdateManyWithoutCropNestedInput
 }
 
 export type CropCreateManyInput = {
@@ -371,10 +378,110 @@ export type CropSumOrderByAggregateInput = {
   sort?: Prisma.SortOrder
 }
 
+export type CropScalarRelationFilter = {
+  is?: Prisma.CropWhereInput
+  isNot?: Prisma.CropWhereInput
+}
+
 export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
+export type CropCreateNestedOneWithoutCustomerCropStatsInput = {
+  create?: Prisma.XOR<Prisma.CropCreateWithoutCustomerCropStatsInput, Prisma.CropUncheckedCreateWithoutCustomerCropStatsInput>
+  connectOrCreate?: Prisma.CropCreateOrConnectWithoutCustomerCropStatsInput
+  connect?: Prisma.CropWhereUniqueInput
+}
+
+export type CropUpdateOneRequiredWithoutCustomerCropStatsNestedInput = {
+  create?: Prisma.XOR<Prisma.CropCreateWithoutCustomerCropStatsInput, Prisma.CropUncheckedCreateWithoutCustomerCropStatsInput>
+  connectOrCreate?: Prisma.CropCreateOrConnectWithoutCustomerCropStatsInput
+  upsert?: Prisma.CropUpsertWithoutCustomerCropStatsInput
+  connect?: Prisma.CropWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CropUpdateToOneWithWhereWithoutCustomerCropStatsInput, Prisma.CropUpdateWithoutCustomerCropStatsInput>, Prisma.CropUncheckedUpdateWithoutCustomerCropStatsInput>
+}
+
+export type CropCreateWithoutCustomerCropStatsInput = {
+  id?: string
+  name: string
+  iconKey?: string | null
+  sort?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CropUncheckedCreateWithoutCustomerCropStatsInput = {
+  id?: string
+  name: string
+  iconKey?: string | null
+  sort?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CropCreateOrConnectWithoutCustomerCropStatsInput = {
+  where: Prisma.CropWhereUniqueInput
+  create: Prisma.XOR<Prisma.CropCreateWithoutCustomerCropStatsInput, Prisma.CropUncheckedCreateWithoutCustomerCropStatsInput>
+}
+
+export type CropUpsertWithoutCustomerCropStatsInput = {
+  update: Prisma.XOR<Prisma.CropUpdateWithoutCustomerCropStatsInput, Prisma.CropUncheckedUpdateWithoutCustomerCropStatsInput>
+  create: Prisma.XOR<Prisma.CropCreateWithoutCustomerCropStatsInput, Prisma.CropUncheckedCreateWithoutCustomerCropStatsInput>
+  where?: Prisma.CropWhereInput
+}
+
+export type CropUpdateToOneWithWhereWithoutCustomerCropStatsInput = {
+  where?: Prisma.CropWhereInput
+  data: Prisma.XOR<Prisma.CropUpdateWithoutCustomerCropStatsInput, Prisma.CropUncheckedUpdateWithoutCustomerCropStatsInput>
+}
+
+export type CropUpdateWithoutCustomerCropStatsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  iconKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sort?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type CropUncheckedUpdateWithoutCustomerCropStatsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  iconKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sort?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+
+/**
+ * Count Type CropCountOutputType
+ */
+
+export type CropCountOutputType = {
+  customerCropStats: number
+}
+
+export type CropCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  customerCropStats?: boolean | CropCountOutputTypeCountCustomerCropStatsArgs
+}
+
+/**
+ * CropCountOutputType without action
+ */
+export type CropCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CropCountOutputType
+   */
+  select?: Prisma.CropCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * CropCountOutputType without action
+ */
+export type CropCountOutputTypeCountCustomerCropStatsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CustomerCropStatWhereInput
+}
 
 
 export type CropSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -384,6 +491,8 @@ export type CropSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   sort?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  customerCropStats?: boolean | Prisma.Crop$customerCropStatsArgs<ExtArgs>
+  _count?: boolean | Prisma.CropCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["crop"]>
 
 export type CropSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -414,10 +523,18 @@ export type CropSelectScalar = {
 }
 
 export type CropOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "iconKey" | "sort" | "createdAt" | "updatedAt", ExtArgs["result"]["crop"]>
+export type CropInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  customerCropStats?: boolean | Prisma.Crop$customerCropStatsArgs<ExtArgs>
+  _count?: boolean | Prisma.CropCountOutputTypeDefaultArgs<ExtArgs>
+}
+export type CropIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type CropIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
 
 export type $CropPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Crop"
-  objects: {}
+  objects: {
+    customerCropStats: Prisma.$CustomerCropStatPayload<ExtArgs>[]
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     name: string
@@ -819,6 +936,7 @@ readonly fields: CropFieldRefs;
  */
 export interface Prisma__CropClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  customerCropStats<T extends Prisma.Crop$customerCropStatsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Crop$customerCropStatsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CustomerCropStatPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -871,6 +989,10 @@ export type CropFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.Internal
    */
   omit?: Prisma.CropOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CropInclude<ExtArgs> | null
+  /**
    * Filter, which Crop to fetch.
    */
   where: Prisma.CropWhereUniqueInput
@@ -889,6 +1011,10 @@ export type CropFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Extensions.I
    */
   omit?: Prisma.CropOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CropInclude<ExtArgs> | null
+  /**
    * Filter, which Crop to fetch.
    */
   where: Prisma.CropWhereUniqueInput
@@ -906,6 +1032,10 @@ export type CropFindFirstArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    * Omit specific fields from the Crop
    */
   omit?: Prisma.CropOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CropInclude<ExtArgs> | null
   /**
    * Filter, which Crop to fetch.
    */
@@ -955,6 +1085,10 @@ export type CropFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extensions.In
    */
   omit?: Prisma.CropOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CropInclude<ExtArgs> | null
+  /**
    * Filter, which Crop to fetch.
    */
   where?: Prisma.CropWhereInput
@@ -1002,6 +1136,10 @@ export type CropFindManyArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
    * Omit specific fields from the Crop
    */
   omit?: Prisma.CropOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CropInclude<ExtArgs> | null
   /**
    * Filter, which Crops to fetch.
    */
@@ -1051,6 +1189,10 @@ export type CropCreateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
    */
   omit?: Prisma.CropOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CropInclude<ExtArgs> | null
+  /**
    * The data needed to create a Crop.
    */
   data: Prisma.XOR<Prisma.CropCreateInput, Prisma.CropUncheckedCreateInput>
@@ -1098,6 +1240,10 @@ export type CropUpdateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
    * Omit specific fields from the Crop
    */
   omit?: Prisma.CropOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CropInclude<ExtArgs> | null
   /**
    * The data needed to update a Crop.
    */
@@ -1165,6 +1311,10 @@ export type CropUpsertArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
    */
   omit?: Prisma.CropOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CropInclude<ExtArgs> | null
+  /**
    * The filter to search for the Crop to update in case it exists.
    */
   where: Prisma.CropWhereUniqueInput
@@ -1191,6 +1341,10 @@ export type CropDeleteArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
    */
   omit?: Prisma.CropOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CropInclude<ExtArgs> | null
+  /**
    * Filter which Crop to delete.
    */
   where: Prisma.CropWhereUniqueInput
@@ -1211,6 +1365,30 @@ export type CropDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
 }
 
 /**
+ * Crop.customerCropStats
+ */
+export type Crop$customerCropStatsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CustomerCropStat
+   */
+  select?: Prisma.CustomerCropStatSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CustomerCropStat
+   */
+  omit?: Prisma.CustomerCropStatOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CustomerCropStatInclude<ExtArgs> | null
+  where?: Prisma.CustomerCropStatWhereInput
+  orderBy?: Prisma.CustomerCropStatOrderByWithRelationInput | Prisma.CustomerCropStatOrderByWithRelationInput[]
+  cursor?: Prisma.CustomerCropStatWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CustomerCropStatScalarFieldEnum | Prisma.CustomerCropStatScalarFieldEnum[]
+}
+
+/**
  * Crop without action
  */
 export type CropDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1222,4 +1400,8 @@ export type CropDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
    * Omit specific fields from the Crop
    */
   omit?: Prisma.CropOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CropInclude<ExtArgs> | null
 }

@@ -444,6 +444,109 @@
 - Role: `performer` (owner)
 - Returns: `200 { payout }`
 
+## Customer settings
+
+### GET `/api/v1/customer/legal-profile`
+- Auth: Bearer
+- Role: `customer`
+- Returns: `200 { legalProfile }`
+
+### PATCH `/api/v1/customer/legal-profile`
+- Auth: Bearer
+- Role: `customer`
+- Назначение: одним запросом сохранить всю “Юридична інформація” из Settings.
+- Body (отправляем всегда весь набор полей; пустые значения отправлять как `null`, не пустой строкой):
+```json
+{
+  "companyName": "ФОП Петренко І.В.",
+  "edrpou": "12345678",
+  "iban": "UA213223130000026007233566001",
+  "legalAddress": "м. Полтава, вул. ...",
+  "vatPayer": true
+}
+```
+- Пример очистки данных:
+```json
+{
+  "companyName": null,
+  "edrpou": null,
+  "iban": null,
+  "legalAddress": null,
+  "vatPayer": false
+}
+```
+- Валидации:
+  - `companyName`: string|null, trim, min 2 max 120 (если не null)
+  - `edrpou`: string|null, trim, только цифры, длина 8–10 (если не null)
+  - `iban`: string|null, trim+upper, UA IBAN (29 символов), checksum MOD-97 (если не null)
+  - `legalAddress`: string|null, trim, min 5 max 255 (если не null)
+  - `vatPayer`: boolean (обязательное поле)
+- Returns: `200 { legalProfile }`
+
+### GET `/api/v1/customer/crop-stats`
+- Auth: Bearer
+- Role: `customer`
+- Query:
+  - `season` (optional, default текущий год)
+- Returns: `200 { season, items[] }`
+
+## Performer settings
+
+### GET `/api/v1/performer/rating`
+- Auth: Bearer
+- Role: `performer`
+- Returns: `200 { rating }`
+
+### GET `/api/v1/performer/reviews`
+- Auth: Bearer
+- Role: `performer`
+- Query: `limit`, `offset`
+- Returns: `200 { items[], page }`
+
+## Security
+
+### GET `/api/v1/security/2fa`
+- Auth: Bearer
+- Role: any
+- Returns: `200 { twoFactor }`
+
+### POST `/api/v1/security/2fa/setup`
+- Auth: Bearer
+- Role: any
+- Returns: `200 { setup }`
+
+### POST `/api/v1/security/2fa/enable`
+- Auth: Bearer
+- Role: any
+- Body:
+```json
+{ "setupId": "string", "code": "123456" }
+```
+- Returns: `200 { twoFactor }`
+
+### POST `/api/v1/security/2fa/disable`
+- Auth: Bearer
+- Role: any
+- Body:
+```json
+{ "code": "123456" }
+```
+- Returns: `200 { twoFactor }`
+
+### GET `/api/v1/security/biometrics`
+- Auth: Bearer
+- Role: any
+- Returns: `200 { biometrics }`
+
+### PATCH `/api/v1/security/biometrics`
+- Auth: Bearer
+- Role: any
+- Body:
+```json
+{ "enabled": true }
+```
+- Returns: `200 { biometrics }`
+
 ## Devices
 
 ### POST `/api/v1/devices/push-tokens`

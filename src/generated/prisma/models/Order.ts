@@ -369,6 +369,7 @@ export type OrderWhereInput = {
   payments?: Prisma.PaymentListRelationFilter
   reportMedia?: Prisma.OrderReportMediaListRelationFilter
   agreement?: Prisma.XOR<Prisma.AgreementNullableScalarRelationFilter, Prisma.AgreementWhereInput> | null
+  reviews?: Prisma.ReviewListRelationFilter
 }
 
 export type OrderOrderByWithRelationInput = {
@@ -403,6 +404,7 @@ export type OrderOrderByWithRelationInput = {
   payments?: Prisma.PaymentOrderByRelationAggregateInput
   reportMedia?: Prisma.OrderReportMediaOrderByRelationAggregateInput
   agreement?: Prisma.AgreementOrderByWithRelationInput
+  reviews?: Prisma.ReviewOrderByRelationAggregateInput
 }
 
 export type OrderWhereUniqueInput = Prisma.AtLeast<{
@@ -440,6 +442,7 @@ export type OrderWhereUniqueInput = Prisma.AtLeast<{
   payments?: Prisma.PaymentListRelationFilter
   reportMedia?: Prisma.OrderReportMediaListRelationFilter
   agreement?: Prisma.XOR<Prisma.AgreementNullableScalarRelationFilter, Prisma.AgreementWhereInput> | null
+  reviews?: Prisma.ReviewListRelationFilter
 }, "id">
 
 export type OrderOrderByWithAggregationInput = {
@@ -530,6 +533,7 @@ export type OrderCreateInput = {
   payments?: Prisma.PaymentCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateInput = {
@@ -562,6 +566,7 @@ export type OrderUncheckedCreateInput = {
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaUncheckedCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementUncheckedCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUpdateInput = {
@@ -594,6 +599,7 @@ export type OrderUpdateInput = {
   payments?: Prisma.PaymentUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateInput = {
@@ -626,6 +632,7 @@ export type OrderUncheckedUpdateInput = {
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUncheckedUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUncheckedUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateManyInput = {
@@ -709,6 +716,11 @@ export type OrderListRelationFilter = {
 
 export type OrderOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type OrderScalarRelationFilter = {
+  is?: Prisma.OrderWhereInput
+  isNot?: Prisma.OrderWhereInput
 }
 
 export type OrderCountOrderByAggregateInput = {
@@ -798,11 +810,6 @@ export type OrderSumOrderByAggregateInput = {
   budget?: Prisma.SortOrder
 }
 
-export type OrderScalarRelationFilter = {
-  is?: Prisma.OrderWhereInput
-  isNot?: Prisma.OrderWhereInput
-}
-
 export type OrderCreateNestedManyWithoutCustomerInput = {
   create?: Prisma.XOR<Prisma.OrderCreateWithoutCustomerInput, Prisma.OrderUncheckedCreateWithoutCustomerInput> | Prisma.OrderCreateWithoutCustomerInput[] | Prisma.OrderUncheckedCreateWithoutCustomerInput[]
   connectOrCreate?: Prisma.OrderCreateOrConnectWithoutCustomerInput | Prisma.OrderCreateOrConnectWithoutCustomerInput[]
@@ -885,6 +892,20 @@ export type OrderUncheckedUpdateManyWithoutPerformerNestedInput = {
   update?: Prisma.OrderUpdateWithWhereUniqueWithoutPerformerInput | Prisma.OrderUpdateWithWhereUniqueWithoutPerformerInput[]
   updateMany?: Prisma.OrderUpdateManyWithWhereWithoutPerformerInput | Prisma.OrderUpdateManyWithWhereWithoutPerformerInput[]
   deleteMany?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
+}
+
+export type OrderCreateNestedOneWithoutReviewsInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutReviewsInput, Prisma.OrderUncheckedCreateWithoutReviewsInput>
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutReviewsInput
+  connect?: Prisma.OrderWhereUniqueInput
+}
+
+export type OrderUpdateOneRequiredWithoutReviewsNestedInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutReviewsInput, Prisma.OrderUncheckedCreateWithoutReviewsInput>
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutReviewsInput
+  upsert?: Prisma.OrderUpsertWithoutReviewsInput
+  connect?: Prisma.OrderWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.OrderUpdateToOneWithWhereWithoutReviewsInput, Prisma.OrderUpdateWithoutReviewsInput>, Prisma.OrderUncheckedUpdateWithoutReviewsInput>
 }
 
 export type EnumOrderStatusFieldUpdateOperationsInput = {
@@ -1018,6 +1039,7 @@ export type OrderCreateWithoutCustomerInput = {
   payments?: Prisma.PaymentCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutCustomerInput = {
@@ -1049,6 +1071,7 @@ export type OrderUncheckedCreateWithoutCustomerInput = {
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaUncheckedCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementUncheckedCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutCustomerInput = {
@@ -1090,6 +1113,7 @@ export type OrderCreateWithoutPerformerInput = {
   payments?: Prisma.PaymentCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutPerformerInput = {
@@ -1121,6 +1145,7 @@ export type OrderUncheckedCreateWithoutPerformerInput = {
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaUncheckedCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementUncheckedCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutPerformerInput = {
@@ -1193,6 +1218,150 @@ export type OrderUpdateManyWithWhereWithoutPerformerInput = {
   data: Prisma.XOR<Prisma.OrderUpdateManyMutationInput, Prisma.OrderUncheckedUpdateManyWithoutPerformerInput>
 }
 
+export type OrderCreateWithoutReviewsInput = {
+  id?: string
+  serviceCategoryId: string
+  serviceSubCategoryId: string
+  serviceTypeId?: string | null
+  areaHa: runtime.Decimal | runtime.DecimalJsLike | number | string
+  dateFrom?: Date | string | null
+  dateTo?: Date | string | null
+  locationLabel: string
+  regionName?: string | null
+  lat: runtime.Decimal | runtime.DecimalJsLike | number | string
+  lng: runtime.Decimal | runtime.DecimalJsLike | number | string
+  comment?: string | null
+  budget: runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: string
+  status?: $Enums.OrderStatus
+  acceptedAt?: Date | string | null
+  depositDeadline?: Date | string | null
+  evidencePhotos?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customer: Prisma.UserCreateNestedOneWithoutCustomerOrdersInput
+  performer?: Prisma.UserCreateNestedOneWithoutPerformerOrdersInput
+  escrowLocks?: Prisma.EscrowLockCreateNestedManyWithoutOrderInput
+  statusEvents?: Prisma.OrderStatusEventCreateNestedManyWithoutOrderInput
+  matches?: Prisma.OrderMatchCreateNestedManyWithoutOrderInput
+  arbitrationCase?: Prisma.ArbitrationCaseCreateNestedOneWithoutOrderInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutOrderInput
+  reportMedia?: Prisma.OrderReportMediaCreateNestedManyWithoutOrderInput
+  agreement?: Prisma.AgreementCreateNestedOneWithoutOrderInput
+}
+
+export type OrderUncheckedCreateWithoutReviewsInput = {
+  id?: string
+  customerUserId: string
+  performerUserId?: string | null
+  serviceCategoryId: string
+  serviceSubCategoryId: string
+  serviceTypeId?: string | null
+  areaHa: runtime.Decimal | runtime.DecimalJsLike | number | string
+  dateFrom?: Date | string | null
+  dateTo?: Date | string | null
+  locationLabel: string
+  regionName?: string | null
+  lat: runtime.Decimal | runtime.DecimalJsLike | number | string
+  lng: runtime.Decimal | runtime.DecimalJsLike | number | string
+  comment?: string | null
+  budget: runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: string
+  status?: $Enums.OrderStatus
+  acceptedAt?: Date | string | null
+  depositDeadline?: Date | string | null
+  evidencePhotos?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  escrowLocks?: Prisma.EscrowLockUncheckedCreateNestedManyWithoutOrderInput
+  statusEvents?: Prisma.OrderStatusEventUncheckedCreateNestedManyWithoutOrderInput
+  matches?: Prisma.OrderMatchUncheckedCreateNestedManyWithoutOrderInput
+  arbitrationCase?: Prisma.ArbitrationCaseUncheckedCreateNestedOneWithoutOrderInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutOrderInput
+  reportMedia?: Prisma.OrderReportMediaUncheckedCreateNestedManyWithoutOrderInput
+  agreement?: Prisma.AgreementUncheckedCreateNestedOneWithoutOrderInput
+}
+
+export type OrderCreateOrConnectWithoutReviewsInput = {
+  where: Prisma.OrderWhereUniqueInput
+  create: Prisma.XOR<Prisma.OrderCreateWithoutReviewsInput, Prisma.OrderUncheckedCreateWithoutReviewsInput>
+}
+
+export type OrderUpsertWithoutReviewsInput = {
+  update: Prisma.XOR<Prisma.OrderUpdateWithoutReviewsInput, Prisma.OrderUncheckedUpdateWithoutReviewsInput>
+  create: Prisma.XOR<Prisma.OrderCreateWithoutReviewsInput, Prisma.OrderUncheckedCreateWithoutReviewsInput>
+  where?: Prisma.OrderWhereInput
+}
+
+export type OrderUpdateToOneWithWhereWithoutReviewsInput = {
+  where?: Prisma.OrderWhereInput
+  data: Prisma.XOR<Prisma.OrderUpdateWithoutReviewsInput, Prisma.OrderUncheckedUpdateWithoutReviewsInput>
+}
+
+export type OrderUpdateWithoutReviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceSubCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaHa?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  dateFrom?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dateTo?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  locationLabel?: Prisma.StringFieldUpdateOperationsInput | string
+  regionName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  comment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  budget?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  acceptedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  depositDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  evidencePhotos?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customer?: Prisma.UserUpdateOneRequiredWithoutCustomerOrdersNestedInput
+  performer?: Prisma.UserUpdateOneWithoutPerformerOrdersNestedInput
+  escrowLocks?: Prisma.EscrowLockUpdateManyWithoutOrderNestedInput
+  statusEvents?: Prisma.OrderStatusEventUpdateManyWithoutOrderNestedInput
+  matches?: Prisma.OrderMatchUpdateManyWithoutOrderNestedInput
+  arbitrationCase?: Prisma.ArbitrationCaseUpdateOneWithoutOrderNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutOrderNestedInput
+  reportMedia?: Prisma.OrderReportMediaUpdateManyWithoutOrderNestedInput
+  agreement?: Prisma.AgreementUpdateOneWithoutOrderNestedInput
+}
+
+export type OrderUncheckedUpdateWithoutReviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  customerUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  performerUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  serviceCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceSubCategoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaHa?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  dateFrom?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dateTo?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  locationLabel?: Prisma.StringFieldUpdateOperationsInput | string
+  regionName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  comment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  budget?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  acceptedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  depositDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  evidencePhotos?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  escrowLocks?: Prisma.EscrowLockUncheckedUpdateManyWithoutOrderNestedInput
+  statusEvents?: Prisma.OrderStatusEventUncheckedUpdateManyWithoutOrderNestedInput
+  matches?: Prisma.OrderMatchUncheckedUpdateManyWithoutOrderNestedInput
+  arbitrationCase?: Prisma.ArbitrationCaseUncheckedUpdateOneWithoutOrderNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutOrderNestedInput
+  reportMedia?: Prisma.OrderReportMediaUncheckedUpdateManyWithoutOrderNestedInput
+  agreement?: Prisma.AgreementUncheckedUpdateOneWithoutOrderNestedInput
+}
+
 export type OrderCreateWithoutEscrowLocksInput = {
   id?: string
   serviceCategoryId: string
@@ -1222,6 +1391,7 @@ export type OrderCreateWithoutEscrowLocksInput = {
   payments?: Prisma.PaymentCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutEscrowLocksInput = {
@@ -1253,6 +1423,7 @@ export type OrderUncheckedCreateWithoutEscrowLocksInput = {
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaUncheckedCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementUncheckedCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutEscrowLocksInput = {
@@ -1300,6 +1471,7 @@ export type OrderUpdateWithoutEscrowLocksInput = {
   payments?: Prisma.PaymentUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutEscrowLocksInput = {
@@ -1331,6 +1503,7 @@ export type OrderUncheckedUpdateWithoutEscrowLocksInput = {
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUncheckedUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUncheckedUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateWithoutPaymentsInput = {
@@ -1362,6 +1535,7 @@ export type OrderCreateWithoutPaymentsInput = {
   arbitrationCase?: Prisma.ArbitrationCaseCreateNestedOneWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutPaymentsInput = {
@@ -1393,6 +1567,7 @@ export type OrderUncheckedCreateWithoutPaymentsInput = {
   arbitrationCase?: Prisma.ArbitrationCaseUncheckedCreateNestedOneWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaUncheckedCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementUncheckedCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutPaymentsInput = {
@@ -1440,6 +1615,7 @@ export type OrderUpdateWithoutPaymentsInput = {
   arbitrationCase?: Prisma.ArbitrationCaseUpdateOneWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutPaymentsInput = {
@@ -1471,6 +1647,7 @@ export type OrderUncheckedUpdateWithoutPaymentsInput = {
   arbitrationCase?: Prisma.ArbitrationCaseUncheckedUpdateOneWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUncheckedUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUncheckedUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateWithoutStatusEventsInput = {
@@ -1502,6 +1679,7 @@ export type OrderCreateWithoutStatusEventsInput = {
   payments?: Prisma.PaymentCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutStatusEventsInput = {
@@ -1533,6 +1711,7 @@ export type OrderUncheckedCreateWithoutStatusEventsInput = {
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaUncheckedCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementUncheckedCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutStatusEventsInput = {
@@ -1580,6 +1759,7 @@ export type OrderUpdateWithoutStatusEventsInput = {
   payments?: Prisma.PaymentUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutStatusEventsInput = {
@@ -1611,6 +1791,7 @@ export type OrderUncheckedUpdateWithoutStatusEventsInput = {
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUncheckedUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUncheckedUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateWithoutMatchesInput = {
@@ -1642,6 +1823,7 @@ export type OrderCreateWithoutMatchesInput = {
   payments?: Prisma.PaymentCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutMatchesInput = {
@@ -1673,6 +1855,7 @@ export type OrderUncheckedCreateWithoutMatchesInput = {
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaUncheckedCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementUncheckedCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutMatchesInput = {
@@ -1720,6 +1903,7 @@ export type OrderUpdateWithoutMatchesInput = {
   payments?: Prisma.PaymentUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutMatchesInput = {
@@ -1751,6 +1935,7 @@ export type OrderUncheckedUpdateWithoutMatchesInput = {
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUncheckedUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUncheckedUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateWithoutArbitrationCaseInput = {
@@ -1782,6 +1967,7 @@ export type OrderCreateWithoutArbitrationCaseInput = {
   payments?: Prisma.PaymentCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutArbitrationCaseInput = {
@@ -1813,6 +1999,7 @@ export type OrderUncheckedCreateWithoutArbitrationCaseInput = {
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaUncheckedCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementUncheckedCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutArbitrationCaseInput = {
@@ -1860,6 +2047,7 @@ export type OrderUpdateWithoutArbitrationCaseInput = {
   payments?: Prisma.PaymentUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutArbitrationCaseInput = {
@@ -1891,6 +2079,7 @@ export type OrderUncheckedUpdateWithoutArbitrationCaseInput = {
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUncheckedUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUncheckedUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateWithoutReportMediaInput = {
@@ -1922,6 +2111,7 @@ export type OrderCreateWithoutReportMediaInput = {
   arbitrationCase?: Prisma.ArbitrationCaseCreateNestedOneWithoutOrderInput
   payments?: Prisma.PaymentCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutReportMediaInput = {
@@ -1953,6 +2143,7 @@ export type OrderUncheckedCreateWithoutReportMediaInput = {
   arbitrationCase?: Prisma.ArbitrationCaseUncheckedCreateNestedOneWithoutOrderInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutOrderInput
   agreement?: Prisma.AgreementUncheckedCreateNestedOneWithoutOrderInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutReportMediaInput = {
@@ -2000,6 +2191,7 @@ export type OrderUpdateWithoutReportMediaInput = {
   arbitrationCase?: Prisma.ArbitrationCaseUpdateOneWithoutOrderNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutReportMediaInput = {
@@ -2031,6 +2223,7 @@ export type OrderUncheckedUpdateWithoutReportMediaInput = {
   arbitrationCase?: Prisma.ArbitrationCaseUncheckedUpdateOneWithoutOrderNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUncheckedUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateWithoutAgreementInput = {
@@ -2062,6 +2255,7 @@ export type OrderCreateWithoutAgreementInput = {
   arbitrationCase?: Prisma.ArbitrationCaseCreateNestedOneWithoutOrderInput
   payments?: Prisma.PaymentCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaCreateNestedManyWithoutOrderInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutOrderInput
 }
 
 export type OrderUncheckedCreateWithoutAgreementInput = {
@@ -2093,6 +2287,7 @@ export type OrderUncheckedCreateWithoutAgreementInput = {
   arbitrationCase?: Prisma.ArbitrationCaseUncheckedCreateNestedOneWithoutOrderInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutOrderInput
   reportMedia?: Prisma.OrderReportMediaUncheckedCreateNestedManyWithoutOrderInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type OrderCreateOrConnectWithoutAgreementInput = {
@@ -2140,6 +2335,7 @@ export type OrderUpdateWithoutAgreementInput = {
   arbitrationCase?: Prisma.ArbitrationCaseUpdateOneWithoutOrderNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUpdateManyWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutAgreementInput = {
@@ -2171,6 +2367,7 @@ export type OrderUncheckedUpdateWithoutAgreementInput = {
   arbitrationCase?: Prisma.ArbitrationCaseUncheckedUpdateOneWithoutOrderNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUncheckedUpdateManyWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderCreateManyCustomerInput = {
@@ -2250,6 +2447,7 @@ export type OrderUpdateWithoutCustomerInput = {
   payments?: Prisma.PaymentUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutCustomerInput = {
@@ -2281,6 +2479,7 @@ export type OrderUncheckedUpdateWithoutCustomerInput = {
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUncheckedUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUncheckedUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateManyWithoutCustomerInput = {
@@ -2336,6 +2535,7 @@ export type OrderUpdateWithoutPerformerInput = {
   payments?: Prisma.PaymentUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutPerformerInput = {
@@ -2367,6 +2567,7 @@ export type OrderUncheckedUpdateWithoutPerformerInput = {
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutOrderNestedInput
   reportMedia?: Prisma.OrderReportMediaUncheckedUpdateManyWithoutOrderNestedInput
   agreement?: Prisma.AgreementUncheckedUpdateOneWithoutOrderNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type OrderUncheckedUpdateManyWithoutPerformerInput = {
@@ -2404,6 +2605,7 @@ export type OrderCountOutputType = {
   matches: number
   payments: number
   reportMedia: number
+  reviews: number
 }
 
 export type OrderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2412,6 +2614,7 @@ export type OrderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   matches?: boolean | OrderCountOutputTypeCountMatchesArgs
   payments?: boolean | OrderCountOutputTypeCountPaymentsArgs
   reportMedia?: boolean | OrderCountOutputTypeCountReportMediaArgs
+  reviews?: boolean | OrderCountOutputTypeCountReviewsArgs
 }
 
 /**
@@ -2459,6 +2662,13 @@ export type OrderCountOutputTypeCountReportMediaArgs<ExtArgs extends runtime.Typ
   where?: Prisma.OrderReportMediaWhereInput
 }
 
+/**
+ * OrderCountOutputType without action
+ */
+export type OrderCountOutputTypeCountReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ReviewWhereInput
+}
+
 
 export type OrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -2492,6 +2702,7 @@ export type OrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   payments?: boolean | Prisma.Order$paymentsArgs<ExtArgs>
   reportMedia?: boolean | Prisma.Order$reportMediaArgs<ExtArgs>
   agreement?: boolean | Prisma.Order$agreementArgs<ExtArgs>
+  reviews?: boolean | Prisma.Order$reviewsArgs<ExtArgs>
   _count?: boolean | Prisma.OrderCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["order"]>
 
@@ -2585,6 +2796,7 @@ export type OrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   payments?: boolean | Prisma.Order$paymentsArgs<ExtArgs>
   reportMedia?: boolean | Prisma.Order$reportMediaArgs<ExtArgs>
   agreement?: boolean | Prisma.Order$agreementArgs<ExtArgs>
+  reviews?: boolean | Prisma.Order$reviewsArgs<ExtArgs>
   _count?: boolean | Prisma.OrderCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type OrderIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2608,6 +2820,7 @@ export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     payments: Prisma.$PaymentPayload<ExtArgs>[]
     reportMedia: Prisma.$OrderReportMediaPayload<ExtArgs>[]
     agreement: Prisma.$AgreementPayload<ExtArgs> | null
+    reviews: Prisma.$ReviewPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3035,6 +3248,7 @@ export interface Prisma__OrderClient<T, Null = never, ExtArgs extends runtime.Ty
   payments<T extends Prisma.Order$paymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   reportMedia<T extends Prisma.Order$reportMediaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$reportMediaArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderReportMediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   agreement<T extends Prisma.Order$agreementArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$agreementArgs<ExtArgs>>): Prisma.Prisma__AgreementClient<runtime.Types.Result.GetResult<Prisma.$AgreementPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  reviews<T extends Prisma.Order$reviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$reviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3661,6 +3875,30 @@ export type Order$agreementArgs<ExtArgs extends runtime.Types.Extensions.Interna
    */
   include?: Prisma.AgreementInclude<ExtArgs> | null
   where?: Prisma.AgreementWhereInput
+}
+
+/**
+ * Order.reviews
+ */
+export type Order$reviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Review
+   */
+  select?: Prisma.ReviewSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Review
+   */
+  omit?: Prisma.ReviewOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ReviewInclude<ExtArgs> | null
+  where?: Prisma.ReviewWhereInput
+  orderBy?: Prisma.ReviewOrderByWithRelationInput | Prisma.ReviewOrderByWithRelationInput[]
+  cursor?: Prisma.ReviewWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ReviewScalarFieldEnum | Prisma.ReviewScalarFieldEnum[]
 }
 
 /**

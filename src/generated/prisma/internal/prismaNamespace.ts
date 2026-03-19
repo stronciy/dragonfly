@@ -391,6 +391,9 @@ export const ModelName = {
   User: 'User',
   RefreshToken: 'RefreshToken',
   CustomerProfile: 'CustomerProfile',
+  Review: 'Review',
+  TwoFactorSetup: 'TwoFactorSetup',
+  CustomerCropStat: 'CustomerCropStat',
   PerformerProfile: 'PerformerProfile',
   PerformerSettings: 'PerformerSettings',
   PerformerService: 'PerformerService',
@@ -424,7 +427,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "serviceCategory" | "serviceSubcategory" | "serviceType" | "crop" | "user" | "refreshToken" | "customerProfile" | "performerProfile" | "performerSettings" | "performerService" | "field" | "order" | "escrowLock" | "payment" | "orderStatusEvent" | "orderMatch" | "arbitrationCase" | "arbitrationMedia" | "notification" | "device" | "orderReportMedia" | "agreement" | "agreementDocument" | "payout" | "reserveTransaction"
+    modelProps: "serviceCategory" | "serviceSubcategory" | "serviceType" | "crop" | "user" | "refreshToken" | "customerProfile" | "review" | "twoFactorSetup" | "customerCropStat" | "performerProfile" | "performerSettings" | "performerService" | "field" | "order" | "escrowLock" | "payment" | "orderStatusEvent" | "orderMatch" | "arbitrationCase" | "arbitrationMedia" | "notification" | "device" | "orderReportMedia" | "agreement" | "agreementDocument" | "payout" | "reserveTransaction"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -943,6 +946,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.CustomerProfileCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.CustomerProfileCountAggregateOutputType> | number
+        }
+      }
+    }
+    Review: {
+      payload: Prisma.$ReviewPayload<ExtArgs>
+      fields: Prisma.ReviewFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ReviewFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReviewPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ReviewFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReviewPayload>
+        }
+        findFirst: {
+          args: Prisma.ReviewFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReviewPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ReviewFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReviewPayload>
+        }
+        findMany: {
+          args: Prisma.ReviewFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReviewPayload>[]
+        }
+        create: {
+          args: Prisma.ReviewCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReviewPayload>
+        }
+        createMany: {
+          args: Prisma.ReviewCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ReviewCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReviewPayload>[]
+        }
+        delete: {
+          args: Prisma.ReviewDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReviewPayload>
+        }
+        update: {
+          args: Prisma.ReviewUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReviewPayload>
+        }
+        deleteMany: {
+          args: Prisma.ReviewDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ReviewUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ReviewUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReviewPayload>[]
+        }
+        upsert: {
+          args: Prisma.ReviewUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReviewPayload>
+        }
+        aggregate: {
+          args: Prisma.ReviewAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateReview>
+        }
+        groupBy: {
+          args: Prisma.ReviewGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ReviewGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ReviewCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ReviewCountAggregateOutputType> | number
+        }
+      }
+    }
+    TwoFactorSetup: {
+      payload: Prisma.$TwoFactorSetupPayload<ExtArgs>
+      fields: Prisma.TwoFactorSetupFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TwoFactorSetupFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TwoFactorSetupPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TwoFactorSetupFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TwoFactorSetupPayload>
+        }
+        findFirst: {
+          args: Prisma.TwoFactorSetupFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TwoFactorSetupPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TwoFactorSetupFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TwoFactorSetupPayload>
+        }
+        findMany: {
+          args: Prisma.TwoFactorSetupFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TwoFactorSetupPayload>[]
+        }
+        create: {
+          args: Prisma.TwoFactorSetupCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TwoFactorSetupPayload>
+        }
+        createMany: {
+          args: Prisma.TwoFactorSetupCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TwoFactorSetupCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TwoFactorSetupPayload>[]
+        }
+        delete: {
+          args: Prisma.TwoFactorSetupDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TwoFactorSetupPayload>
+        }
+        update: {
+          args: Prisma.TwoFactorSetupUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TwoFactorSetupPayload>
+        }
+        deleteMany: {
+          args: Prisma.TwoFactorSetupDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TwoFactorSetupUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TwoFactorSetupUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TwoFactorSetupPayload>[]
+        }
+        upsert: {
+          args: Prisma.TwoFactorSetupUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TwoFactorSetupPayload>
+        }
+        aggregate: {
+          args: Prisma.TwoFactorSetupAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTwoFactorSetup>
+        }
+        groupBy: {
+          args: Prisma.TwoFactorSetupGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TwoFactorSetupGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TwoFactorSetupCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TwoFactorSetupCountAggregateOutputType> | number
+        }
+      }
+    }
+    CustomerCropStat: {
+      payload: Prisma.$CustomerCropStatPayload<ExtArgs>
+      fields: Prisma.CustomerCropStatFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CustomerCropStatFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomerCropStatPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CustomerCropStatFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomerCropStatPayload>
+        }
+        findFirst: {
+          args: Prisma.CustomerCropStatFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomerCropStatPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CustomerCropStatFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomerCropStatPayload>
+        }
+        findMany: {
+          args: Prisma.CustomerCropStatFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomerCropStatPayload>[]
+        }
+        create: {
+          args: Prisma.CustomerCropStatCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomerCropStatPayload>
+        }
+        createMany: {
+          args: Prisma.CustomerCropStatCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CustomerCropStatCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomerCropStatPayload>[]
+        }
+        delete: {
+          args: Prisma.CustomerCropStatDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomerCropStatPayload>
+        }
+        update: {
+          args: Prisma.CustomerCropStatUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomerCropStatPayload>
+        }
+        deleteMany: {
+          args: Prisma.CustomerCropStatDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CustomerCropStatUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CustomerCropStatUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomerCropStatPayload>[]
+        }
+        upsert: {
+          args: Prisma.CustomerCropStatUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomerCropStatPayload>
+        }
+        aggregate: {
+          args: Prisma.CustomerCropStatAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCustomerCropStat>
+        }
+        groupBy: {
+          args: Prisma.CustomerCropStatGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CustomerCropStatGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CustomerCropStatCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CustomerCropStatCountAggregateOutputType> | number
         }
       }
     }
@@ -2374,6 +2599,9 @@ export const UserScalarFieldEnum = {
   email: 'email',
   phone: 'phone',
   passwordHash: 'passwordHash',
+  biometricsEnabled: 'biometricsEnabled',
+  twoFactorSecret: 'twoFactorSecret',
+  twoFactorEnabledAt: 'twoFactorEnabledAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2399,11 +2627,54 @@ export const CustomerProfileScalarFieldEnum = {
   companyName: 'companyName',
   companyEdrpou: 'companyEdrpou',
   billingEmail: 'billingEmail',
+  iban: 'iban',
+  taxSystem: 'taxSystem',
+  vatPayer: 'vatPayer',
+  legalAddress: 'legalAddress',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type CustomerProfileScalarFieldEnum = (typeof CustomerProfileScalarFieldEnum)[keyof typeof CustomerProfileScalarFieldEnum]
+
+
+export const ReviewScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  performerUserId: 'performerUserId',
+  authorUserId: 'authorUserId',
+  rating: 'rating',
+  text: 'text',
+  createdAt: 'createdAt'
+} as const
+
+export type ReviewScalarFieldEnum = (typeof ReviewScalarFieldEnum)[keyof typeof ReviewScalarFieldEnum]
+
+
+export const TwoFactorSetupScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  secret: 'secret',
+  createdAt: 'createdAt',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt'
+} as const
+
+export type TwoFactorSetupScalarFieldEnum = (typeof TwoFactorSetupScalarFieldEnum)[keyof typeof TwoFactorSetupScalarFieldEnum]
+
+
+export const CustomerCropStatScalarFieldEnum = {
+  id: 'id',
+  customerUserId: 'customerUserId',
+  season: 'season',
+  cropId: 'cropId',
+  areaHa: 'areaHa',
+  yieldT: 'yieldT',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CustomerCropStatScalarFieldEnum = (typeof CustomerCropStatScalarFieldEnum)[keyof typeof CustomerCropStatScalarFieldEnum]
 
 
 export const PerformerProfileScalarFieldEnum = {
@@ -2782,6 +3053,27 @@ export type ListEnumUserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
 
 
 /**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
+ * Reference to a field of type 'TaxSystem'
+ */
+export type EnumTaxSystemFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TaxSystem'>
+    
+
+
+/**
+ * Reference to a field of type 'TaxSystem[]'
+ */
+export type ListEnumTaxSystemFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TaxSystem[]'>
+    
+
+
+/**
  * Reference to a field of type 'CoverageMode'
  */
 export type EnumCoverageModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CoverageMode'>
@@ -3050,6 +3342,9 @@ export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
   refreshToken?: Prisma.RefreshTokenOmit
   customerProfile?: Prisma.CustomerProfileOmit
+  review?: Prisma.ReviewOmit
+  twoFactorSetup?: Prisma.TwoFactorSetupOmit
+  customerCropStat?: Prisma.CustomerCropStatOmit
   performerProfile?: Prisma.PerformerProfileOmit
   performerSettings?: Prisma.PerformerSettingsOmit
   performerService?: Prisma.PerformerServiceOmit

@@ -82,6 +82,13 @@ enum PayoutStatus {
   failed
 }
 
+enum TaxSystem {
+  FOP_2
+  FOP_3
+  LLC
+  OTHER
+}
+
 model ServiceCategory {
   id   String @id @default(cuid())
   name String
@@ -137,6 +144,8 @@ model Crop {
   iconKey String? @map("icon_key")
   sort    Int @default(0)
 
+  customerCropStats CustomerCropStat[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -152,6 +161,10 @@ model User {
   phone        String?  @db.VarChar(32)
   passwordHash String   @map("password_hash")
 
+  biometricsEnabled Boolean @default(false) @map("biometrics_enabled")
+  twoFactorSecret   String? @map("two_factor_secret")
+  twoFactorEnabledAt DateTime? @map("two_factor_enabled_at")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -161,6 +174,7 @@ model User {
   refreshTokens RefreshToken[]
   devices       Device[]
   notifications Notification[]
+  twoFactorSetups TwoFactorSetup[]
 
   customerOrders  Order[] @relation("CustomerOrders")
   performerOrders Order[] @relation("PerformerOrders")
@@ -169,6 +183,8 @@ model User {
   payments   Payment[]
   payouts     Payout[]
   reserveTx   ReserveTransaction[]
+  authoredReviews Review[] @relation("AuthoredReviews")
+  performerReviews Review[] @relation("PerformerReviews")
 
   @@map("users")
 }
@@ -195,14 +211,78 @@ model CustomerProfile {
   companyName  String? @map("company_name")
   companyEdrpou String? @map("company_edrpou")
   billingEmail String? @map("billing_email")
+  iban         String? @map("iban")
+  taxSystem    TaxSystem? @map("tax_system")
+  vatPayer     Boolean @default(false) @map("vat_payer")
+  legalAddress String? @map("legal_address")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   fields Field[]
+  cropStats CustomerCropStat[]
 
   @@map("customer_profiles")
+}
+
+model Review {
+  id String @id @default(cuid())
+
+  orderId         String @map("order_id")
+  performerUserId String @map("performer_user_id")
+  authorUserId    String @map("author_user_id")
+
+  rating Int
+  text   String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  performer User  @relation("PerformerReviews", fields: [performerUserId], references: [id], onDelete: Cascade)
+  author    User  @relation("AuthoredReviews", fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, authorUserId], name: "uniq_review_order_author")
+  @@index([performerUserId, createdAt])
+  @@map("reviews")
+}
+
+model TwoFactorSetup {
+  id String @id @default(cuid())
+
+  userId String @map("user_id")
+  secret String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("two_factor_setups")
+}
+
+model CustomerCropStat {
+  id String @id @default(cuid())
+
+  customerUserId String @map("customer_user_id")
+  season         Int
+  cropId         String @map("crop_id")
+
+  areaHa Decimal @db.Decimal(10, 2) @map("area_ha")
+  yieldT Decimal @db.Decimal(12, 2) @map("yield_t")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  customer CustomerProfile @relation(fields: [customerUserId], references: [userId], onDelete: Cascade)
+  crop     Crop            @relation(fields: [cropId], references: [id], onDelete: Cascade)
+
+  @@unique([customerUserId, season, cropId], name: "uniq_cropstat_customer_season_crop")
+  @@index([customerUserId, season])
+  @@map("customer_crop_stats")
 }
 
 model PerformerProfile {
@@ -336,6 +416,7 @@ model Order {
   payments        Payment[]
   reportMedia     OrderReportMedia[]
   agreement       Agreement?
+  reviews         Review[]
 
   @@index([customerUserId, status, createdAt])
   @@index([performerUserId, status, createdAt])

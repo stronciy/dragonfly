@@ -457,14 +457,6 @@ export type PerformerProfileUncheckedUpdateOneWithoutUserNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.PerformerProfileUpdateToOneWithWhereWithoutUserInput, Prisma.PerformerProfileUpdateWithoutUserInput>, Prisma.PerformerProfileUncheckedUpdateWithoutUserInput>
 }
 
-export type DecimalFieldUpdateOperationsInput = {
-  set?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  increment?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  decrement?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  multiply?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
-}
-
 export type PerformerProfileCreateNestedOneWithoutSettingsInput = {
   create?: Prisma.XOR<Prisma.PerformerProfileCreateWithoutSettingsInput, Prisma.PerformerProfileUncheckedCreateWithoutSettingsInput>
   connectOrCreate?: Prisma.PerformerProfileCreateOrConnectWithoutSettingsInput

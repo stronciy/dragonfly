@@ -75,6 +75,21 @@ export type RefreshToken = Prisma.RefreshTokenModel
  */
 export type CustomerProfile = Prisma.CustomerProfileModel
 /**
+ * Model Review
+ * 
+ */
+export type Review = Prisma.ReviewModel
+/**
+ * Model TwoFactorSetup
+ * 
+ */
+export type TwoFactorSetup = Prisma.TwoFactorSetupModel
+/**
+ * Model CustomerCropStat
+ * 
+ */
+export type CustomerCropStat = Prisma.CustomerCropStatModel
+/**
  * Model PerformerProfile
  * 
  */
