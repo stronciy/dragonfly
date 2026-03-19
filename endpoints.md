@@ -243,6 +243,7 @@
   - Для тестов в dev засеяны типы (serviceCategoryId/serviceSubCategoryId/serviceTypeId):
     - `plowing/deep/standard`, `plowing/deep/reinforced`, `plowing/shallow/light`
     - `cultivation/pre_sowing/shallow`, `cultivation/pre_sowing/deep`
+    - `cultivation/inter_row` (подкатегория без типов → отправляйте `serviceTypeId: null`)
     - `sowing/grains/wheat`, `sowing/grains/barley`, `sowing/grains/corn`, `sowing/technical/sunflower`, `sowing/technical/rapeseed`
     - `harvesting/combine/grains`, `harvesting/combine/corn`
 - Returns: `200 { quote }`
