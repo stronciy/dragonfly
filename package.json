@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:ws": "node server.js",
     "build": "next build",
     "build:worker": "tsc -p tsconfig.worker.json",
     "start": "next start",
+    "start:ws": "node server.js",
     "lint": "next lint",
     "test": "npm run test:unit",
     "test:unit": "tsc -p tsconfig.test.json && node --test dist-tests/tests/**/*.test.js",
@@ -29,7 +31,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "stripe": "^20.4.1",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -5,6 +5,8 @@ const bullmq_1 = require("bullmq");
 const prisma_1 = require("../lib/prisma");
 const connection_1 = require("../queues/connection");
 const expoPush_service_1 = require("../services/expoPush.service");
+const publishDomainEvent_1 = require("../realtime/publishDomainEvent");
+const presence_1 = require("../realtime/presence");
 function startMatchNewExecutorWorker() {
     const expo = new expoPush_service_1.ExpoPushService(prisma_1.prisma);
     return new bullmq_1.Worker("match-new-executor", async (job) => {
@@ -50,24 +52,63 @@ function startMatchNewExecutorWorker() {
         ORDER BY distance_km ASC
         LIMIT 500
       `);
-        if (matches.length === 0)
-            return;
-        await prisma_1.prisma.$transaction(matches.map((m) => prisma_1.prisma.orderMatch.upsert({
-            where: {
-                uniq_performer_order_match: { performerUserId, orderId: m.order_id },
-            },
-            create: {
-                performerUserId,
-                orderId: m.order_id,
-                distanceKm: m.distance_km,
-            },
-            update: { distanceKm: m.distance_km },
-        })));
+        const existing = await prisma_1.prisma.orderMatch.findMany({ where: { performerUserId }, select: { orderId: true } });
+        const existingIds = new Set(existing.map((m) => m.orderId));
+        const nextIds = new Set(matches.map((m) => m.order_id));
+        const removedOrderIds = [];
+        for (const id of existingIds) {
+            if (!nextIds.has(id))
+                removedOrderIds.push(id);
+        }
+        const addedOrderIds = [];
+        for (const id of nextIds) {
+            if (!existingIds.has(id))
+                addedOrderIds.push(id);
+        }
+        await prisma_1.prisma.$transaction([
+            ...matches.map((m) => prisma_1.prisma.orderMatch.upsert({
+                where: {
+                    uniq_performer_order_match: { performerUserId, orderId: m.order_id },
+                },
+                create: {
+                    performerUserId,
+                    orderId: m.order_id,
+                    distanceKm: m.distance_km,
+                },
+                update: { distanceKm: m.distance_km },
+            })),
+            ...(removedOrderIds.length
+                ? [
+                    prisma_1.prisma.orderMatch.deleteMany({
+                        where: { performerUserId, orderId: { in: removedOrderIds } },
+                    }),
+                ]
+                : []),
+        ]);
+        if (addedOrderIds.length) {
+            await (0, publishDomainEvent_1.publishDomainEvent)({
+                type: "marketplace.match_added",
+                targets: { userIds: [performerUserId] },
+                data: { performerUserId, orderIds: addedOrderIds },
+            });
+        }
+        if (removedOrderIds.length) {
+            await (0, publishDomainEvent_1.publishDomainEvent)({
+                type: "marketplace.match_removed",
+                targets: { userIds: [performerUserId] },
+                data: { performerUserId, orderIds: removedOrderIds },
+            });
+        }
         const tokens = (await prisma_1.prisma.device.findMany({
             where: { userId: performerUserId, revokedAt: null },
             select: { expoPushToken: true, userId: true },
         }));
         if (tokens.length === 0)
+            return;
+        if (addedOrderIds.length === 0)
+            return;
+        const online = await (0, presence_1.getOnlineUserIds)([performerUserId]);
+        if (online.has(performerUserId))
             return;
         await expo.sendBatch(tokens.map((t) => ({
             toUserId: t.userId,

@@ -28,6 +28,45 @@
 }
 ```
 
+## Realtime (WebSocket + Push fallback)
+
+### WebSocket `GET /ws`
+- Назначение: realtime-сигналы об изменениях заказов/биржи/статусов, чтобы клиент мог обновлять экраны без ручного refresh.
+- Auth: `Authorization: Bearer <accessToken>` (JWT access token)
+- URL:
+  - dev: `ws://localhost:<PORT>/ws`
+  - prod: `wss://<host>/ws`
+- Важно:
+  - WebSocket используется только как “сигнал” (at-least-once не гарантируется). Клиент после события делает refetch (refetch-on-focus остаётся обязательным).
+  - Сервер не поддерживает подписку на произвольный `orderId`. Роутинг событий делается по `userId` (получатели определяются сервером).
+
+#### Формат сообщений (server → client)
+```json
+{
+  "eventId": "uuid",
+  "type": "order.updated",
+  "version": "1.0",
+  "timestamp": "2026-03-19T10:30:00Z",
+  "requestId": "uuid",
+  "targets": { "userIds": ["usr_..."] },
+  "data": { "orderId": "cmmx...", "status": "published" }
+}
+```
+
+#### События (минимальный набор)
+- `order.created` — создан заказ (customer)
+- `order.updated` — изменены поля заказа (customer, performer если назначен)
+- `order.deleted` — заказ удалён (customer, performer если назначен)
+- `order.status_changed` — смена статуса (customer + performer)
+- `marketplace.match_added` — заказ стал доступен исполнителю (performer)
+- `marketplace.match_removed` — заказ больше не доступен исполнителю (performer)
+- `agreement.assigned` — исполнитель назначен / заказ принят (customer + performer)
+- `escrow.changed` — зарезервирован/изменён escrow (если будет эмититься)
+
+#### Push fallback (когда приложение в фоне/закрыто)
+- Для `marketplace.match_added` пуш отправляется только если пользователь offline (нет активного WS presence).
+- Для критичных статусов (например `accepted`/депозиты) клиенту всё равно нужно полагаться на push + refetch при открытии экрана.
+
 ## Auth
 
 ### POST `/api/v1/auth/register`
@@ -107,6 +146,9 @@
   - `offset` (default 0)
   - `unreadOnly` (optional boolean)
 - Returns: `200 { items[], page }`
+- Notes:
+  - `items[].data` может содержать `orderId` для deeplink/обновления экрана
+  - `items[].orderId` — вынесен отдельно (если был в `data.orderId`)
 
 ### PATCH `/api/v1/notifications/:notificationId/read`
 - Auth: Bearer
@@ -272,7 +314,7 @@
 - Auth: Bearer
 - Role: `customer` (owner)
 - Allowed order status: `draft | published`
-- Returns: `204 {}`
+- Returns: `200 { deleted: true, orderId }`
 - Side effects: удаляет `order_matches` по orderId
 
 ### PATCH `/api/v1/orders/:orderId/cancel`
@@ -335,6 +377,16 @@
   - `distanceKmMax` (optional)
   - `sort = distance | price | date` (optional)
 - Returns: `200 { items[], page }`
+- Item fields (актуально по коду):
+  - `id` (orderId)
+  - `orderId` (дубль id)
+  - `title`, `locationLabel`, `regionName`
+  - `serviceCategoryId`, `serviceSubCategoryId`, `serviceTypeId`
+  - `areaHa`, `price`, `budget`, `currency`
+  - `distanceKm`
+  - `dateFrom`, `dateTo`
+  - `location: { lat, lng }`
+  - `status`, `createdAt`
 
 ### GET `/api/v1/marketplace/orders/:orderId`
 - Auth: Bearer

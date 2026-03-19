@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { enqueueMatchNewOrder } from "@/queues/jobs";
 import { makePage, parsePagination } from "@/lib/pagination";
+import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 
 const postSchema = z.object({
   serviceCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
@@ -299,6 +300,13 @@ export async function POST(req: Request) {
         console.info(`[api] POST /api/v1/orders match_enqueued requestId=${requestId} orderId=${order.id}`);
       }
     }
+
+    await publishDomainEvent({
+      type: "order.created",
+      requestId,
+      targets: { userIds: [user.id] },
+      data: { orderId: order.id, status: order.status },
+    });
 
     return ok(req, { order }, { status: 201, message: "Created" });
   } catch (err) {

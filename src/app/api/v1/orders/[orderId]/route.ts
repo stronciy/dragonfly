@@ -1,9 +1,10 @@
 import { z } from "zod";
-import { ok, fail } from "@/lib/apiResponse";
+import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { ApiError } from "@/lib/errors";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/lib/prisma";
 import { enqueueMatchNewOrder } from "@/queues/jobs";
+import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 
 const patchSchema = z
   .object({
@@ -75,6 +76,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
+    const requestId = getRequestId(req);
     const user = await requireUser(req);
     if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
     const { orderId } = await ctx.params;
@@ -84,6 +86,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
 
     const body = patchSchema.parse(await req.json());
     const nextStatus = body.status ?? order.status;
+    const changedFields = Object.keys(body);
 
     const updated = await prisma.$transaction(async (tx) => {
       const u = await tx.order.update({
@@ -103,7 +106,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
           budget: body.budget,
           status: nextStatus,
         },
-        select: { id: true, status: true, createdAt: true },
+        select: { id: true, status: true, performerUserId: true, createdAt: true },
       });
 
       if (order.status !== nextStatus) {
@@ -115,8 +118,37 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       return u;
     });
 
+    if (order.status === "published" && updated.status !== "published") {
+      const removed = await prisma.orderMatch.findMany({ where: { orderId }, select: { performerUserId: true } });
+      await prisma.orderMatch.deleteMany({ where: { orderId } });
+      if (removed.length) {
+        await publishDomainEvent({
+          type: "marketplace.match_removed",
+          requestId,
+          targets: { userIds: removed.map((r) => r.performerUserId) },
+          data: { orderId },
+        });
+      }
+    }
+
     if (order.status !== "published" && updated.status === "published") {
       await enqueueMatchNewOrder(orderId);
+    }
+
+    await publishDomainEvent({
+      type: "order.updated",
+      requestId,
+      targets: { userIds: [user.id, ...(updated.performerUserId ? [updated.performerUserId] : [])] },
+      data: { orderId, changedFields, status: updated.status },
+    });
+
+    if (order.status !== updated.status) {
+      await publishDomainEvent({
+        type: "order.status_changed",
+        requestId,
+        targets: { userIds: [user.id, ...(updated.performerUserId ? [updated.performerUserId] : [])] },
+        data: { orderId, fromStatus: order.status, toStatus: updated.status },
+      });
     }
 
     return ok(req, { order: updated }, { message: "Updated" });
@@ -130,6 +162,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
+    const requestId = getRequestId(req);
     const user = await requireUser(req);
     if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
     const { orderId } = await ctx.params;
@@ -159,10 +192,27 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ orderId: str
       throw new ApiError(403, "FORBIDDEN", "Order cannot be deleted");
     }
 
+    const matchedPerformers = await prisma.orderMatch.findMany({ where: { orderId }, select: { performerUserId: true } });
     await prisma.$transaction([
       prisma.orderMatch.deleteMany({ where: { orderId } }),
       prisma.order.delete({ where: { id: orderId } }),
     ]);
+
+    if (matchedPerformers.length) {
+      await publishDomainEvent({
+        type: "marketplace.match_removed",
+        requestId,
+        targets: { userIds: matchedPerformers.map((m) => m.performerUserId) },
+        data: { orderId },
+      });
+    }
+
+    await publishDomainEvent({
+      type: "order.deleted",
+      requestId,
+      targets: { userIds: [user.id, ...(order.performerUserId ? [order.performerUserId] : [])] },
+      data: { orderId },
+    });
 
     return ok(req, { deleted: true, orderId }, { status: 200, message: "Deleted" });
   } catch (err) {

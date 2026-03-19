@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { ok, fail } from "@/lib/apiResponse";
+import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { ApiError } from "@/lib/errors";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/lib/prisma";
+import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 
 const schema = z.object({
   status: z.enum(["started", "completed"]),
@@ -15,6 +16,7 @@ const allowedTransitions: Record<string, Array<string>> = {
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
+    const requestId = getRequestId(req);
     const user = await requireUser(req);
     if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
     const { orderId } = await ctx.params;
@@ -40,6 +42,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         });
       }
       return u;
+    });
+
+    await publishDomainEvent({
+      type: "order.status_changed",
+      requestId,
+      targets: { userIds: [updated.customerUserId, updated.performerUserId!].filter(Boolean) as string[] },
+      data: { orderId: updated.id, fromStatus: order.status, toStatus: updated.status },
     });
 
     return ok(req, { order: { id: updated.id, status: updated.status } }, { message: "Status updated" });

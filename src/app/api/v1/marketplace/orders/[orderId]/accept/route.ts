@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { ok, fail } from "@/lib/apiResponse";
+import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { ApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/requireAuth";
+import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 
 const schema = z.object({
   paymentIntentId: z.string().min(1),
@@ -10,14 +11,16 @@ const schema = z.object({
 
 export async function POST(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
+    const requestId = getRequestId(req);
     const user = await requireUser(req);
     if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
-    const [order, payment] = await prisma.$transaction([
+    const [order, payment, existingMatches] = await prisma.$transaction([
       prisma.order.findUnique({ where: { id: orderId } }),
       prisma.payment.findUnique({ where: { id: body.paymentIntentId } }),
+      prisma.orderMatch.findMany({ where: { orderId }, select: { performerUserId: true } }),
     ]);
 
     if (!order || order.status !== "published") throw new ApiError(404, "NOT_FOUND", "Order not found");
@@ -51,6 +54,30 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
       await tx.orderStatusEvent.create({ data: { orderId: order.id, fromStatus: "published", toStatus: "accepted", note: null } });
       await tx.orderMatch.deleteMany({ where: { orderId: order.id } });
+    });
+
+    const matchRecipients = Array.from(new Set(existingMatches.map((m) => m.performerUserId)));
+    if (matchRecipients.length) {
+      await publishDomainEvent({
+        type: "marketplace.match_removed",
+        requestId,
+        targets: { userIds: matchRecipients },
+        data: { orderId: order.id },
+      });
+    }
+
+    await publishDomainEvent({
+      type: "agreement.assigned",
+      requestId,
+      targets: { userIds: [order.customerUserId, user.id] },
+      data: { orderId: order.id, customerId: order.customerUserId, performerId: user.id },
+    });
+
+    await publishDomainEvent({
+      type: "order.status_changed",
+      requestId,
+      targets: { userIds: [order.customerUserId, user.id] },
+      data: { orderId: order.id, fromStatus: "published", toStatus: "accepted" },
     });
 
     return ok(req, { order: { id: order.id, status: "accepted" }, agreementId: null }, { message: "Accepted" });

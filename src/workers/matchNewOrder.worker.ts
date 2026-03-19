@@ -1,8 +1,11 @@
 import { Worker } from "bullmq";
+import { Expo } from "expo-server-sdk";
 import { prisma } from "../lib/prisma";
 import { getRedisConnectionOptions } from "../queues/connection";
 import { ExpoPushService } from "../services/expoPush.service";
 import { formatOrderDateRange } from "../lib/matching";
+import { publishDomainEvent } from "../realtime/publishDomainEvent";
+import { getOnlineUserIds } from "../realtime/presence";
 
 type MatchNewOrderJob = { orderId: string };
 
@@ -33,7 +36,16 @@ export function startMatchNewOrderWorker() {
         },
       });
 
-      if (!order || order.status !== "published") return;
+      if (!order) {
+        process.stdout.write(JSON.stringify({ level: "info", msg: "match_new_order_skipped", reason: "order_not_found", orderId }) + "\n");
+        return;
+      }
+      if (order.status !== "published") {
+        process.stdout.write(
+          JSON.stringify({ level: "info", msg: "match_new_order_skipped", reason: "order_not_published", orderId, status: order.status }) + "\n"
+        );
+        return;
+      }
 
       const category = await prisma.serviceCategory.findUnique({
         where: { id: order.serviceCategoryId },
@@ -86,7 +98,10 @@ export function startMatchNewOrderWorker() {
         LIMIT 500
       `) as Array<{ performer_user_id: string; distance_km: number }>;
 
-      if (candidates.length === 0) return;
+      if (candidates.length === 0) {
+        process.stdout.write(JSON.stringify({ level: "info", msg: "match_new_order_no_candidates", orderId }) + "\n");
+        return;
+      }
 
       await prisma.$transaction(
         candidates.map((c) =>
@@ -107,6 +122,12 @@ export function startMatchNewOrderWorker() {
         )
       );
 
+      await publishDomainEvent({
+        type: "marketplace.match_added",
+        targets: { userIds: candidates.map((c) => c.performer_user_id) },
+        data: { orderId: order.id },
+      });
+
       const tokens = (await prisma.device.findMany({
         where: {
           userId: { in: candidates.map((c) => c.performer_user_id) },
@@ -115,7 +136,31 @@ export function startMatchNewOrderWorker() {
         select: { expoPushToken: true, userId: true },
       })) as Array<{ expoPushToken: string; userId: string }>;
 
-      if (tokens.length === 0) return;
+      if (tokens.length === 0) {
+        process.stdout.write(
+          JSON.stringify({ level: "info", msg: "match_new_order_no_devices", orderId, candidateCount: candidates.length }) + "\n"
+        );
+        return;
+      }
+
+      const online = await getOnlineUserIds(Array.from(new Set(tokens.map((t) => t.userId))));
+      const pushTokens = tokens.filter((t) => !online.has(t.userId));
+      if (pushTokens.length === 0) {
+        process.stdout.write(JSON.stringify({ level: "info", msg: "match_new_order_push_skipped_online", orderId, onlineCount: online.size }) + "\n");
+        return;
+      }
+
+      const validTokenCount = tokens.filter((t) => Expo.isExpoPushToken(t.expoPushToken)).length;
+      process.stdout.write(
+        JSON.stringify({
+          level: "info",
+          msg: "match_new_order_ready_to_notify",
+          orderId,
+          candidateCount: candidates.length,
+          deviceCount: tokens.length,
+          validTokenCount,
+        }) + "\n"
+      );
 
       const serviceLabel = [category?.name, subcategory?.name, type?.name].filter(Boolean).join(" / ");
       const dateRange = formatOrderDateRange(order.dateFrom, order.dateTo);
@@ -125,7 +170,7 @@ export function startMatchNewOrderWorker() {
       const body = [location, `${Number(order.areaHa)} га`, budget, dateRange].filter(Boolean).join(" • ");
 
       await expo.sendBatch(
-        tokens.map((t) => ({
+        pushTokens.map((t) => ({
           toUserId: t.userId,
           toExpoToken: t.expoPushToken,
           title,
@@ -146,6 +191,8 @@ export function startMatchNewOrderWorker() {
           },
         }))
       );
+
+      process.stdout.write(JSON.stringify({ level: "info", msg: "match_new_order_notified", orderId, sentTo: pushTokens.length }) + "\n");
     },
     { connection: getRedisConnectionOptions(), concurrency: 10 }
   );

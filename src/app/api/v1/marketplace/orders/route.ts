@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ok, fail } from "@/lib/apiResponse";
+import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { ApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/requireAuth";
@@ -14,6 +14,7 @@ const querySchema = z.object({
 
 export async function GET(req: Request) {
   try {
+    const requestId = getRequestId(req);
     const user = await requireUser(req);
     if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
 
@@ -55,11 +56,18 @@ export async function GET(req: Request) {
             select: {
               id: true,
               status: true,
+              serviceCategoryId: true,
+              serviceSubCategoryId: true,
+              serviceTypeId: true,
               areaHa: true,
               dateFrom: true,
+              dateTo: true,
               budget: true,
               currency: true,
               locationLabel: true,
+              regionName: true,
+              lat: true,
+              lng: true,
               createdAt: true,
             },
           },
@@ -70,16 +78,31 @@ export async function GET(req: Request) {
 
     const items = matches.map((m) => ({
         id: m.order.id,
+        orderId: m.order.id,
         title: m.order.locationLabel,
+        serviceCategoryId: m.order.serviceCategoryId,
+        serviceSubCategoryId: m.order.serviceSubCategoryId,
+        serviceTypeId: m.order.serviceTypeId,
         areaHa: Number(m.order.areaHa),
         durationDays: null,
         price: Number(m.order.budget),
+        budget: Number(m.order.budget),
         currency: m.order.currency,
         distanceKm: Number(m.distanceKm),
         dateFrom: m.order.dateFrom,
+        dateTo: m.order.dateTo,
         locationLabel: m.order.locationLabel,
+        regionName: m.order.regionName,
+        location: { lat: Number(m.order.lat), lng: Number(m.order.lng) },
         status: m.order.status,
+        createdAt: m.order.createdAt,
       }));
+
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[api] GET /api/v1/marketplace/orders requestId=${requestId} userId=${user.id} total=${totalCount} returned=${items.length}`, {
+        orderIds: items.map((i) => i.id),
+      });
+    }
 
     return ok(req, { items, page: makePage(limit, offset, totalCount) });
   } catch (err) {

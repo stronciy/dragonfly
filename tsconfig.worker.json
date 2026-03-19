@@ -15,6 +15,7 @@
     "src/queues/**/*.ts",
     "src/services/**/*.ts",
     "src/lib/**/*.ts",
+    "src/realtime/**/*.ts",
     "src/generated/**/*.ts"
   ]
 }
