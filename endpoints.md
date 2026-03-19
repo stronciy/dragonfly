@@ -177,6 +177,10 @@
 ### POST `/api/v1/orders/quote`
 - Auth: Bearer
 - Role: `customer`
+- Rate limit: 100/min per IP (or 500/min for authenticated user if global rule applies)
+- Headers:
+  - `Authorization: Bearer <accessToken>`
+  - `Content-Type: application/json`
 - Body:
 ```json
 {
@@ -186,9 +190,48 @@
   "areaHa": 120.5
 }
 ```
+- Fields:
+  - `serviceCategoryId` (string, required) — ID категории услуги (trim, не пустая строка)
+  - `serviceSubCategoryId` (string, required) — ID подкатегории услуги (trim, не пустая строка)
+  - `serviceTypeId` (string | null, optional/required by подкатегории):
+    - string — если у подкатегории есть типы и выбран конкретный тип
+    - null — допустимо только для подкатегорий без типов
+  - `areaHa` (number, required) — площадь в гектарах (> 0, разумный верхний лимит, например ≤ 20000)
 - Returns: `200 { quote }`
-- Notes:
-  - `serviceTypeId` должен существовать в БД (иначе `404 Service type not found`)
+- Response:
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "data": {
+    "quote": {
+      "currency": "UAH",
+      "budgetUah": 48000,
+      "rateUahPerHa": 400,
+      "areaHa": 120.5
+    }
+  },
+  "message": "Quote calculated",
+  "timestamp": "2026-03-19T10:30:00Z",
+  "requestId": "req_123abc"
+}
+```
+- Optional response fields:
+```json
+{
+  "breakdown": {
+    "base": 45000,
+    "distanceSurcharge": 0,
+    "urgencySurcharge": 3000,
+    "discount": 0
+  }
+}
+```
+- Errors:
+  - `400 VALIDATION_ERROR` — некорректный формат, `areaHa <= 0`, отсутствуют поля, тип обязателен, но не передан и т.п.
+  - `404 NOT_FOUND` — `serviceTypeId` указан, но не существует → `Service type not found`
+  - `401 UNAUTHORIZED` — нет/невалидный токен
+  - `500 INTERNAL_ERROR` — необработанная ошибка расчёта
 
 ### POST `/api/v1/orders`
 - Auth: Bearer

@@ -59,5 +59,9 @@ export function fail(req: Request, err: unknown) {
     requestId,
   };
 
+  if (process.env.NODE_ENV !== "production" && apiErr.code === "VALIDATION_ERROR") {
+    console.warn(`[api] ${req.method} ${new URL(req.url).pathname} ${apiErr.status} ${apiErr.code} requestId=${requestId}`, apiErr.details);
+  }
+
   return NextResponse.json(body, { status: apiErr.status });
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ok, fail } from "@/lib/apiResponse";
+import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { ApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/requireAuth";
@@ -22,10 +22,16 @@ const schema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const requestId = getRequestId(req);
     const user = await requireUser(req);
     if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
 
-    const body = schema.parse(await req.json());
+    const rawBody = await req.json();
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[api] POST /api/v1/orders/quote payload requestId=${requestId}`, rawBody);
+    }
+
+    const body = schema.parse(rawBody);
     if (!body.serviceTypeId) throw new ApiError(400, "VALIDATION_ERROR", "serviceTypeId is required for quote");
 
     const type = await prisma.serviceType.findUnique({ where: { id: body.serviceTypeId } });

@@ -6,20 +6,23 @@ import { requireUser } from "@/lib/auth/requireAuth";
 import { enqueueMatchNewExecutor } from "@/queues/jobs";
 
 const serviceSchema = z.object({
-  serviceCategoryId: z.string().min(1),
-  serviceSubCategoryId: z.string().min(1),
-  serviceTypeId: z.string().min(1).nullable().optional(),
+  serviceCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
+  serviceSubCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
+  serviceTypeId: z.preprocess(
+    (v) => (typeof v === "string" ? (v.trim() === "" ? null : v.trim()) : v),
+    z.string().min(1).nullable().optional()
+  ),
 });
 
 const putSchema = z.object({
-  baseLocationLabel: z.string().min(1),
+  baseLocationLabel: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
   baseCoordinate: z.object({
-    lat: z.number().min(-90).max(90),
-    lng: z.number().min(-180).max(180),
+    lat: z.coerce.number().min(-90).max(90),
+    lng: z.coerce.number().min(-180).max(180),
   }),
   coverage: z.object({
     mode: z.enum(["radius", "country"]),
-    radiusKm: z.number().int().min(0).max(500).nullable().optional(),
+    radiusKm: z.coerce.number().int().min(0).max(500).nullable().optional(),
   }),
   services: z.array(serviceSchema).min(1),
 });
@@ -72,7 +75,9 @@ export async function PUT(req: Request) {
 
     const body = putSchema.parse(await req.json());
     if (body.coverage.mode === "radius" && (body.coverage.radiusKm ?? null) === null) {
-      throw new ApiError(400, "VALIDATION_ERROR", "radiusKm is required for radius mode");
+      throw new ApiError(400, "VALIDATION_ERROR", "radiusKm is required for radius mode", {
+        fieldErrors: { "coverage.radiusKm": ["Required for radius mode"] },
+      });
     }
 
     await prisma.$transaction(async (tx) => {
