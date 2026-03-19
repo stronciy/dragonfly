@@ -2558,6 +2558,9 @@ export const ServiceSubcategoryScalarFieldEnum = {
   categoryId: 'categoryId',
   name: 'name',
   sort: 'sort',
+  pricePerHa: 'pricePerHa',
+  minPrice: 'minPrice',
+  currency: 'currency',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

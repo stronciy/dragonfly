@@ -109,6 +109,10 @@ model ServiceSubcategory {
   name       String
   sort       Int @default(0)
 
+  pricePerHa Decimal? @db.Decimal(12, 2) @map("price_per_ha")
+  minPrice   Decimal? @db.Decimal(12, 2) @map("min_price")
+  currency   String   @default("UAH") @db.VarChar(8)
+
   category ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   types    ServiceType[]
 
@@ -120,7 +124,7 @@ model ServiceSubcategory {
 }
 
 model ServiceType {
-  id            String  @id @default(cuid())
+  id            String
   subcategoryId String  @map("subcategory_id")
   name          String
   sort          Int     @default(0)
@@ -134,6 +138,7 @@ model ServiceType {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@id([subcategoryId, id])
   @@index([subcategoryId, sort, name])
   @@map("service_types")
 }

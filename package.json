@@ -8,6 +8,8 @@
     "build:worker": "tsc -p tsconfig.worker.json",
     "start": "next start",
     "lint": "next lint",
+    "test": "npm run test:unit",
+    "test:unit": "tsc -p tsconfig.test.json && node --test dist-tests/tests/**/*.test.js",
     "worker": "node dist/workers/run.js",
     "prisma:generate": "prisma generate"
   },

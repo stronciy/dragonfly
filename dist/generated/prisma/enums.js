@@ -9,7 +9,7 @@
 * 🟢 You can import this file directly.
 */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PayoutStatus = exports.ArbitrationStatus = exports.CoverageMode = exports.DevicePlatform = exports.NotificationType = exports.PaymentStatus = exports.PaymentProvider = exports.EscrowRole = exports.EscrowStatus = exports.OrderStatus = exports.UserRole = void 0;
+exports.TaxSystem = exports.PayoutStatus = exports.ArbitrationStatus = exports.CoverageMode = exports.DevicePlatform = exports.NotificationType = exports.PaymentStatus = exports.PaymentProvider = exports.EscrowRole = exports.EscrowStatus = exports.OrderStatus = exports.UserRole = void 0;
 exports.UserRole = {
     customer: 'customer',
     performer: 'performer',
@@ -72,4 +72,10 @@ exports.PayoutStatus = {
     pending: 'pending',
     paid: 'paid',
     failed: 'failed'
+};
+exports.TaxSystem = {
+    FOP_2: 'FOP_2',
+    FOP_3: 'FOP_3',
+    LLC: 'LLC',
+    OTHER: 'OTHER'
 };

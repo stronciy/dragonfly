@@ -6,7 +6,7 @@ const connection_1 = require("./connection");
 const defaultJobOptions = {
     attempts: 5,
     backoff: { type: "exponential", delay: 1000 },
-    removeOnComplete: { count: 5000 },
+    removeOnComplete: true,
     removeOnFail: { count: 5000 },
 };
 exports.matchNewOrderQueue = new bullmq_1.Queue("match-new-order", {

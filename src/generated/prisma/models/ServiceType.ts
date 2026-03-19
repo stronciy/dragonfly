@@ -273,10 +273,11 @@ export type ServiceTypeOrderByWithRelationInput = {
 }
 
 export type ServiceTypeWhereUniqueInput = Prisma.AtLeast<{
-  id?: string
+  subcategoryId_id?: Prisma.ServiceTypeSubcategoryIdIdCompoundUniqueInput
   AND?: Prisma.ServiceTypeWhereInput | Prisma.ServiceTypeWhereInput[]
   OR?: Prisma.ServiceTypeWhereInput[]
   NOT?: Prisma.ServiceTypeWhereInput | Prisma.ServiceTypeWhereInput[]
+  id?: Prisma.StringFilter<"ServiceType"> | string
   subcategoryId?: Prisma.StringFilter<"ServiceType"> | string
   name?: Prisma.StringFilter<"ServiceType"> | string
   sort?: Prisma.IntFilter<"ServiceType"> | number
@@ -286,7 +287,7 @@ export type ServiceTypeWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"ServiceType"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ServiceType"> | Date | string
   subcategory?: Prisma.XOR<Prisma.ServiceSubcategoryScalarRelationFilter, Prisma.ServiceSubcategoryWhereInput>
-}, "id">
+}, "subcategoryId_id">
 
 export type ServiceTypeOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -321,7 +322,7 @@ export type ServiceTypeScalarWhereWithAggregatesInput = {
 }
 
 export type ServiceTypeCreateInput = {
-  id?: string
+  id: string
   name: string
   sort?: number
   pricePerHa?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -333,7 +334,7 @@ export type ServiceTypeCreateInput = {
 }
 
 export type ServiceTypeUncheckedCreateInput = {
-  id?: string
+  id: string
   subcategoryId: string
   name: string
   sort?: number
@@ -369,7 +370,7 @@ export type ServiceTypeUncheckedUpdateInput = {
 }
 
 export type ServiceTypeCreateManyInput = {
-  id?: string
+  id: string
   subcategoryId: string
   name: string
   sort?: number
@@ -411,6 +412,11 @@ export type ServiceTypeListRelationFilter = {
 
 export type ServiceTypeOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type ServiceTypeSubcategoryIdIdCompoundUniqueInput = {
+  subcategoryId: string
+  id: string
 }
 
 export type ServiceTypeCountOrderByAggregateInput = {
@@ -503,16 +509,8 @@ export type ServiceTypeUncheckedUpdateManyWithoutSubcategoryNestedInput = {
   deleteMany?: Prisma.ServiceTypeScalarWhereInput | Prisma.ServiceTypeScalarWhereInput[]
 }
 
-export type NullableDecimalFieldUpdateOperationsInput = {
-  set?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  increment?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  decrement?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  multiply?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
-}
-
 export type ServiceTypeCreateWithoutSubcategoryInput = {
-  id?: string
+  id: string
   name: string
   sort?: number
   pricePerHa?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -523,7 +521,7 @@ export type ServiceTypeCreateWithoutSubcategoryInput = {
 }
 
 export type ServiceTypeUncheckedCreateWithoutSubcategoryInput = {
-  id?: string
+  id: string
   name: string
   sort?: number
   pricePerHa?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -575,7 +573,7 @@ export type ServiceTypeScalarWhereInput = {
 }
 
 export type ServiceTypeCreateManySubcategoryInput = {
-  id?: string
+  id: string
   name: string
   sort?: number
   pricePerHa?: runtime.Decimal | runtime.DecimalJsLike | number | string | null

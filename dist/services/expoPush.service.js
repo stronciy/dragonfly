@@ -21,18 +21,6 @@ class ExpoPushService {
         }
         if (valid.length === 0)
             return;
-        await this.prisma.notification.createMany({
-            data: valid.map((v) => {
-                var _a;
-                return ({
-                    userId: v.toUserId,
-                    type: "marketplace",
-                    title: v.title,
-                    message: v.body,
-                    data: ((_a = v.data) !== null && _a !== void 0 ? _a : {}),
-                });
-            }),
-        });
         const messages = valid.map((v) => ({
             to: v.toExpoToken,
             sound: "default",
@@ -41,20 +29,52 @@ class ExpoPushService {
             data: v.data,
         }));
         const chunks = this.expo.chunkPushNotifications(messages);
-        const ticketChunks = [];
+        const ticketsByIndex = [];
         for (const chunk of chunks) {
-            const tickets = await this.expo.sendPushNotificationsAsync(chunk);
-            ticketChunks.push(...tickets);
+            const tickets = (await this.expo.sendPushNotificationsAsync(chunk));
+            ticketsByIndex.push(...tickets);
         }
-        const receiptIds = ticketChunks.flatMap((t) => (t.status === "ok" && t.id ? [t.id] : []));
-        await this.handleReceipts(receiptIds);
+        await this.prisma.notification.createMany({
+            data: valid.map((v, i) => {
+                var _a, _b;
+                return ({
+                    userId: v.toUserId,
+                    type: "marketplace",
+                    title: v.title,
+                    message: v.body,
+                    data: Object.assign(Object.assign({}, ((_a = v.data) !== null && _a !== void 0 ? _a : {})), { expo: { ticket: (_b = ticketsByIndex[i]) !== null && _b !== void 0 ? _b : null } }),
+                });
+            }),
+        });
+        const ticketIdToToken = new Map();
+        const receiptIds = ticketsByIndex.flatMap((t, i) => {
+            if ((t === null || t === void 0 ? void 0 : t.status) !== "ok" || !t.id)
+                return [];
+            ticketIdToToken.set(t.id, valid[i].toExpoToken);
+            return [t.id];
+        });
+        await this.handleReceipts(receiptIds, ticketIdToToken);
     }
-    async handleReceipts(receiptIds) {
+    async handleReceipts(receiptIds, ticketIdToToken) {
+        var _a;
         if (receiptIds.length === 0)
             return;
         const chunks = this.expo.chunkPushNotificationReceiptIds(receiptIds);
         for (const chunk of chunks) {
-            await this.expo.getPushNotificationReceiptsAsync(chunk);
+            const receipts = await this.expo.getPushNotificationReceiptsAsync(chunk);
+            for (const receiptId of chunk) {
+                const receipt = receipts[receiptId];
+                if (!receipt || receipt.status !== "error")
+                    continue;
+                const token = ticketIdToToken.get(receiptId);
+                const error = (_a = receipt.details) === null || _a === void 0 ? void 0 : _a.error;
+                if (token && error === "DeviceNotRegistered") {
+                    await this.prisma.device.updateMany({
+                        where: { expoPushToken: token },
+                        data: { revokedAt: new Date() },
+                    });
+                }
+            }
         }
     }
 }

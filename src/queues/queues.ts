@@ -4,7 +4,7 @@ import { getRedisConnectionOptions } from "./connection";
 const defaultJobOptions = {
   attempts: 5,
   backoff: { type: "exponential" as const, delay: 1000 },
-  removeOnComplete: { count: 5000 },
+  removeOnComplete: true,
   removeOnFail: { count: 5000 },
 };
 

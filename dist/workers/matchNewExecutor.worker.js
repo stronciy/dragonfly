@@ -13,7 +13,9 @@ function startMatchNewExecutorWorker() {
             where: { performerUserId },
             select: { coverageMode: true, radiusKm: true },
         });
-        if (!settings || settings.coverageMode !== "radius" || !settings.radiusKm)
+        if (!settings)
+            return;
+        if (settings.coverageMode === "radius" && !settings.radiusKm)
             return;
         const matches = (await prisma_1.prisma.$queryRaw `
         SELECT
@@ -33,7 +35,16 @@ function startMatchNewExecutorWorker() {
             OR o.service_type_id IS NULL
             OR psvc.service_type_id = o.service_type_id
           )
-          AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+          AND (
+            ps.coverage_mode = 'country'
+            OR (
+              ps.coverage_mode = 'radius'
+              AND ps.radius_km IS NOT NULL
+              AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+            )
+          )
+        ORDER BY distance_km ASC
+        LIMIT 500
       `);
         if (matches.length === 0)
             return;

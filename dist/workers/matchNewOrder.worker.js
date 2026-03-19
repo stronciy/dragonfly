@@ -5,6 +5,7 @@ const bullmq_1 = require("bullmq");
 const prisma_1 = require("../lib/prisma");
 const connection_1 = require("../queues/connection");
 const expoPush_service_1 = require("../services/expoPush.service");
+const matching_1 = require("../lib/matching");
 function startMatchNewOrderWorker() {
     const expo = new expoPush_service_1.ExpoPushService(prisma_1.prisma);
     return new bullmq_1.Worker("match-new-order", async (job) => {
@@ -15,11 +16,33 @@ function startMatchNewOrderWorker() {
                 id: true,
                 status: true,
                 areaHa: true,
+                dateFrom: true,
+                dateTo: true,
+                budget: true,
+                currency: true,
                 locationLabel: true,
+                regionName: true,
+                serviceCategoryId: true,
+                serviceSubCategoryId: true,
+                serviceTypeId: true,
             },
         });
         if (!order || order.status !== "published")
             return;
+        const category = await prisma_1.prisma.serviceCategory.findUnique({
+            where: { id: order.serviceCategoryId },
+            select: { name: true },
+        });
+        const subcategory = await prisma_1.prisma.serviceSubcategory.findUnique({
+            where: { id: order.serviceSubCategoryId },
+            select: { name: true },
+        });
+        const type = order.serviceTypeId
+            ? await prisma_1.prisma.serviceType.findUnique({
+                where: { subcategoryId_id: { subcategoryId: order.serviceSubCategoryId, id: order.serviceTypeId } },
+                select: { name: true },
+            })
+            : null;
         const candidates = (await prisma_1.prisma.$queryRaw `
         SELECT
           ps.performer_user_id,
@@ -31,8 +54,6 @@ function startMatchNewOrderWorker() {
           ON o.id = ${orderId}
         WHERE
           o.status = 'published'
-          AND ps.coverage_mode = 'radius'
-          AND ps.radius_km IS NOT NULL
           AND psvc.service_category_id = o.service_category_id
           AND psvc.service_subcategory_id = o.service_subcategory_id
           AND (
@@ -40,7 +61,16 @@ function startMatchNewOrderWorker() {
             OR o.service_type_id IS NULL
             OR psvc.service_type_id = o.service_type_id
           )
-          AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+          AND (
+            ps.coverage_mode = 'country'
+            OR (
+              ps.coverage_mode = 'radius'
+              AND ps.radius_km IS NOT NULL
+              AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+            )
+          )
+        ORDER BY distance_km ASC
+        LIMIT 500
       `);
         if (candidates.length === 0)
             return;
@@ -67,12 +97,34 @@ function startMatchNewOrderWorker() {
         }));
         if (tokens.length === 0)
             return;
-        await expo.sendBatch(tokens.map((t) => ({
-            toUserId: t.userId,
-            toExpoToken: t.expoPushToken,
-            title: "Новый заказ рядом с вами!",
-            body: `${order.areaHa} га — ${order.locationLabel}`,
-            data: { type: "marketplace", orderId: order.id },
-        })));
+        const serviceLabel = [category === null || category === void 0 ? void 0 : category.name, subcategory === null || subcategory === void 0 ? void 0 : subcategory.name, type === null || type === void 0 ? void 0 : type.name].filter(Boolean).join(" / ");
+        const dateRange = (0, matching_1.formatOrderDateRange)(order.dateFrom, order.dateTo);
+        const budget = `${Number(order.budget)} ${order.currency}`;
+        const location = [order.locationLabel, order.regionName].filter(Boolean).join(", ");
+        const title = serviceLabel ? `Новий заказ: ${serviceLabel}` : "Новий заказ поруч";
+        const body = [location, `${Number(order.areaHa)} га`, budget, dateRange].filter(Boolean).join(" • ");
+        await expo.sendBatch(tokens.map((t) => {
+            var _a, _b, _c, _d, _e;
+            return ({
+                toUserId: t.userId,
+                toExpoToken: t.expoPushToken,
+                title,
+                body,
+                data: {
+                    type: "marketplace",
+                    orderId: order.id,
+                    serviceCategoryId: order.serviceCategoryId,
+                    serviceSubCategoryId: order.serviceSubCategoryId,
+                    serviceTypeId: order.serviceTypeId,
+                    areaHa: Number(order.areaHa),
+                    budget: Number(order.budget),
+                    currency: order.currency,
+                    dateFrom: (_b = (_a = order.dateFrom) === null || _a === void 0 ? void 0 : _a.toISOString()) !== null && _b !== void 0 ? _b : null,
+                    dateTo: (_d = (_c = order.dateTo) === null || _c === void 0 ? void 0 : _c.toISOString()) !== null && _d !== void 0 ? _d : null,
+                    locationLabel: order.locationLabel,
+                    regionName: (_e = order.regionName) !== null && _e !== void 0 ? _e : null,
+                },
+            });
+        }));
     }, { connection: (0, connection_1.getRedisConnectionOptions)(), concurrency: 10 });
 }

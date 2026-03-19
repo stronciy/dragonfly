@@ -28,10 +28,14 @@ export type AggregateServiceSubcategory = {
 
 export type ServiceSubcategoryAvgAggregateOutputType = {
   sort: number | null
+  pricePerHa: runtime.Decimal | null
+  minPrice: runtime.Decimal | null
 }
 
 export type ServiceSubcategorySumAggregateOutputType = {
   sort: number | null
+  pricePerHa: runtime.Decimal | null
+  minPrice: runtime.Decimal | null
 }
 
 export type ServiceSubcategoryMinAggregateOutputType = {
@@ -39,6 +43,9 @@ export type ServiceSubcategoryMinAggregateOutputType = {
   categoryId: string | null
   name: string | null
   sort: number | null
+  pricePerHa: runtime.Decimal | null
+  minPrice: runtime.Decimal | null
+  currency: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -48,6 +55,9 @@ export type ServiceSubcategoryMaxAggregateOutputType = {
   categoryId: string | null
   name: string | null
   sort: number | null
+  pricePerHa: runtime.Decimal | null
+  minPrice: runtime.Decimal | null
+  currency: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -57,6 +67,9 @@ export type ServiceSubcategoryCountAggregateOutputType = {
   categoryId: number
   name: number
   sort: number
+  pricePerHa: number
+  minPrice: number
+  currency: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -65,10 +78,14 @@ export type ServiceSubcategoryCountAggregateOutputType = {
 
 export type ServiceSubcategoryAvgAggregateInputType = {
   sort?: true
+  pricePerHa?: true
+  minPrice?: true
 }
 
 export type ServiceSubcategorySumAggregateInputType = {
   sort?: true
+  pricePerHa?: true
+  minPrice?: true
 }
 
 export type ServiceSubcategoryMinAggregateInputType = {
@@ -76,6 +93,9 @@ export type ServiceSubcategoryMinAggregateInputType = {
   categoryId?: true
   name?: true
   sort?: true
+  pricePerHa?: true
+  minPrice?: true
+  currency?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -85,6 +105,9 @@ export type ServiceSubcategoryMaxAggregateInputType = {
   categoryId?: true
   name?: true
   sort?: true
+  pricePerHa?: true
+  minPrice?: true
+  currency?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -94,6 +117,9 @@ export type ServiceSubcategoryCountAggregateInputType = {
   categoryId?: true
   name?: true
   sort?: true
+  pricePerHa?: true
+  minPrice?: true
+  currency?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -190,6 +216,9 @@ export type ServiceSubcategoryGroupByOutputType = {
   categoryId: string
   name: string
   sort: number
+  pricePerHa: runtime.Decimal | null
+  minPrice: runtime.Decimal | null
+  currency: string
   createdAt: Date
   updatedAt: Date
   _count: ServiceSubcategoryCountAggregateOutputType | null
@@ -222,6 +251,9 @@ export type ServiceSubcategoryWhereInput = {
   categoryId?: Prisma.StringFilter<"ServiceSubcategory"> | string
   name?: Prisma.StringFilter<"ServiceSubcategory"> | string
   sort?: Prisma.IntFilter<"ServiceSubcategory"> | number
+  pricePerHa?: Prisma.DecimalNullableFilter<"ServiceSubcategory"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.DecimalNullableFilter<"ServiceSubcategory"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringFilter<"ServiceSubcategory"> | string
   createdAt?: Prisma.DateTimeFilter<"ServiceSubcategory"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ServiceSubcategory"> | Date | string
   category?: Prisma.XOR<Prisma.ServiceCategoryScalarRelationFilter, Prisma.ServiceCategoryWhereInput>
@@ -233,6 +265,9 @@ export type ServiceSubcategoryOrderByWithRelationInput = {
   categoryId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   sort?: Prisma.SortOrder
+  pricePerHa?: Prisma.SortOrderInput | Prisma.SortOrder
+  minPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  currency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   category?: Prisma.ServiceCategoryOrderByWithRelationInput
@@ -247,6 +282,9 @@ export type ServiceSubcategoryWhereUniqueInput = Prisma.AtLeast<{
   categoryId?: Prisma.StringFilter<"ServiceSubcategory"> | string
   name?: Prisma.StringFilter<"ServiceSubcategory"> | string
   sort?: Prisma.IntFilter<"ServiceSubcategory"> | number
+  pricePerHa?: Prisma.DecimalNullableFilter<"ServiceSubcategory"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.DecimalNullableFilter<"ServiceSubcategory"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringFilter<"ServiceSubcategory"> | string
   createdAt?: Prisma.DateTimeFilter<"ServiceSubcategory"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ServiceSubcategory"> | Date | string
   category?: Prisma.XOR<Prisma.ServiceCategoryScalarRelationFilter, Prisma.ServiceCategoryWhereInput>
@@ -258,6 +296,9 @@ export type ServiceSubcategoryOrderByWithAggregationInput = {
   categoryId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   sort?: Prisma.SortOrder
+  pricePerHa?: Prisma.SortOrderInput | Prisma.SortOrder
+  minPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  currency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ServiceSubcategoryCountOrderByAggregateInput
@@ -275,6 +316,9 @@ export type ServiceSubcategoryScalarWhereWithAggregatesInput = {
   categoryId?: Prisma.StringWithAggregatesFilter<"ServiceSubcategory"> | string
   name?: Prisma.StringWithAggregatesFilter<"ServiceSubcategory"> | string
   sort?: Prisma.IntWithAggregatesFilter<"ServiceSubcategory"> | number
+  pricePerHa?: Prisma.DecimalNullableWithAggregatesFilter<"ServiceSubcategory"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.DecimalNullableWithAggregatesFilter<"ServiceSubcategory"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringWithAggregatesFilter<"ServiceSubcategory"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"ServiceSubcategory"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"ServiceSubcategory"> | Date | string
 }
@@ -283,6 +327,9 @@ export type ServiceSubcategoryCreateInput = {
   id?: string
   name: string
   sort?: number
+  pricePerHa?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   category: Prisma.ServiceCategoryCreateNestedOneWithoutSubcategoriesInput
@@ -294,6 +341,9 @@ export type ServiceSubcategoryUncheckedCreateInput = {
   categoryId: string
   name: string
   sort?: number
+  pricePerHa?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   types?: Prisma.ServiceTypeUncheckedCreateNestedManyWithoutSubcategoryInput
@@ -303,6 +353,9 @@ export type ServiceSubcategoryUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sort?: Prisma.IntFieldUpdateOperationsInput | number
+  pricePerHa?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   category?: Prisma.ServiceCategoryUpdateOneRequiredWithoutSubcategoriesNestedInput
@@ -314,6 +367,9 @@ export type ServiceSubcategoryUncheckedUpdateInput = {
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sort?: Prisma.IntFieldUpdateOperationsInput | number
+  pricePerHa?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   types?: Prisma.ServiceTypeUncheckedUpdateManyWithoutSubcategoryNestedInput
@@ -324,6 +380,9 @@ export type ServiceSubcategoryCreateManyInput = {
   categoryId: string
   name: string
   sort?: number
+  pricePerHa?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -332,6 +391,9 @@ export type ServiceSubcategoryUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sort?: Prisma.IntFieldUpdateOperationsInput | number
+  pricePerHa?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -341,6 +403,9 @@ export type ServiceSubcategoryUncheckedUpdateManyInput = {
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sort?: Prisma.IntFieldUpdateOperationsInput | number
+  pricePerHa?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -360,12 +425,17 @@ export type ServiceSubcategoryCountOrderByAggregateInput = {
   categoryId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   sort?: Prisma.SortOrder
+  pricePerHa?: Prisma.SortOrder
+  minPrice?: Prisma.SortOrder
+  currency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type ServiceSubcategoryAvgOrderByAggregateInput = {
   sort?: Prisma.SortOrder
+  pricePerHa?: Prisma.SortOrder
+  minPrice?: Prisma.SortOrder
 }
 
 export type ServiceSubcategoryMaxOrderByAggregateInput = {
@@ -373,6 +443,9 @@ export type ServiceSubcategoryMaxOrderByAggregateInput = {
   categoryId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   sort?: Prisma.SortOrder
+  pricePerHa?: Prisma.SortOrder
+  minPrice?: Prisma.SortOrder
+  currency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -382,12 +455,17 @@ export type ServiceSubcategoryMinOrderByAggregateInput = {
   categoryId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   sort?: Prisma.SortOrder
+  pricePerHa?: Prisma.SortOrder
+  minPrice?: Prisma.SortOrder
+  currency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type ServiceSubcategorySumOrderByAggregateInput = {
   sort?: Prisma.SortOrder
+  pricePerHa?: Prisma.SortOrder
+  minPrice?: Prisma.SortOrder
 }
 
 export type ServiceSubcategoryScalarRelationFilter = {
@@ -437,6 +515,14 @@ export type ServiceSubcategoryUncheckedUpdateManyWithoutCategoryNestedInput = {
   deleteMany?: Prisma.ServiceSubcategoryScalarWhereInput | Prisma.ServiceSubcategoryScalarWhereInput[]
 }
 
+export type NullableDecimalFieldUpdateOperationsInput = {
+  set?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  increment?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  decrement?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  multiply?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
+}
+
 export type ServiceSubcategoryCreateNestedOneWithoutTypesInput = {
   create?: Prisma.XOR<Prisma.ServiceSubcategoryCreateWithoutTypesInput, Prisma.ServiceSubcategoryUncheckedCreateWithoutTypesInput>
   connectOrCreate?: Prisma.ServiceSubcategoryCreateOrConnectWithoutTypesInput
@@ -455,6 +541,9 @@ export type ServiceSubcategoryCreateWithoutCategoryInput = {
   id?: string
   name: string
   sort?: number
+  pricePerHa?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   types?: Prisma.ServiceTypeCreateNestedManyWithoutSubcategoryInput
@@ -464,6 +553,9 @@ export type ServiceSubcategoryUncheckedCreateWithoutCategoryInput = {
   id?: string
   name: string
   sort?: number
+  pricePerHa?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   types?: Prisma.ServiceTypeUncheckedCreateNestedManyWithoutSubcategoryInput
@@ -503,6 +595,9 @@ export type ServiceSubcategoryScalarWhereInput = {
   categoryId?: Prisma.StringFilter<"ServiceSubcategory"> | string
   name?: Prisma.StringFilter<"ServiceSubcategory"> | string
   sort?: Prisma.IntFilter<"ServiceSubcategory"> | number
+  pricePerHa?: Prisma.DecimalNullableFilter<"ServiceSubcategory"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.DecimalNullableFilter<"ServiceSubcategory"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringFilter<"ServiceSubcategory"> | string
   createdAt?: Prisma.DateTimeFilter<"ServiceSubcategory"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ServiceSubcategory"> | Date | string
 }
@@ -511,6 +606,9 @@ export type ServiceSubcategoryCreateWithoutTypesInput = {
   id?: string
   name: string
   sort?: number
+  pricePerHa?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   category: Prisma.ServiceCategoryCreateNestedOneWithoutSubcategoriesInput
@@ -521,6 +619,9 @@ export type ServiceSubcategoryUncheckedCreateWithoutTypesInput = {
   categoryId: string
   name: string
   sort?: number
+  pricePerHa?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -545,6 +646,9 @@ export type ServiceSubcategoryUpdateWithoutTypesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sort?: Prisma.IntFieldUpdateOperationsInput | number
+  pricePerHa?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   category?: Prisma.ServiceCategoryUpdateOneRequiredWithoutSubcategoriesNestedInput
@@ -555,6 +659,9 @@ export type ServiceSubcategoryUncheckedUpdateWithoutTypesInput = {
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sort?: Prisma.IntFieldUpdateOperationsInput | number
+  pricePerHa?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -563,6 +670,9 @@ export type ServiceSubcategoryCreateManyCategoryInput = {
   id?: string
   name: string
   sort?: number
+  pricePerHa?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -571,6 +681,9 @@ export type ServiceSubcategoryUpdateWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sort?: Prisma.IntFieldUpdateOperationsInput | number
+  pricePerHa?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   types?: Prisma.ServiceTypeUpdateManyWithoutSubcategoryNestedInput
@@ -580,6 +693,9 @@ export type ServiceSubcategoryUncheckedUpdateWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sort?: Prisma.IntFieldUpdateOperationsInput | number
+  pricePerHa?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   types?: Prisma.ServiceTypeUncheckedUpdateManyWithoutSubcategoryNestedInput
@@ -589,6 +705,9 @@ export type ServiceSubcategoryUncheckedUpdateManyWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   sort?: Prisma.IntFieldUpdateOperationsInput | number
+  pricePerHa?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -629,6 +748,9 @@ export type ServiceSubcategorySelect<ExtArgs extends runtime.Types.Extensions.In
   categoryId?: boolean
   name?: boolean
   sort?: boolean
+  pricePerHa?: boolean
+  minPrice?: boolean
+  currency?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   category?: boolean | Prisma.ServiceCategoryDefaultArgs<ExtArgs>
@@ -641,6 +763,9 @@ export type ServiceSubcategorySelectCreateManyAndReturn<ExtArgs extends runtime.
   categoryId?: boolean
   name?: boolean
   sort?: boolean
+  pricePerHa?: boolean
+  minPrice?: boolean
+  currency?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   category?: boolean | Prisma.ServiceCategoryDefaultArgs<ExtArgs>
@@ -651,6 +776,9 @@ export type ServiceSubcategorySelectUpdateManyAndReturn<ExtArgs extends runtime.
   categoryId?: boolean
   name?: boolean
   sort?: boolean
+  pricePerHa?: boolean
+  minPrice?: boolean
+  currency?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   category?: boolean | Prisma.ServiceCategoryDefaultArgs<ExtArgs>
@@ -661,11 +789,14 @@ export type ServiceSubcategorySelectScalar = {
   categoryId?: boolean
   name?: boolean
   sort?: boolean
+  pricePerHa?: boolean
+  minPrice?: boolean
+  currency?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ServiceSubcategoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "categoryId" | "name" | "sort" | "createdAt" | "updatedAt", ExtArgs["result"]["serviceSubcategory"]>
+export type ServiceSubcategoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "categoryId" | "name" | "sort" | "pricePerHa" | "minPrice" | "currency" | "createdAt" | "updatedAt", ExtArgs["result"]["serviceSubcategory"]>
 export type ServiceSubcategoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   category?: boolean | Prisma.ServiceCategoryDefaultArgs<ExtArgs>
   types?: boolean | Prisma.ServiceSubcategory$typesArgs<ExtArgs>
@@ -689,6 +820,9 @@ export type $ServiceSubcategoryPayload<ExtArgs extends runtime.Types.Extensions.
     categoryId: string
     name: string
     sort: number
+    pricePerHa: runtime.Decimal | null
+    minPrice: runtime.Decimal | null
+    currency: string
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["serviceSubcategory"]>
@@ -1120,6 +1254,9 @@ export interface ServiceSubcategoryFieldRefs {
   readonly categoryId: Prisma.FieldRef<"ServiceSubcategory", 'String'>
   readonly name: Prisma.FieldRef<"ServiceSubcategory", 'String'>
   readonly sort: Prisma.FieldRef<"ServiceSubcategory", 'Int'>
+  readonly pricePerHa: Prisma.FieldRef<"ServiceSubcategory", 'Decimal'>
+  readonly minPrice: Prisma.FieldRef<"ServiceSubcategory", 'Decimal'>
+  readonly currency: Prisma.FieldRef<"ServiceSubcategory", 'String'>
   readonly createdAt: Prisma.FieldRef<"ServiceSubcategory", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"ServiceSubcategory", 'DateTime'>
 }

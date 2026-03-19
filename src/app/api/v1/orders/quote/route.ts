@@ -5,15 +5,18 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/requireAuth";
 
 const schema = z.object({
-  serviceCategoryId: z.string().min(1),
-  serviceSubCategoryId: z.string().min(1),
-  serviceTypeId: z.string().min(1).optional(),
-  areaHa: z.number().positive(),
+  serviceCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
+  serviceSubCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
+  serviceTypeId: z.preprocess(
+    (v) => (typeof v === "string" ? (v.trim() === "" ? null : v.trim()) : v),
+    z.string().min(1).nullable().optional()
+  ),
+  areaHa: z.coerce.number().positive(),
   location: z
     .object({
-      lat: z.number().min(-90).max(90),
-      lng: z.number().min(-180).max(180),
-      regionName: z.string().min(1).optional(),
+      lat: z.coerce.number().min(-90).max(90),
+      lng: z.coerce.number().min(-180).max(180),
+      regionName: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)).optional(),
     })
     .optional(),
   dateFrom: z.string().datetime().optional(),
@@ -32,9 +35,48 @@ export async function POST(req: Request) {
     }
 
     const body = schema.parse(rawBody);
-    if (!body.serviceTypeId) throw new ApiError(400, "VALIDATION_ERROR", "serviceTypeId is required for quote");
 
-    const type = await prisma.serviceType.findUnique({ where: { id: body.serviceTypeId } });
+    const [category, subcategory] = await prisma.$transaction([
+      prisma.serviceCategory.findUnique({ where: { id: body.serviceCategoryId }, select: { id: true } }),
+      prisma.serviceSubcategory.findUnique({
+        where: { id: body.serviceSubCategoryId },
+        select: { id: true, categoryId: true, pricePerHa: true, minPrice: true, currency: true, _count: { select: { types: true } } },
+      }),
+    ]);
+    if (!category) throw new ApiError(404, "NOT_FOUND", "Service category not found");
+    if (!subcategory || subcategory.categoryId !== body.serviceCategoryId) {
+      throw new ApiError(404, "NOT_FOUND", "Service subcategory not found");
+    }
+
+    const hasTypes = (subcategory._count.types ?? 0) > 0;
+    const currency = subcategory.currency ?? "UAH";
+
+    if (body.serviceTypeId == null) {
+      if (hasTypes) {
+        throw new ApiError(400, "VALIDATION_ERROR", "serviceTypeId is required for this subcategory", {
+          fieldErrors: { serviceTypeId: ["Required for this subcategory"] },
+        });
+      }
+
+      const pricePerHa = Number(subcategory.pricePerHa ?? 0);
+      if (pricePerHa <= 0) throw new ApiError(503, "INTERNAL_ERROR", "Pricing not configured");
+
+      const amount = Math.max(pricePerHa * body.areaHa, Number(subcategory.minPrice ?? 0));
+      const validUntil = new Date(Date.now() + 60 * 60 * 1000);
+
+      return ok(req, {
+        quote: {
+          amount,
+          currency,
+          breakdown: [{ label: "Base", amount }],
+          validUntil: validUntil.toISOString(),
+        },
+      });
+    }
+
+    const type = await prisma.serviceType.findUnique({
+      where: { subcategoryId_id: { subcategoryId: body.serviceSubCategoryId, id: body.serviceTypeId } },
+    });
     if (!type) throw new ApiError(404, "NOT_FOUND", "Service type not found");
 
     const pricePerHa = Number(type.pricePerHa ?? 0);

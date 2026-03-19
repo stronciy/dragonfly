@@ -18,7 +18,8 @@ export function startMatchNewExecutorWorker() {
         select: { coverageMode: true, radiusKm: true },
       });
 
-      if (!settings || settings.coverageMode !== "radius" || !settings.radiusKm) return;
+      if (!settings) return;
+      if (settings.coverageMode === "radius" && !settings.radiusKm) return;
 
       const matches = (await prisma.$queryRaw<Array<{ order_id: string; distance_km: number }>>`
         SELECT
@@ -38,7 +39,16 @@ export function startMatchNewExecutorWorker() {
             OR o.service_type_id IS NULL
             OR psvc.service_type_id = o.service_type_id
           )
-          AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+          AND (
+            ps.coverage_mode = 'country'
+            OR (
+              ps.coverage_mode = 'radius'
+              AND ps.radius_km IS NOT NULL
+              AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+            )
+          )
+        ORDER BY distance_km ASC
+        LIMIT 500
       `) as Array<{ order_id: string; distance_km: number }>;
 
       if (matches.length === 0) return;

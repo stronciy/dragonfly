@@ -32,8 +32,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const depositDeadline = new Date(acceptedAt.getTime() + 12 * 60 * 60 * 1000);
 
     await prisma.$transaction(async (tx) => {
-      await tx.order.update({
-        where: { id: order.id },
+      const match = await tx.orderMatch.findUnique({
+        where: { uniq_performer_order_match: { performerUserId: user.id, orderId: order.id } },
+        select: { id: true },
+      });
+      if (!match) throw new ApiError(403, "FORBIDDEN", "Order is not available for this performer");
+
+      const updated = await tx.order.updateMany({
+        where: { id: order.id, status: "published", performerUserId: null },
         data: {
           performerUserId: user.id,
           status: "accepted",
@@ -41,7 +47,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
           depositDeadline,
         },
       });
-      await tx.orderStatusEvent.create({ data: { orderId: order.id, fromStatus: order.status, toStatus: "accepted", note: null } });
+      if (updated.count !== 1) throw new ApiError(409, "CONFLICT", "Order already accepted");
+
+      await tx.orderStatusEvent.create({ data: { orderId: order.id, fromStatus: "published", toStatus: "accepted", note: null } });
       await tx.orderMatch.deleteMany({ where: { orderId: order.id } });
     });
 

@@ -7,20 +7,23 @@ import { enqueueMatchNewOrder } from "@/queues/jobs";
 import { makePage, parsePagination } from "@/lib/pagination";
 
 const postSchema = z.object({
-  serviceCategoryId: z.string().min(1),
-  serviceSubCategoryId: z.string().min(1),
-  serviceTypeId: z.string().min(1).nullable().optional(),
-  areaHa: z.number().positive(),
+  serviceCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
+  serviceSubCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
+  serviceTypeId: z.preprocess(
+    (v) => (typeof v === "string" ? (v.trim() === "" ? null : v.trim()) : v),
+    z.string().min(1).nullable().optional()
+  ),
+  areaHa: z.coerce.number().positive(),
   dateFrom: z.string().datetime().nullable().optional(),
   dateTo: z.string().datetime().nullable().optional(),
   location: z.object({
-    lat: z.number().min(-90).max(90),
-    lng: z.number().min(-180).max(180),
-    addressLabel: z.string().min(1),
-    regionName: z.string().min(1).optional(),
+    lat: z.coerce.number().min(-90).max(90),
+    lng: z.coerce.number().min(-180).max(180),
+    addressLabel: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
+    regionName: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)).optional(),
   }),
-  comment: z.string().max(5000).optional(),
-  budget: z.number().positive(),
+  comment: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().max(5000)).optional(),
+  budget: z.coerce.number().positive(),
   status: z.enum(["draft", "published"]).optional(),
 });
 
@@ -126,6 +129,47 @@ export async function POST(req: Request) {
 
     const body = postSchema.parse(await req.json());
     const status = body.status ?? "published";
+
+    const { categoryOk, subcategoryOk, subcategoryHasTypes, serviceTypeOk } = await prisma.$transaction(async (tx) => {
+      const [category, subcategory] = await Promise.all([
+        tx.serviceCategory.findUnique({ where: { id: body.serviceCategoryId }, select: { id: true } }),
+        tx.serviceSubcategory.findUnique({
+          where: { id: body.serviceSubCategoryId },
+          select: { id: true, categoryId: true, _count: { select: { types: true } } },
+        }),
+      ]);
+
+      const categoryOk = Boolean(category);
+      const subcategoryOk = Boolean(subcategory) && subcategory?.categoryId === body.serviceCategoryId;
+      const subcategoryHasTypes = Boolean(subcategory) && (subcategory?._count.types ?? 0) > 0;
+
+      if (!categoryOk || !subcategoryOk) {
+        return { categoryOk, subcategoryOk, subcategoryHasTypes, serviceTypeOk: false };
+      }
+
+      if (body.serviceTypeId == null) {
+        return { categoryOk, subcategoryOk, subcategoryHasTypes, serviceTypeOk: !subcategoryHasTypes };
+      }
+
+      const type = await tx.serviceType.findUnique({
+        where: { subcategoryId_id: { subcategoryId: body.serviceSubCategoryId, id: body.serviceTypeId } },
+        select: { id: true },
+      });
+
+      return { categoryOk, subcategoryOk, subcategoryHasTypes, serviceTypeOk: Boolean(type) };
+    });
+
+    if (!categoryOk) throw new ApiError(404, "NOT_FOUND", "Service category not found");
+    if (!subcategoryOk) throw new ApiError(404, "NOT_FOUND", "Service subcategory not found");
+
+    if (body.serviceTypeId == null && subcategoryHasTypes) {
+      throw new ApiError(400, "VALIDATION_ERROR", "serviceTypeId is required for this subcategory", {
+        fieldErrors: { serviceTypeId: ["Required for this subcategory"] },
+      });
+    }
+    if (body.serviceTypeId != null && !serviceTypeOk) {
+      throw new ApiError(404, "NOT_FOUND", "Service type not found");
+    }
 
     const order = await prisma.$transaction(async (tx) => {
       const created = await tx.order.create({

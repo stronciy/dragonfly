@@ -48,7 +48,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.JsonNullValueFilter = exports.NullsOrder = exports.QueryMode = exports.NullableJsonNullValueInput = exports.SortOrder = exports.ReserveTransactionScalarFieldEnum = exports.PayoutScalarFieldEnum = exports.AgreementDocumentScalarFieldEnum = exports.AgreementScalarFieldEnum = exports.OrderReportMediaScalarFieldEnum = exports.DeviceScalarFieldEnum = exports.NotificationScalarFieldEnum = exports.ArbitrationMediaScalarFieldEnum = exports.ArbitrationCaseScalarFieldEnum = exports.OrderMatchScalarFieldEnum = exports.OrderStatusEventScalarFieldEnum = exports.PaymentScalarFieldEnum = exports.EscrowLockScalarFieldEnum = exports.OrderScalarFieldEnum = exports.FieldScalarFieldEnum = exports.PerformerServiceScalarFieldEnum = exports.PerformerSettingsScalarFieldEnum = exports.PerformerProfileScalarFieldEnum = exports.CustomerProfileScalarFieldEnum = exports.RefreshTokenScalarFieldEnum = exports.UserScalarFieldEnum = exports.TransactionIsolationLevel = exports.ModelName = exports.AnyNull = exports.JsonNull = exports.DbNull = exports.NullTypes = exports.Decimal = void 0;
+exports.JsonNullValueFilter = exports.NullsOrder = exports.QueryMode = exports.NullableJsonNullValueInput = exports.SortOrder = exports.ReserveTransactionScalarFieldEnum = exports.PayoutScalarFieldEnum = exports.AgreementDocumentScalarFieldEnum = exports.AgreementScalarFieldEnum = exports.OrderReportMediaScalarFieldEnum = exports.DeviceScalarFieldEnum = exports.NotificationScalarFieldEnum = exports.ArbitrationMediaScalarFieldEnum = exports.ArbitrationCaseScalarFieldEnum = exports.OrderMatchScalarFieldEnum = exports.OrderStatusEventScalarFieldEnum = exports.PaymentScalarFieldEnum = exports.EscrowLockScalarFieldEnum = exports.OrderScalarFieldEnum = exports.FieldScalarFieldEnum = exports.PerformerServiceScalarFieldEnum = exports.PerformerSettingsScalarFieldEnum = exports.PerformerProfileScalarFieldEnum = exports.CustomerCropStatScalarFieldEnum = exports.TwoFactorSetupScalarFieldEnum = exports.ReviewScalarFieldEnum = exports.CustomerProfileScalarFieldEnum = exports.RefreshTokenScalarFieldEnum = exports.UserScalarFieldEnum = exports.CropScalarFieldEnum = exports.ServiceTypeScalarFieldEnum = exports.ServiceSubcategoryScalarFieldEnum = exports.ServiceCategoryScalarFieldEnum = exports.TransactionIsolationLevel = exports.ModelName = exports.AnyNull = exports.JsonNull = exports.DbNull = exports.NullTypes = exports.Decimal = void 0;
 const runtime = __importStar(require("@prisma/client/runtime/index-browser"));
 exports.Decimal = runtime.Decimal;
 exports.NullTypes = {
@@ -75,9 +75,16 @@ exports.JsonNull = runtime.JsonNull;
  */
 exports.AnyNull = runtime.AnyNull;
 exports.ModelName = {
+    ServiceCategory: 'ServiceCategory',
+    ServiceSubcategory: 'ServiceSubcategory',
+    ServiceType: 'ServiceType',
+    Crop: 'Crop',
     User: 'User',
     RefreshToken: 'RefreshToken',
     CustomerProfile: 'CustomerProfile',
+    Review: 'Review',
+    TwoFactorSetup: 'TwoFactorSetup',
+    CustomerCropStat: 'CustomerCropStat',
     PerformerProfile: 'PerformerProfile',
     PerformerSettings: 'PerformerSettings',
     PerformerService: 'PerformerService',
@@ -106,6 +113,43 @@ exports.TransactionIsolationLevel = runtime.makeStrictEnum({
     RepeatableRead: 'RepeatableRead',
     Serializable: 'Serializable'
 });
+exports.ServiceCategoryScalarFieldEnum = {
+    id: 'id',
+    name: 'name',
+    sort: 'sort',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+exports.ServiceSubcategoryScalarFieldEnum = {
+    id: 'id',
+    categoryId: 'categoryId',
+    name: 'name',
+    sort: 'sort',
+    pricePerHa: 'pricePerHa',
+    minPrice: 'minPrice',
+    currency: 'currency',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+exports.ServiceTypeScalarFieldEnum = {
+    id: 'id',
+    subcategoryId: 'subcategoryId',
+    name: 'name',
+    sort: 'sort',
+    pricePerHa: 'pricePerHa',
+    minPrice: 'minPrice',
+    currency: 'currency',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+exports.CropScalarFieldEnum = {
+    id: 'id',
+    name: 'name',
+    iconKey: 'iconKey',
+    sort: 'sort',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
 exports.UserScalarFieldEnum = {
     id: 'id',
     role: 'role',
@@ -113,6 +157,9 @@ exports.UserScalarFieldEnum = {
     email: 'email',
     phone: 'phone',
     passwordHash: 'passwordHash',
+    biometricsEnabled: 'biometricsEnabled',
+    twoFactorSecret: 'twoFactorSecret',
+    twoFactorEnabledAt: 'twoFactorEnabledAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
 };
@@ -130,6 +177,37 @@ exports.CustomerProfileScalarFieldEnum = {
     companyName: 'companyName',
     companyEdrpou: 'companyEdrpou',
     billingEmail: 'billingEmail',
+    iban: 'iban',
+    taxSystem: 'taxSystem',
+    vatPayer: 'vatPayer',
+    legalAddress: 'legalAddress',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+exports.ReviewScalarFieldEnum = {
+    id: 'id',
+    orderId: 'orderId',
+    performerUserId: 'performerUserId',
+    authorUserId: 'authorUserId',
+    rating: 'rating',
+    text: 'text',
+    createdAt: 'createdAt'
+};
+exports.TwoFactorSetupScalarFieldEnum = {
+    id: 'id',
+    userId: 'userId',
+    secret: 'secret',
+    createdAt: 'createdAt',
+    expiresAt: 'expiresAt',
+    consumedAt: 'consumedAt'
+};
+exports.CustomerCropStatScalarFieldEnum = {
+    id: 'id',
+    customerUserId: 'customerUserId',
+    season: 'season',
+    cropId: 'cropId',
+    areaHa: 'areaHa',
+    yieldT: 'yieldT',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
 };

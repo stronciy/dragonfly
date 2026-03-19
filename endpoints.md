@@ -193,10 +193,16 @@
 - Fields:
   - `serviceCategoryId` (string, required) — ID категории услуги (trim, не пустая строка)
   - `serviceSubCategoryId` (string, required) — ID подкатегории услуги (trim, не пустая строка)
-  - `serviceTypeId` (string | null, optional/required by подкатегории):
-    - string — если у подкатегории есть типы и выбран конкретный тип
-    - null — допустимо только для подкатегорий без типов
+  - `serviceTypeId` (string | null, required) — ID типа услуги в рамках `serviceSubCategoryId` или `null` для подкатегорий без типов
   - `areaHa` (number, required) — площадь в гектарах (> 0, разумный верхний лимит, например ≤ 20000)
+- Notes:
+  - Если получаете `404 Service type not found`, проверьте доступные значения через `GET /api/v1/catalog/services`
+  - Если подкатегория не имеет типов (в каталоге `types: []`), отправляйте `serviceTypeId: null`
+  - Для тестов в dev засеяны типы (serviceCategoryId/serviceSubCategoryId/serviceTypeId):
+    - `plowing/deep/standard`, `plowing/deep/reinforced`, `plowing/shallow/light`
+    - `cultivation/pre_sowing/shallow`, `cultivation/pre_sowing/deep`
+    - `sowing/grains/wheat`, `sowing/grains/barley`, `sowing/grains/corn`, `sowing/technical/sunflower`, `sowing/technical/rapeseed`
+    - `harvesting/combine/grains`, `harvesting/combine/corn`
 - Returns: `200 { quote }`
 - Response:
 ```json
@@ -205,10 +211,10 @@
   "code": "SUCCESS",
   "data": {
     "quote": {
+      "amount": 48000,
       "currency": "UAH",
-      "budgetUah": 48000,
-      "rateUahPerHa": 400,
-      "areaHa": 120.5
+      "breakdown": [{ "label": "Base", "amount": 48000 }],
+      "validUntil": "2026-03-19T10:30:00Z"
     }
   },
   "message": "Quote calculated",
@@ -216,21 +222,11 @@
   "requestId": "req_123abc"
 }
 ```
-- Optional response fields:
-```json
-{
-  "breakdown": {
-    "base": 45000,
-    "distanceSurcharge": 0,
-    "urgencySurcharge": 3000,
-    "discount": 0
-  }
-}
-```
 - Errors:
   - `400 VALIDATION_ERROR` — некорректный формат, `areaHa <= 0`, отсутствуют поля, тип обязателен, но не передан и т.п.
   - `404 NOT_FOUND` — `serviceTypeId` указан, но не существует → `Service type not found`
   - `401 UNAUTHORIZED` — нет/невалидный токен
+  - `503 INTERNAL_ERROR` — цена не настроена (`Pricing not configured`)
   - `500 INTERNAL_ERROR` — необработанная ошибка расчёта
 
 ### POST `/api/v1/orders`
@@ -251,9 +247,12 @@
   "status": "draft"
 }
 ```
+- Dates:
+  - `dateFrom`, `dateTo` должны быть `null` или ISO 8601 datetime строкой с таймзоной
+  - Examples: `"2026-03-19T10:30:00Z"`, `"2026-03-19T12:30:00+02:00"`
 - Returns: `201 { order }`
 - Side effects:
-  - при `status=published` enqueue `match-new-order`
+  - при `status=published` enqueue `match-new-order` (асинхронный поиск подходящих исполнителей + push-уведомления)
 
 ### GET `/api/v1/orders/:orderId`
 - Auth: Bearer
@@ -327,6 +326,9 @@
 ### GET `/api/v1/marketplace/orders`
 - Auth: Bearer
 - Role: `performer`
+- Notes:
+  - Список формируется на основе таблицы `order_matches` (создаётся асинхронно воркерами `match-new-order` и `match-new-executor`)
+  - Заказ не попадёт в список, если не выполнены критерии матчинга (география и специализация)
 - Query:
   - `limit`, `offset`
   - `serviceCategoryId`, `serviceSubCategoryId` (optional)
@@ -349,6 +351,7 @@
 ```
 - Preconditions:
   - order `published`
+  - существует запись в `order_matches` для данного performer (заказ доступен этому исполнителю)
   - payment `succeeded`
   - escrow lock `performer` существует и `locked`
 - Returns: `200 { order, agreementId }`
