@@ -14,6 +14,7 @@ function startMatchNewOrderWorker() {
             where: { id: orderId },
             select: {
                 id: true,
+                customerUserId: true,
                 status: true,
                 areaHa: true,
                 dateFrom: true,
@@ -48,12 +49,16 @@ function startMatchNewOrderWorker() {
           ps.performer_user_id,
           (ST_Distance(ps.base_geo, o.location_geo) / 1000.0) AS distance_km
         FROM performer_settings ps
+        JOIN users u
+          ON u.id = ps.performer_user_id
         JOIN performer_services psvc
           ON psvc.performer_user_id = ps.performer_user_id
         JOIN orders o
           ON o.id = ${orderId}
         WHERE
           o.status = 'published'
+          AND u.role = 'performer'
+          AND ps.performer_user_id <> o.customer_user_id
           AND psvc.service_category_id = o.service_category_id
           AND psvc.service_subcategory_id = o.service_subcategory_id
           AND (

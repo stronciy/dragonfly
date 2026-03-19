@@ -12,15 +12,21 @@ function getRequestId(req) {
 function ok(req, data, init) {
     var _a, _b;
     const requestId = getRequestId(req);
+    const status = (_a = init === null || init === void 0 ? void 0 : init.status) !== null && _a !== void 0 ? _a : 200;
+    const headers = new Headers(init === null || init === void 0 ? void 0 : init.headers);
+    headers.set("x-request-id", requestId);
+    if (status === 204 || status === 205) {
+        return new server_1.NextResponse(null, { status, headers });
+    }
     const body = {
         success: true,
         code: "SUCCESS",
         data,
-        message: (_a = init === null || init === void 0 ? void 0 : init.message) !== null && _a !== void 0 ? _a : "OK",
+        message: (_b = init === null || init === void 0 ? void 0 : init.message) !== null && _b !== void 0 ? _b : "OK",
         timestamp: new Date().toISOString(),
         requestId,
     };
-    return server_1.NextResponse.json(body, { status: (_b = init === null || init === void 0 ? void 0 : init.status) !== null && _b !== void 0 ? _b : 200, headers: init === null || init === void 0 ? void 0 : init.headers });
+    return server_1.NextResponse.json(body, { status, headers });
 }
 function fail(req, err) {
     const requestId = getRequestId(req);

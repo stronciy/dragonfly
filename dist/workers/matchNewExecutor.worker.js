@@ -9,6 +9,9 @@ function startMatchNewExecutorWorker() {
     const expo = new expoPush_service_1.ExpoPushService(prisma_1.prisma);
     return new bullmq_1.Worker("match-new-executor", async (job) => {
         const { performerUserId } = job.data;
+        const performerUser = await prisma_1.prisma.user.findUnique({ where: { id: performerUserId }, select: { role: true } });
+        if (!performerUser || performerUser.role !== "performer")
+            return;
         const settings = await prisma_1.prisma.performerSettings.findUnique({
             where: { performerUserId },
             select: { coverageMode: true, radiusKm: true },
@@ -28,6 +31,7 @@ function startMatchNewExecutorWorker() {
           ON psvc.performer_user_id = ps.performer_user_id
         WHERE
           o.status = 'published'
+          AND o.customer_user_id <> ps.performer_user_id
           AND psvc.service_category_id = o.service_category_id
           AND psvc.service_subcategory_id = o.service_subcategory_id
           AND (

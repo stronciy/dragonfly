@@ -13,6 +13,9 @@ export function startMatchNewExecutorWorker() {
     async (job) => {
       const { performerUserId } = job.data;
 
+      const performerUser = await prisma.user.findUnique({ where: { id: performerUserId }, select: { role: true } });
+      if (!performerUser || performerUser.role !== "performer") return;
+
       const settings = await prisma.performerSettings.findUnique({
         where: { performerUserId },
         select: { coverageMode: true, radiusKm: true },
@@ -32,6 +35,7 @@ export function startMatchNewExecutorWorker() {
           ON psvc.performer_user_id = ps.performer_user_id
         WHERE
           o.status = 'published'
+          AND o.customer_user_id <> ps.performer_user_id
           AND psvc.service_category_id = o.service_category_id
           AND psvc.service_subcategory_id = o.service_subcategory_id
           AND (

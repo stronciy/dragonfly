@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ok, fail } from "@/lib/apiResponse";
+import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { ApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/requireAuth";
@@ -127,8 +127,24 @@ export async function POST(req: Request) {
     const user = await requireUser(req);
     if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
 
-    const body = postSchema.parse(await req.json());
+    const requestId = getRequestId(req);
+    const rawBody = await req.json().catch(() => ({}));
+    const body = postSchema.parse(rawBody);
     const status = body.status ?? "published";
+
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[api] POST /api/v1/orders requestId=${requestId} userId=${user.id} payload`, {
+        serviceCategoryId: body.serviceCategoryId,
+        serviceSubCategoryId: body.serviceSubCategoryId,
+        serviceTypeId: body.serviceTypeId ?? null,
+        areaHa: body.areaHa,
+        dateFrom: body.dateFrom ?? null,
+        dateTo: body.dateTo ?? null,
+        location: { lat: body.location.lat, lng: body.location.lng },
+        budget: body.budget,
+        status,
+      });
+    }
 
     const { categoryOk, subcategoryOk, subcategoryHasTypes, serviceTypeOk } = await prisma.$transaction(async (tx) => {
       const [category, subcategory] = await Promise.all([
@@ -158,6 +174,15 @@ export async function POST(req: Request) {
 
       return { categoryOk, subcategoryOk, subcategoryHasTypes, serviceTypeOk: Boolean(type) };
     });
+
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[api] POST /api/v1/orders catalog_check requestId=${requestId}`, {
+        categoryOk,
+        subcategoryOk,
+        subcategoryHasTypes,
+        serviceTypeOk,
+      });
+    }
 
     if (!categoryOk) throw new ApiError(404, "NOT_FOUND", "Service category not found");
     if (!subcategoryOk) throw new ApiError(404, "NOT_FOUND", "Service subcategory not found");
@@ -199,8 +224,80 @@ export async function POST(req: Request) {
       return created;
     });
 
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[api] POST /api/v1/orders created requestId=${requestId} userId=${user.id}`, order);
+    }
+
     if (order.status === "published") {
+      if (process.env.NODE_ENV !== "production") {
+        const eligibleCountRows = await prisma.$queryRaw<Array<{ count: bigint }>>`
+          SELECT COUNT(DISTINCT ps.performer_user_id)::bigint AS count
+          FROM performer_services srv
+          JOIN performer_settings ps ON ps.performer_user_id = srv.performer_user_id
+          JOIN users u ON u.id = ps.performer_user_id
+          JOIN orders o ON o.id = ${order.id}
+          WHERE srv.service_category_id = o.service_category_id
+            AND srv.service_subcategory_id = o.service_subcategory_id
+            AND u.role = 'performer'
+            AND ps.performer_user_id <> o.customer_user_id
+            AND (srv.service_type_id IS NULL OR o.service_type_id IS NULL OR srv.service_type_id = o.service_type_id)
+            AND (
+              ps.coverage_mode = 'country'
+              OR (
+                ps.coverage_mode = 'radius'
+                AND ps.radius_km IS NOT NULL
+                AND ps.base_geo IS NOT NULL
+                AND o.location_geo IS NOT NULL
+                AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+              )
+            )
+        `;
+
+        const topRows = await prisma.$queryRaw<
+          Array<{ performerUserId: string; coverageMode: string; radiusKm: number | null; distanceKm: number | null }>
+        >`
+          SELECT
+            srv.performer_user_id AS "performerUserId",
+            ps.coverage_mode AS "coverageMode",
+            ps.radius_km AS "radiusKm",
+            CASE
+              WHEN ps.base_geo IS NOT NULL AND o.location_geo IS NOT NULL THEN (ST_Distance(ps.base_geo, o.location_geo) / 1000.0)
+              ELSE NULL
+            END AS "distanceKm"
+          FROM performer_services srv
+          JOIN performer_settings ps ON ps.performer_user_id = srv.performer_user_id
+          JOIN users u ON u.id = ps.performer_user_id
+          JOIN orders o ON o.id = ${order.id}
+          WHERE srv.service_category_id = o.service_category_id
+            AND srv.service_subcategory_id = o.service_subcategory_id
+            AND u.role = 'performer'
+            AND ps.performer_user_id <> o.customer_user_id
+            AND (srv.service_type_id IS NULL OR o.service_type_id IS NULL OR srv.service_type_id = o.service_type_id)
+            AND (
+              ps.coverage_mode = 'country'
+              OR (
+                ps.coverage_mode = 'radius'
+                AND ps.radius_km IS NOT NULL
+                AND ps.base_geo IS NOT NULL
+                AND o.location_geo IS NOT NULL
+                AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+              )
+            )
+          ORDER BY "distanceKm" ASC NULLS LAST
+          LIMIT 5
+        `;
+
+        const eligibleCount = eligibleCountRows[0]?.count != null ? Number(eligibleCountRows[0].count) : 0;
+        console.info(`[api] POST /api/v1/orders match_preview requestId=${requestId} orderId=${order.id}`, {
+          eligibleCount,
+          top: topRows,
+        });
+      }
+
       await enqueueMatchNewOrder(order.id);
+      if (process.env.NODE_ENV !== "production") {
+        console.info(`[api] POST /api/v1/orders match_enqueued requestId=${requestId} orderId=${order.id}`);
+      }
     }
 
     return ok(req, { order }, { status: 201, message: "Created" });

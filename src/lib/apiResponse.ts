@@ -32,6 +32,14 @@ export function ok<T>(
   init?: { status?: number; message?: string; headers?: HeadersInit }
 ) {
   const requestId = getRequestId(req);
+  const status = init?.status ?? 200;
+  const headers = new Headers(init?.headers);
+  headers.set("x-request-id", requestId);
+
+  if (status === 204 || status === 205) {
+    return new NextResponse(null, { status, headers });
+  }
+
   const body: SuccessBody<T> = {
     success: true,
     code: "SUCCESS",
@@ -40,7 +48,7 @@ export function ok<T>(
     timestamp: new Date().toISOString(),
     requestId,
   };
-  return NextResponse.json(body, { status: init?.status ?? 200, headers: init?.headers });
+  return NextResponse.json(body, { status, headers });
 }
 
 export function fail(req: Request, err: unknown) {

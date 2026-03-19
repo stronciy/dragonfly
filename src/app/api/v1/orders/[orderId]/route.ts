@@ -133,16 +133,38 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ orderId: str
     const user = await requireUser(req);
     if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
     const { orderId } = await ctx.params;
-    const order = await getOrderOr404(orderId);
-    if (order.customerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Order not found");
-    if (!["draft", "published"].includes(order.status)) throw new ApiError(403, "FORBIDDEN", "Order cannot be deleted");
+    let order: Awaited<ReturnType<typeof getOrderOr404>>;
+    try {
+      order = await getOrderOr404(orderId);
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production" && err instanceof ApiError && err.status === 404) {
+        console.info(`[api] DELETE /api/v1/orders/${orderId} not_found userId=${user.id}`);
+      }
+      throw err;
+    }
+
+    if (order.customerUserId !== user.id) {
+      if (process.env.NODE_ENV !== "production") {
+        console.info(
+          `[api] DELETE /api/v1/orders/${orderId} not_owned userId=${user.id} ownerUserId=${order.customerUserId}`
+        );
+      }
+      throw new ApiError(404, "NOT_FOUND", "Order not found");
+    }
+
+    if (!["draft", "published"].includes(order.status)) {
+      if (process.env.NODE_ENV !== "production") {
+        console.info(`[api] DELETE /api/v1/orders/${orderId} bad_status userId=${user.id} status=${order.status}`);
+      }
+      throw new ApiError(403, "FORBIDDEN", "Order cannot be deleted");
+    }
 
     await prisma.$transaction([
       prisma.orderMatch.deleteMany({ where: { orderId } }),
       prisma.order.delete({ where: { id: orderId } }),
     ]);
 
-    return ok(req, {}, { status: 204, message: "Deleted" });
+    return ok(req, { deleted: true, orderId }, { status: 200, message: "Deleted" });
   } catch (err) {
     return fail(req, err);
   }
