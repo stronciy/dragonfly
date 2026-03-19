@@ -215,6 +215,10 @@
   - `group` = `all | active | closed` (optional)
   - `limit`, `offset`
 - Returns: `200 { items[], page }`
+- Notes:
+  - Адрес в ответах всегда дублируется:
+    - `location.addressLabel`/`location.regionName` (для UI)
+    - fallback: `locationLabel`/`regionName` (legacy)
 
 ### POST `/api/v1/orders/quote`
 - Auth: Bearer
@@ -342,6 +346,10 @@
 { "method": "card" }
 ```
 - Returns: `200 { paymentIntent, order }`
+- Notes:
+  - `paymentIntent.orderId` — это `order_id` для LiqPay (нужно использовать его в провайдере)
+  - `server_url` в LiqPay data указывает на `/api/v1/payments/liqpay/webhook`
+  - `result_url` по умолчанию `/<home>` (можно переопределить на стороне клиента, если нужен deeplink)
 
 ### POST `/api/v1/marketplace/orders/:orderId/deposits/performer-intent`
 - Auth: Bearer
@@ -351,18 +359,40 @@
 { "method": "card" }
 ```
 - Returns: `200 { paymentIntent }`
+- Notes:
+  - `paymentIntent.orderId` — это `order_id` для LiqPay
+  - `server_url` в LiqPay data указывает на `/api/v1/payments/liqpay/webhook`
+  - `result_url` по умолчанию `/<home>`
 
 ### POST `/api/v1/payments/:paymentIntentId/confirm`
 - Auth: Bearer (владелец payment)
 - Body:
 ```json
-{ "providerPayload": {} }
+{
+  "providerPayload": {
+    "provider": "liqpay",
+    "data": "base64(...)",
+    "signature": "base64(...)"
+  }
+}
 ```
 - Returns: `200 { payment, order? }`
 - Side effects:
-  - синхронизирует статус PaymentIntent со Stripe
+  - валидирует подпись LiqPay
+  - обновляет Payment по `liqpay.status`
   - создаёт/обновляет `escrow_locks`
   - при наличии escrow у обеих сторон переводит заказ в `confirmed` и чистит `order_matches`
+
+### POST `/api/v1/payments/liqpay/webhook`
+- Auth: public (server-to-server)
+- Content-Type: `application/x-www-form-urlencoded` (LiqPay стандарт) или JSON
+- Body (form):
+  - `data` (string, base64 JSON)
+  - `signature` (string, base64)
+- Returns: `200 { received: true }`
+- Notes:
+  - endpoint проверяет подпись и обновляет `payments`/`escrow_locks` аналогично confirm
+  - `order_id` внутри LiqPay должен быть равен `providerIntentId` из `paymentIntent` ответа intent
 
 ## Marketplace (performer)
 
@@ -386,7 +416,7 @@
   - `areaHa`, `price`, `budget`, `currency`
   - `distanceKm`
   - `dateFrom`, `dateTo`
-  - `location: { lat, lng }`
+  - `location: { lat, lng, locationLabel, addressLabel, regionName }`
   - `status`, `createdAt`
 
 ### GET `/api/v1/marketplace/orders/:orderId`

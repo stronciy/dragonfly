@@ -52,7 +52,8 @@ export type EscrowRole = (typeof EscrowRole)[keyof typeof EscrowRole]
 
 
 export const PaymentProvider = {
-  stripe: 'stripe'
+  stripe: 'stripe',
+  liqpay: 'liqpay'
 } as const
 
 export type PaymentProvider = (typeof PaymentProvider)[keyof typeof PaymentProvider]

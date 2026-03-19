@@ -94,7 +94,13 @@ export async function GET(req: Request) {
         locationLabel: m.order.locationLabel,
         addressLabel: m.order.locationLabel,
         regionName: m.order.regionName,
-        location: { lat: Number(m.order.lat), lng: Number(m.order.lng) },
+        location: {
+          lat: Number(m.order.lat),
+          lng: Number(m.order.lng),
+          locationLabel: m.order.locationLabel,
+          addressLabel: m.order.locationLabel,
+          regionName: m.order.regionName,
+        },
         status: m.order.status,
         createdAt: m.order.createdAt,
       }));

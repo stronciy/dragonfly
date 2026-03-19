@@ -3,12 +3,19 @@ import { ok, fail } from "@/lib/apiResponse";
 import { ApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/requireAuth";
-import { getStripe } from "@/services/stripe.service";
 import type { InputJsonValue } from "@/generated/prisma/internal/prismaNamespace";
+import { createLiqPayCheckout } from "@/services/liqpay.service";
 
 const schema = z.object({
   method: z.enum(["card", "apple-pay", "google-pay", "bank-transfer"]),
 });
+
+function getRequestOrigin(req: Request) {
+  const url = new URL(req.url);
+  const proto = req.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "");
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? url.host;
+  return `${proto}://${host}`;
+}
 
 export async function POST(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
@@ -22,26 +29,29 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (order.status !== "accepted") throw new ApiError(409, "CONFLICT", "Customer deposit is not available for this status");
 
     const amount = Number(order.budget) * 0.1;
-    const amountMinor = Math.max(1, Math.round(amount * 100));
 
-    const stripe = getStripe();
-    const pi = await stripe.paymentIntents.create({
-      amount: amountMinor,
-      currency: order.currency.toLowerCase(),
-      metadata: { orderId: order.id, role: "customer", method: body.method, userId: user.id },
-      automatic_payment_methods: { enabled: true },
+    const providerIntentId = `liqpay_${crypto.randomUUID()}`;
+    const origin = getRequestOrigin(req);
+    const checkout = createLiqPayCheckout({
+      orderId: providerIntentId,
+      amount,
+      currency: order.currency,
+      description: `Customer deposit for order ${order.id}`,
+      method: body.method,
+      serverUrl: `${origin}/api/v1/payments/liqpay/webhook`,
+      resultUrl: `${origin}/`,
     });
 
     const payment = await prisma.payment.create({
       data: {
         orderId: order.id,
         userId: user.id,
-        provider: "stripe",
-        providerIntentId: pi.id,
+        provider: "liqpay",
+        providerIntentId,
         status: "requires_action",
         amount,
         currency: order.currency,
-        raw: pi as unknown as InputJsonValue,
+        raw: { method: body.method, liqpay: checkout } as unknown as InputJsonValue,
       },
       select: { id: true, amount: true, currency: true },
     });
@@ -49,7 +59,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     return ok(
       req,
       {
-        paymentIntent: { id: payment.id, amount: Number(payment.amount), currency: payment.currency, provider: "stripe", clientSecret: pi.client_secret },
+        paymentIntent: {
+          id: payment.id,
+          provider: "liqpay",
+          checkoutUrl: checkout.checkoutUrl,
+          data: checkout.data,
+          signature: checkout.signature,
+          orderId: providerIntentId,
+          amount: Number(payment.amount),
+          currency: payment.currency,
+          availableMethods: ["card", "apple-pay", "google-pay", "bank-transfer"],
+        },
         order: { id: order.id, status: order.status },
       },
       { message: "Created" }

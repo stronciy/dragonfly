@@ -37,7 +37,8 @@ exports.EscrowRole = {
     performer: 'performer'
 };
 exports.PaymentProvider = {
-    stripe: 'stripe'
+    stripe: 'stripe',
+    liqpay: 'liqpay'
 };
 exports.PaymentStatus = {
     requires_action: 'requires_action',

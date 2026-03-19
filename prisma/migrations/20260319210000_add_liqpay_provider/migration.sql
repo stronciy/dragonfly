@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "PaymentProvider" ADD VALUE IF NOT EXISTS 'liqpay';
