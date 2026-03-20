@@ -13,7 +13,10 @@
     "test": "npm run test:unit",
     "test:unit": "tsc -p tsconfig.test.json && node --test dist-tests/tests/**/*.test.js",
     "worker": "node dist/workers/run.js",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "db:deploy": "prisma migrate deploy --config prisma.config.ts",
+    "db:reset": "prisma migrate reset --force --config prisma.config.ts",
+    "db:status": "prisma migrate status --config prisma.config.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.5.0",
