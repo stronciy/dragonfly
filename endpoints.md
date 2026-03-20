@@ -799,5 +799,3 @@
 ### DELETE `/api/v1/devices/push-tokens/:deviceId`
 - Auth: Bearer
 - Returns: `204 {}`
-
-additional description
