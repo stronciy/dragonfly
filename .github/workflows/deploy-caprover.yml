@@ -82,6 +82,8 @@ jobs:
               "COPY --from=build /app/package.json ./package.json",
               "COPY --from=build /app/next.config.ts ./next.config.ts",
               "COPY --from=build /app/server.js ./server.js",
+              "COPY prisma ./prisma",
+              "COPY prisma.config.ts ./prisma.config.ts",
               "COPY --from=build /app/public ./public",
               "COPY --from=build /app/.next ./.next",
               "CMD [\"node\",\"server.js\"]",
@@ -98,7 +100,7 @@ jobs:
           if [ -f next-env.d.ts ]; then EXTRA_FILES+=(next-env.d.ts); fi
           if [ -f middleware.ts ]; then EXTRA_FILES+=(middleware.ts); fi
           tar --exclude='./.git' --exclude='./deploy.tar' -cf deploy.tar \
-            captain-definition package.json package-lock.json next.config.ts server.js \
+            captain-definition package.json package-lock.json prisma.config.ts next.config.ts server.js \
             src prisma public tsconfig.json tsconfig.worker.json tsconfig.test.json \
             "${EXTRA_FILES[@]}"
 
@@ -137,6 +139,7 @@ jobs:
               "COPY --from=build /app/node_modules ./node_modules",
               "COPY --from=build /app/package.json ./package.json",
               "COPY prisma ./prisma",
+              "COPY prisma.config.ts ./prisma.config.ts",
               "COPY --from=build /app/dist ./dist",
               "CMD [\"sh\",\"-lc\",\"./node_modules/.bin/prisma migrate deploy --schema prisma/schema.prisma && npm run worker\"]",
               ""
@@ -151,7 +154,7 @@ jobs:
           EXTRA_FILES=()
           if [ -f next-env.d.ts ]; then EXTRA_FILES+=(next-env.d.ts); fi
           tar --exclude='./.git' --exclude='./deploy.tar' -cf deploy.tar \
-            captain-definition package.json package-lock.json prisma src tsconfig.json tsconfig.worker.json \
+            captain-definition package.json package-lock.json prisma.config.ts prisma src tsconfig.json tsconfig.worker.json \
             "${EXTRA_FILES[@]}"
 
       - name: Deploy workerdragonfly
