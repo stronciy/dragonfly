@@ -8,12 +8,22 @@ const defaultJobOptions = {
   removeOnFail: { count: 5000 },
 };
 
-export const matchNewOrderQueue = new Queue("match-new-order", {
-  connection: getRedisConnectionOptions(),
-  defaultJobOptions,
-});
+let matchNewOrderQueue: Queue | null = null;
+export function getMatchNewOrderQueue() {
+  if (matchNewOrderQueue) return matchNewOrderQueue;
+  matchNewOrderQueue = new Queue("match-new-order", {
+    connection: getRedisConnectionOptions(),
+    defaultJobOptions,
+  });
+  return matchNewOrderQueue;
+}
 
-export const matchNewExecutorQueue = new Queue("match-new-executor", {
-  connection: getRedisConnectionOptions(),
-  defaultJobOptions,
-});
+let matchNewExecutorQueue: Queue | null = null;
+export function getMatchNewExecutorQueue() {
+  if (matchNewExecutorQueue) return matchNewExecutorQueue;
+  matchNewExecutorQueue = new Queue("match-new-executor", {
+    connection: getRedisConnectionOptions(),
+    defaultJobOptions,
+  });
+  return matchNewExecutorQueue;
+}
