@@ -92,7 +92,15 @@ jobs:
 
       - name: Create deploy tar (dragonfly)
         shell: bash
-        run: tar --exclude='./.git' --exclude='./deploy.tar' -cf deploy.tar captain-definition package.json package-lock.json next.config.ts server.js middleware.ts src prisma public tsconfig.json tsconfig.worker.json tsconfig.test.json next-env.d.ts
+        run: |
+          set -euo pipefail
+          EXTRA_FILES=()
+          if [ -f next-env.d.ts ]; then EXTRA_FILES+=(next-env.d.ts); fi
+          if [ -f middleware.ts ]; then EXTRA_FILES+=(middleware.ts); fi
+          tar --exclude='./.git' --exclude='./deploy.tar' -cf deploy.tar \
+            captain-definition package.json package-lock.json next.config.ts server.js \
+            src prisma public tsconfig.json tsconfig.worker.json tsconfig.test.json \
+            "${EXTRA_FILES[@]}"
 
       - name: Deploy dragonfly
         uses: caprover/deploy-from-github@main
@@ -137,7 +145,13 @@ jobs:
 
       - name: Create deploy tar (workerdragonfly)
         shell: bash
-        run: tar --exclude='./.git' --exclude='./deploy.tar' -cf deploy.tar captain-definition package.json package-lock.json prisma src tsconfig.json tsconfig.worker.json next-env.d.ts
+        run: |
+          set -euo pipefail
+          EXTRA_FILES=()
+          if [ -f next-env.d.ts ]; then EXTRA_FILES+=(next-env.d.ts); fi
+          tar --exclude='./.git' --exclude='./deploy.tar' -cf deploy.tar \
+            captain-definition package.json package-lock.json prisma src tsconfig.json tsconfig.worker.json \
+            "${EXTRA_FILES[@]}"
 
       - name: Deploy workerdragonfly
         uses: caprover/deploy-from-github@main
