@@ -29,27 +29,29 @@ jobs:
           filters: |
             mainapp:
               - '.github/workflows/deploy-caprover.yml'
-              - 'trae-backend/src/app/**'
-              - 'trae-backend/server.js'
-              - 'trae-backend/next.config.ts'
-              - 'trae-backend/package.json'
-              - 'trae-backend/package-lock.json'
-              - 'trae-backend/endpoints.md'
-              - 'trae-backend/src/lib/**'
-              - 'trae-backend/src/realtime/**'
-              - 'trae-backend/src/services/**'
-              - 'trae-backend/prisma/**'
+              - 'src/app/**'
+              - 'server.js'
+              - 'middleware.ts'
+              - 'next.config.ts'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'endpoints.md'
+              - 'src/lib/**'
+              - 'src/realtime/**'
+              - 'src/services/**'
+              - 'prisma/**'
 
             worker:
               - '.github/workflows/deploy-caprover.yml'
-              - 'trae-backend/src/workers/**'
-              - 'trae-backend/src/queues/**'
-              - 'trae-backend/package.json'
-              - 'trae-backend/package-lock.json'
-              - 'trae-backend/src/lib/**'
-              - 'trae-backend/src/realtime/**'
-              - 'trae-backend/src/services/**'
-              - 'trae-backend/prisma/**'
+              - 'src/workers/**'
+              - 'src/queues/**'
+              - 'tsconfig.worker.json'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'src/lib/**'
+              - 'src/realtime/**'
+              - 'src/services/**'
+              - 'prisma/**'
 
   deploy_dragonfly:
     needs: changes
@@ -66,22 +68,22 @@ jobs:
             "schemaVersion": 2,
             "dockerfileLines": [
               "FROM node:20-alpine AS build",
-              "WORKDIR /app/trae-backend",
-              "COPY trae-backend/package.json trae-backend/package-lock.json ./",
+              "WORKDIR /app",
+              "COPY package.json package-lock.json ./",
               "RUN npm ci",
-              "COPY trae-backend ./",
+              "COPY . .",
               "RUN npm run prisma:generate",
               "RUN npm run build",
               "",
               "FROM node:20-alpine AS runtime",
-              "WORKDIR /app/trae-backend",
+              "WORKDIR /app",
               "ENV NODE_ENV=production",
-              "COPY --from=build /app/trae-backend/node_modules ./node_modules",
-              "COPY --from=build /app/trae-backend/package.json ./package.json",
-              "COPY --from=build /app/trae-backend/next.config.ts ./next.config.ts",
-              "COPY --from=build /app/trae-backend/server.js ./server.js",
-              "COPY --from=build /app/trae-backend/public ./public",
-              "COPY --from=build /app/trae-backend/.next ./.next",
+              "COPY --from=build /app/node_modules ./node_modules",
+              "COPY --from=build /app/package.json ./package.json",
+              "COPY --from=build /app/next.config.ts ./next.config.ts",
+              "COPY --from=build /app/server.js ./server.js",
+              "COPY --from=build /app/public ./public",
+              "COPY --from=build /app/.next ./.next",
               "CMD [\"node\",\"server.js\"]",
               ""
             ]
@@ -90,10 +92,10 @@ jobs:
 
       - name: Create deploy tar (dragonfly)
         shell: bash
-        run: tar -cf deploy.tar captain-definition trae-backend
+        run: tar --exclude='./.git' --exclude='./deploy.tar' -cf deploy.tar captain-definition package.json package-lock.json next.config.ts server.js middleware.ts src prisma public tsconfig.json tsconfig.worker.json tsconfig.test.json next-env.d.ts
 
       - name: Deploy dragonfly
-        uses: caprover/deploy-from-github@v1
+        uses: caprover/deploy-from-github@main
         with:
           server: ${{ secrets.CAPROVER_SERVER }}
           app: dragonfly
@@ -114,19 +116,19 @@ jobs:
             "schemaVersion": 2,
             "dockerfileLines": [
               "FROM node:20-alpine AS build",
-              "WORKDIR /app/trae-backend",
-              "COPY trae-backend/package.json trae-backend/package-lock.json ./",
+              "WORKDIR /app",
+              "COPY package.json package-lock.json ./",
               "RUN npm ci",
-              "COPY trae-backend ./",
+              "COPY . .",
               "RUN npm run prisma:generate",
               "RUN npm run build:worker",
               "",
               "FROM node:20-alpine AS runtime",
-              "WORKDIR /app/trae-backend",
+              "WORKDIR /app",
               "ENV NODE_ENV=production",
-              "COPY --from=build /app/trae-backend/node_modules ./node_modules",
-              "COPY --from=build /app/trae-backend/package.json ./package.json",
-              "COPY --from=build /app/trae-backend/dist ./dist",
+              "COPY --from=build /app/node_modules ./node_modules",
+              "COPY --from=build /app/package.json ./package.json",
+              "COPY --from=build /app/dist ./dist",
               "CMD [\"npm\",\"run\",\"worker\"]",
               ""
             ]
@@ -135,10 +137,10 @@ jobs:
 
       - name: Create deploy tar (workerdragonfly)
         shell: bash
-        run: tar -cf deploy.tar captain-definition trae-backend
+        run: tar --exclude='./.git' --exclude='./deploy.tar' -cf deploy.tar captain-definition package.json package-lock.json prisma src tsconfig.json tsconfig.worker.json next-env.d.ts
 
       - name: Deploy workerdragonfly
-        uses: caprover/deploy-from-github@v1
+        uses: caprover/deploy-from-github@main
         with:
           server: ${{ secrets.CAPROVER_SERVER }}
           app: workerdragonfly
