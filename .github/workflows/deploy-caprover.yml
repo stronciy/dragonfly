@@ -141,7 +141,7 @@ jobs:
               "COPY prisma ./prisma",
               "COPY prisma.config.ts ./prisma.config.ts",
               "COPY --from=build /app/dist ./dist",
-              "CMD [\"sh\",\"-lc\",\"./node_modules/.bin/prisma migrate deploy --config prisma.config.ts && npm run worker\"]",
+              "CMD [\"sh\",\"-lc\",\"attempt=0; while true; do attempt=$((attempt+1)); echo \\\"[worker] prisma migrate deploy (attempt ${attempt})\\\"; ./node_modules/.bin/prisma migrate deploy --config prisma.config.ts && break; code=$?; echo \\\"[worker] prisma migrate deploy failed (exit ${code}). Fix DB state then wait for retry. Next retry in 30s.\\\"; sleep 30; done; npm run worker\"]",
               ""
             ]
           }
