@@ -266,9 +266,15 @@ export async function POST(req: Request) {
               OR (
                 ps.coverage_mode = 'radius'
                 AND ps.radius_km IS NOT NULL
-                AND ps.base_geo IS NOT NULL
-                AND o.location_geo IS NOT NULL
-                AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+                AND (
+                  6371.0 * acos(
+                    least(1.0, greatest(-1.0,
+                      cos(radians(ps.base_lat)) * cos(radians(o.lat)) *
+                      cos(radians(o.lng) - radians(ps.base_lng)) +
+                      sin(radians(ps.base_lat)) * sin(radians(o.lat))
+                    ))
+                  )
+                ) <= ps.radius_km
               )
             )
         `;
@@ -280,10 +286,15 @@ export async function POST(req: Request) {
             srv.performer_user_id AS "performerUserId",
             ps.coverage_mode AS "coverageMode",
             ps.radius_km AS "radiusKm",
-            CASE
-              WHEN ps.base_geo IS NOT NULL AND o.location_geo IS NOT NULL THEN (ST_Distance(ps.base_geo, o.location_geo) / 1000.0)
-              ELSE NULL
-            END AS "distanceKm"
+            (
+              6371.0 * acos(
+                least(1.0, greatest(-1.0,
+                  cos(radians(ps.base_lat)) * cos(radians(o.lat)) *
+                  cos(radians(o.lng) - radians(ps.base_lng)) +
+                  sin(radians(ps.base_lat)) * sin(radians(o.lat))
+                ))
+              )
+            ) AS "distanceKm"
           FROM performer_services srv
           JOIN performer_settings ps ON ps.performer_user_id = srv.performer_user_id
           JOIN users u ON u.id = ps.performer_user_id
@@ -298,9 +309,15 @@ export async function POST(req: Request) {
               OR (
                 ps.coverage_mode = 'radius'
                 AND ps.radius_km IS NOT NULL
-                AND ps.base_geo IS NOT NULL
-                AND o.location_geo IS NOT NULL
-                AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+                AND (
+                  6371.0 * acos(
+                    least(1.0, greatest(-1.0,
+                      cos(radians(ps.base_lat)) * cos(radians(o.lat)) *
+                      cos(radians(o.lng) - radians(ps.base_lng)) +
+                      sin(radians(ps.base_lat)) * sin(radians(o.lat))
+                    ))
+                  )
+                ) <= ps.radius_km
               )
             )
           ORDER BY "distanceKm" ASC NULLS LAST

@@ -317,7 +317,6 @@ model PerformerSettings {
   baseLocationLabel String  @map("base_location_label")
   baseLat           Decimal @db.Decimal(9, 6) @map("base_lat")
   baseLng           Decimal @db.Decimal(9, 6) @map("base_lng")
-  baseGeo           Unsupported("geography(Point,4326)")? @map("base_geo")
 
   coverageMode CoverageMode @default(radius) @map("coverage_mode")
   radiusKm     Int?         @map("radius_km")
@@ -328,7 +327,6 @@ model PerformerSettings {
   performer PerformerProfile @relation(fields: [performerUserId], references: [userId], onDelete: Cascade)
 
   @@index([coverageMode])
-  @@index([baseGeo], type: Gist, map: "idx_performer_settings_base_geo_gist")
   @@map("performer_settings")
 }
 
@@ -361,7 +359,6 @@ model Field {
 
   centroidLat Decimal? @db.Decimal(9, 6) @map("centroid_lat")
   centroidLng Decimal? @db.Decimal(9, 6) @map("centroid_lng")
-  centroidGeo Unsupported("geography(Point,4326)")? @map("centroid_geo")
 
   status String? @db.VarChar(32)
 
@@ -371,7 +368,6 @@ model Field {
   owner CustomerProfile @relation(fields: [ownerUserId], references: [userId], onDelete: Cascade)
 
   @@index([ownerUserId])
-  @@index([centroidGeo], type: Gist, map: "idx_fields_centroid_geo_gist")
   @@map("fields")
 }
 
@@ -395,7 +391,6 @@ model Order {
 
   lat         Decimal @db.Decimal(9, 6) @map("lat")
   lng         Decimal @db.Decimal(9, 6) @map("lng")
-  locationGeo Unsupported("geography(Point,4326)")? @map("location_geo")
 
   comment String? @db.Text
 
@@ -428,7 +423,6 @@ model Order {
   @@index([performerUserId, status, createdAt])
   @@index([status, createdAt])
   @@index([serviceCategoryId, serviceSubCategoryId, serviceTypeId])
-  @@index([locationGeo], type: Gist, map: "idx_orders_location_geo_gist")
   @@map("orders")
 }
 

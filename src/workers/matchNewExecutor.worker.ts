@@ -29,7 +29,15 @@ export function startMatchNewExecutorWorker() {
       const matches = (await prisma.$queryRaw<Array<{ order_id: string; distance_km: number }>>`
         SELECT
           o.id AS order_id,
-          (ST_Distance(ps.base_geo, o.location_geo) / 1000.0) AS distance_km
+          (
+            6371.0 * acos(
+              least(1.0, greatest(-1.0,
+                cos(radians(ps.base_lat)) * cos(radians(o.lat)) *
+                cos(radians(o.lng) - radians(ps.base_lng)) +
+                sin(radians(ps.base_lat)) * sin(radians(o.lat))
+              ))
+            )
+          ) AS distance_km
         FROM orders o
         JOIN performer_settings ps
           ON ps.performer_user_id = ${performerUserId}
@@ -50,7 +58,15 @@ export function startMatchNewExecutorWorker() {
             OR (
               ps.coverage_mode = 'radius'
               AND ps.radius_km IS NOT NULL
-              AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+              AND (
+                6371.0 * acos(
+                  least(1.0, greatest(-1.0,
+                    cos(radians(ps.base_lat)) * cos(radians(o.lat)) *
+                    cos(radians(o.lng) - radians(ps.base_lng)) +
+                    sin(radians(ps.base_lat)) * sin(radians(o.lat))
+                  ))
+                )
+              ) <= ps.radius_km
             )
           )
         ORDER BY distance_km ASC
