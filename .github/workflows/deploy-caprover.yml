@@ -141,7 +141,7 @@ jobs:
               "COPY prisma ./prisma",
               "COPY prisma.config.ts ./prisma.config.ts",
               "COPY --from=build /app/dist ./dist",
-              "CMD [\"sh\",\"-lc\",\"attempt=0; while true; do attempt=$((attempt+1)); echo \\\"[worker] prisma migrate deploy (attempt ${attempt})\\\"; ./node_modules/.bin/prisma migrate deploy --config prisma.config.ts && break; code=$?; echo \\\"[worker] prisma migrate deploy failed (exit ${code}). Fix DB state then wait for retry. Next retry in 30s.\\\"; sleep 30; done; npm run worker\"]",
+              "CMD [\"sh\",\"-lc\",\"attempt=0; while true; do attempt=$((attempt+1)); echo \\\"[worker] prisma migrate deploy (attempt ${attempt})\\\"; out=$(./node_modules/.bin/prisma migrate deploy --config prisma.config.ts 2>&1); code=$?; echo \\\"$out\\\"; if [ $code -eq 0 ]; then break; fi; if [ \\\"${DB_MIGRATE_RESET_ON_FAILURE:-}\\\" = \\\"1\\\" ] || [ \\\"${DB_MIGRATE_RESET_ON_FAILURE:-}\\\" = \\\"true\\\" ]; then if echo \\\"$out\\\" | grep -q \\\"P3009\\\" && echo \\\"$out\\\" | grep -q \\\"20260317191146_init\\\"; then echo \\\"[worker] detected failed init migration (P3009). Running prisma migrate reset --force (DATA LOSS).\\\"; ./node_modules/.bin/prisma migrate reset --force --config prisma.config.ts && continue; fi; fi; echo \\\"[worker] prisma migrate deploy failed (exit ${code}). Fix DB state then wait for retry. Next retry in 30s.\\\"; sleep 30; done; npm run worker\"]",
               ""
             ]
           }
