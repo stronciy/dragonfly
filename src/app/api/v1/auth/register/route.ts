@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   try {
     const body = schema.parse(await req.json());
 
-    const existing = await prisma.user.findUnique({ where: { email: body.email } });
+    const existing = await prisma.user.findUnique({ where: { email: body.email }, select: { id: true } });
     if (existing) throw new ApiError(409, "CONFLICT", "Email already in use");
 
     const passwordHash = await bcrypt.hash(body.password, 12);
