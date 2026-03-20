@@ -1,4 +1,4 @@
-CREATE EXTENSION IF NOT EXISTS postgis;
+-- Extension removed
 
 -- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('customer', 'performer', 'admin');
@@ -92,7 +92,6 @@ CREATE TABLE "performer_settings" (
     "base_location_label" TEXT NOT NULL,
     "base_lat" DECIMAL(9,6) NOT NULL,
     "base_lng" DECIMAL(9,6) NOT NULL,
-    "base_geo" geography(Point,4326),
     "coverage_mode" "CoverageMode" NOT NULL DEFAULT 'radius',
     "radius_km" INTEGER,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -123,7 +122,6 @@ CREATE TABLE "fields" (
     "geometry" JSONB,
     "centroid_lat" DECIMAL(9,6),
     "centroid_lng" DECIMAL(9,6),
-    "centroid_geo" geography(Point,4326),
     "status" VARCHAR(32),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -146,7 +144,6 @@ CREATE TABLE "orders" (
     "region_name" TEXT,
     "lat" DECIMAL(9,6) NOT NULL,
     "lng" DECIMAL(9,6) NOT NULL,
-    "location_geo" geography(Point,4326),
     "comment" TEXT,
     "budget" DECIMAL(12,2) NOT NULL,
     "currency" VARCHAR(8) NOT NULL DEFAULT 'UAH',
