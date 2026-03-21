@@ -62,10 +62,13 @@
 - `marketplace.match_removed` — заказ больше не доступен исполнителю (performer)
 - `agreement.assigned` — исполнитель назначен / заказ принят (customer + performer)
 - `escrow.changed` — зарезервирован/изменён escrow (если будет эмититься)
+- `deposit.performer_paid` — исполнитель оплатил гарантийную сумму (customer)
+- `deposit.customer_required` — заказчик оплатил гарантийную сумму (performer)
 
 #### Push fallback (когда приложение в фоне/закрыто)
 - Для `marketplace.match_added` пуш отправляется только если пользователь offline (нет активного WS presence).
 - Для критичных статусов (например `accepted`/депозиты) клиенту всё равно нужно полагаться на push + refetch при открытии экрана.
+- Для `deposit.performer_paid` и `deposit.customer_required` пуш отправляется всегда + дублируется в БД уведомлений.
 
 ## Auth
 
@@ -145,10 +148,32 @@
   - `limit` (default 20, max 100)
   - `offset` (default 0)
   - `unreadOnly` (optional boolean)
+  - `type` (optional) — фильтр по типу: `system | order | deposit | marketplace | arbitration | payout`
+  - `role` (optional) — фильтр по роли: `customer | performer` (если не указано, используется роль пользователя)
 - Returns: `200 { items[], page }`
 - Notes:
   - `items[].data` может содержать `orderId` для deeplink/обновления экрана
   - `items[].orderId` — вынесен отдельно (если был в `data.orderId`)
+  - **Разделение по ролям**: сообщения для депозитов содержат `data.role` и отображаются только в соответствующей панели (customer/performer)
+  - Пример data для депозита заказчика:
+    ```json
+    {
+      "orderId": "cmxxx...",
+      "type": "deposit_customer_required",
+      "role": "customer",
+      "depositAmount": 4800,
+      "currency": "UAH",
+      "deadlineHours": 12
+    }
+    ```
+  - Пример data для депозита исполнителя:
+    ```json
+    {
+      "orderId": "cmxxx...",
+      "type": "deposit_customer_paid",
+      "role": "performer"
+    }
+    ```
 
 ### PATCH `/api/v1/notifications/:notificationId/read`
 - Auth: Bearer
@@ -340,7 +365,7 @@
 ### POST `/api/v1/orders/:orderId/deposits/customer-intent`
 - Auth: Bearer
 - Role: `customer` (owner)
-- Allowed order status: `accepted`
+- Allowed order status: `requires_confirmation | accepted`
 - Body:
 ```json
 { "method": "card" }
@@ -350,6 +375,7 @@
   - `paymentIntent.orderId` — это `order_id` для LiqPay (нужно использовать его в провайдере)
   - `server_url` в LiqPay data указывает на `/api/v1/payments/liqpay/webhook`
   - `result_url` по умолчанию `/<home>` (можно переопределить на стороне клиента, если нужен deeplink)
+  - **Сумма оплаты**: 110% от бюджета заказа (100% работа + 10% гарантийная сумма)
 
 ### POST `/api/v1/marketplace/orders/:orderId/deposits/performer-intent`
 - Auth: Bearer
@@ -363,6 +389,7 @@
   - `paymentIntent.orderId` — это `order_id` для LiqPay
   - `server_url` в LiqPay data указывает на `/api/v1/payments/liqpay/webhook`
   - `result_url` по умолчанию `/<home>`
+  - **Сумма оплаты**: 10% от бюджета заказа (гарантийная сумма исполнителя)
 
 ### POST `/api/v1/payments/:paymentIntentId/confirm`
 - Auth: Bearer (владелец payment)
@@ -382,6 +409,12 @@
   - обновляет Payment по `liqpay.status`
   - создаёт/обновляет `escrow_locks`
   - при наличии escrow у обеих сторон переводит заказ в `confirmed` и чистит `order_matches`
+  - **Отправляет Push notification** противоположной стороне с учётом роли:
+    - исполнитель оплатил → заказчик получает Push с суммой и сроком (12ч)
+    - заказчик оплатил → исполнитель получает Push о готовности к работе
+  - **Отправляет WebSocket сигнал**:
+    - `deposit.performer_paid` → заказчику
+    - `deposit.customer_required` → исполнителю
 
 ### POST `/api/v1/payments/liqpay/webhook`
 - Auth: public (server-to-server)
@@ -393,23 +426,26 @@
 - Notes:
   - endpoint проверяет подпись и обновляет `payments`/`escrow_locks` аналогично confirm
   - `order_id` внутри LiqPay должен быть равен `providerIntentId` из `paymentIntent` ответа intent
+  - **Отправляет Push notification** противоположной стороне с учётом роли (аналогично `/confirm`)
+  - **Отправляет WebSocket сигнал** (аналогично `/confirm`)
 
 ## Сделка / статусы заказа (логика, которую должно поддерживать приложение)
 
 Ниже описан целевой бизнес‑процесс “двойного залога” (10% + 10%) и то, как это должно выглядеть на уровне API/клиента.
 
 ### Статусы (целевая интерпретация)
-- `published` — “Открыт” (виден в бирже, доступен для принятия).
-- `requires_confirmation` — “Ожидает подтверждения заказчиком” (исполнитель забронировал заказ, идёт 12ч таймер).
-- `confirmed` — “Сделка подтверждена / средства заблокированы” (после оплаты заказчиком; дальше можно стартовать работу).
-- `started` — “В работе”.
-- `completed` — “Завершён” (работа принята/закрыта).
-- `arbitration` — “Арбитраж”.
-- `cancelled` — “Отменён”.
+- `published` — "Открыт" (виден в бирже, доступен для принятия).
+- `requires_confirmation` — "Ожидает подтверждения заказчиком" (исполнитель забронировал заказ, идёт 12ч таймер).
+- `confirmed` — "Сделка подтверждена / средства заблокированы" (после оплаты заказчиком; дальше можно стартовать работу).
+- `started` — "В работе".
+- `completed` — "Завершён" (работа принята/закрыта).
+- `arbitration` — "Арбитраж".
+- `cancelled` — "Отменён".
 
-Текущее состояние в коде:
-- При бронировании сейчас используется статус `accepted` (а не `requires_confirmation`).
-- Статусы `pending_deposit` и `requires_confirmation` в коде почти не используются и требуют внедрения по процессу ниже.
+Текущее состояние в коде (актуально после изменений):
+- При бронировании используется статус `requires_confirmation`.
+- Статус `accepted` поддерживается для обратной совместимости (webhook/confirm обрабатывают оба статуса).
+- Статус `pending_deposit` зарезервирован для будущего использования.
 
 ### Этап 1 — Инициация сделки (действие исполнителя)
 Цель: забронировать заказ и заморозить 10% залога исполнителя.
@@ -432,13 +468,13 @@
   - Перейти на экран “Ожидаем подтверждения заказчиком”, показать `depositDeadline` (12ч).
 
 **Что нужно изменить/добавить на бэкенде, чтобы соответствовать бизнес‑процессу 1:1**
-- Изменить `POST /marketplace/orders/:id/accept`:
-  - Вместо статуса `accepted` выставлять `requires_confirmation`.
-  - Обязательные поля: `acceptedAt`, `depositDeadline = now + 12h`.
-  - Отправлять уведомление заказчику (push/email) “Исполнитель забронировал… подтвердите в течение 12 часов”.
-- Добавить проверки “профиль исполнителя не заблокирован” (если будет флаг блокировки профиля).
-- Если планируется “баланс” платформы (wallet/ledger), а не только внешний провайдер:
-  - Ввести “доступный баланс” и “заморозку (hold)” 10% с баланса исполнителя.
+- ✅ Изменить `POST /marketplace/orders/:id/accept`:
+  - ✅ Вместо статуса `accepted` выставлять `requires_confirmation`.
+  - ✅ Обязательные поля: `acceptedAt`, `depositDeadline = now + 12h`.
+  - ✅ Отправлять уведомление заказчику (push/email) "Исполнитель забронировал… подтвердите в течение 12 часов".
+- Добавить проверки "профиль исполнителя не заблокирован" (если будет флаг блокировки профиля).
+- Если планируется "баланс" платформы (wallet/ledger), а не только внешний провайдер:
+  - Ввести "доступный баланс" и "заморозку (hold)" 10% с баланса исполнителя.
   - Тогда `performer-intent` может стать внутренней операцией, а не платёж у провайдера.
 
 ### Этап 2 — Реакция заказчика (в течение 12 часов)
@@ -447,21 +483,19 @@
 Цель: внести 100% стоимости заказа + 10% страхового депозита заказчика.
 
 **Как должно быть в API**
-- `POST /api/v1/orders/:orderId/deposits/customer-intent` должен создавать оплату на сумму:
-  - `amount = 1.0 * budget + 0.1 * budget`
-- Подтверждение оплаты (webhook/confirm) должно:
-  - создать/обновить `escrow_lock` для роли `customer`
-  - перевести заказ в статус “В работе”:
-    - либо сразу `started`
-    - либо в `confirmed`, а старт отдельной кнопкой исполнителя
+- ✅ `POST /api/v1/orders/:orderId/deposits/customer-intent` должен создавать оплату на сумму:
+  - ✅ `amount = 1.0 * budget + 0.1 * budget`
+- ✅ Подтверждение оплаты (webhook/confirm) должно:
+  - ✅ создать/обновить `escrow_lock` для роли `customer`
+  - ✅ перевести заказ в статус "В работе":
+    - ✅ `requires_confirmation → confirmed` (при наличии обоих escrow)
+  - ✅ Отправить Push notification исполнителю
 
 **Что нужно изменить/добавить на бэкенде**
-- Сейчас `customer-intent` создаёт оплату только на 10% — нужно увеличить до `110%`.
-- Определиться и зафиксировать контракт статусов:
-  - вариант 1: `requires_confirmation → started` сразу после оплаты заказчика
-  - вариант 2: `requires_confirmation → confirmed` и отдельный `PATCH /orders/:id/status started` от исполнителя
-- Уведомления:
-  - исполнителю: “Заказчик подтвердил оплату. Можете начинать”.
+- ✅ Сейчас `customer-intent` создаёт оплату на 110% (100% работа + 10% гарантія).
+- ✅ Статусы: `requires_confirmation → confirmed` после оплаты заказчика.
+- ✅ Уведомления:
+  - ✅ исполнителю: "Заказчик подтвердил оплату. Можете начинать".
 
 #### Вариант B — заказчик бездействует (тайм‑аут)
 Цель: по истечении 12 часов автоматически отменить бронирование и вернуть залог исполнителю.
@@ -498,11 +532,14 @@
   - фиксация решения в истории/логах/уведомлениях
 
 ### Требования к клиенту (чтобы соответствовать процессу)
-- Всегда реагировать на `409` при принятии заказа (гонка исполнителей).
-- При `requires_confirmation` (или текущем `accepted`) показывать таймер `depositDeadline`.
-- Блокировать редактирование заказа заказчиком после брони (бэкенд уже запрещает редактирование вне `draft|published`).
-- Делать refetch по событиям WS:
-  - `marketplace.match_removed`, `order.status_changed`, `agreement.assigned`, `escrow.changed` (когда начнём эмитить).
+- ✅ Всегда реагировать на `409` при принятии заказа (гонка исполнителей).
+- ✅ При `requires_confirmation` показывать таймер `depositDeadline`.
+- ✅ Блокировать редактирование заказа заказчиком после брони (бэкенд уже запрещает редактирование вне `draft|published`).
+- ✅ Делать refetch по событиям WS:
+  - ✅ `marketplace.match_removed`, `order.status_changed`, `agreement.assigned`
+  - ✅ `deposit.performer_paid` — новое событие для заказчика (исполнитель оплатил)
+  - ✅ `deposit.customer_required` — новое событие для исполнителя (заказчик оплатил)
+- ✅ Фильтровать уведомления по ролям через `GET /notifications?role=customer|performer`
 
 ## Marketplace (performer)
 
@@ -547,11 +584,17 @@
   - существует запись в `order_matches` для данного performer (заказ доступен этому исполнителю)
   - payment `succeeded`
   - escrow lock `performer` существует и `locked`
-- Returns: `200 { order, agreementId }`
+- Returns: `200 { order: { id, status }, agreementId }`
 - Side effects:
-  - ставит `accepted`
-  - задаёт `depositDeadline = now + 12h`
-  - чистит `order_matches`
+  - ✅ ставит `requires_confirmation` (вместо `accepted`)
+  - ✅ задаёт `depositDeadline = now + 12h`
+  - ✅ чистит `order_matches` (заказ исчезает из биржи для всех исполнителей)
+  - ✅ отправляет WebSocket сигналы:
+    - `marketplace.match_removed` — другим исполнителям
+    - `agreement.assigned` — заказчику и исполнителю
+    - `order.status_changed` — заказчику и исполнителю
+- Notes:
+  - После вызова этого endpoint заказчик получает Push-уведомление о том, что исполнитель забронировал заказ
 
 ## Performer settings
 

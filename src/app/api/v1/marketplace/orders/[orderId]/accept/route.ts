@@ -45,14 +45,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         where: { id: order.id, status: "published", performerUserId: null },
         data: {
           performerUserId: user.id,
-          status: "accepted",
+          status: "requires_confirmation",
           acceptedAt,
           depositDeadline,
         },
       });
       if (updated.count !== 1) throw new ApiError(409, "CONFLICT", "Order already accepted");
 
-      await tx.orderStatusEvent.create({ data: { orderId: order.id, fromStatus: "published", toStatus: "accepted", note: null } });
+      await tx.orderStatusEvent.create({ data: { orderId: order.id, fromStatus: "published", toStatus: "requires_confirmation", note: null } });
       await tx.orderMatch.deleteMany({ where: { orderId: order.id } });
     });
 
@@ -77,10 +77,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       type: "order.status_changed",
       requestId,
       targets: { userIds: [order.customerUserId, user.id] },
-      data: { orderId: order.id, fromStatus: "published", toStatus: "accepted" },
+      data: { orderId: order.id, fromStatus: "published", toStatus: "requires_confirmation" },
     });
 
-    return ok(req, { order: { id: order.id, status: "accepted" }, agreementId: null }, { message: "Accepted" });
+    return ok(req, { order: { id: order.id, status: "requires_confirmation" }, agreementId: null }, { message: "Accepted" });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));

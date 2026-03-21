@@ -6,7 +6,9 @@ export type DomainEventType =
   | "marketplace.match_added"
   | "marketplace.match_removed"
   | "agreement.assigned"
-  | "escrow.changed";
+  | "escrow.changed"
+  | "deposit.performer_paid"
+  | "deposit.customer_required";
 
 export type DomainEvent<T extends DomainEventType = DomainEventType, D = unknown> = {
   eventId: string;

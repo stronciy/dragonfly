@@ -1,10 +1,12 @@
 import { z } from "zod";
-import { ok, fail } from "@/lib/apiResponse";
+import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { ApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/requireAuth";
 import type { InputJsonValue } from "@/generated/prisma/internal/prismaNamespace";
 import { liqpayDecodeData, liqpayVerifySignature } from "@/services/liqpay.service";
+import { ExpoPushService } from "@/services/expoPush.service";
+import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 
 const schema = z.object({
   providerPayload: z.object({
@@ -34,6 +36,7 @@ function mapLiqPayStatus(status: string) {
 
 export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentId: string }> }) {
   try {
+    const requestId = getRequestId(req);
     const user = await requireUser(req);
     const { paymentIntentId } = await ctx.params;
     const body = schema.parse(await req.json().catch(() => ({})));
@@ -77,7 +80,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
 
     if (updated.status === "succeeded") {
       const [order, dbUser] = await prisma.$transaction([
-        prisma.order.findUnique({ where: { id: updated.orderId }, select: { id: true, status: true } }),
+        prisma.order.findUnique({ where: { id: updated.orderId }, select: { id: true, status: true, customerUserId: true, performerUserId: true, budget: true } }),
         prisma.user.findUnique({ where: { id: user.id }, select: { role: true } }),
       ]);
 
@@ -99,16 +102,101 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
           },
         });
 
-        if (order.status === "accepted") {
+        // Відправити Push та WebSocket сповіщення з урахуванням ролей
+        const expo = new ExpoPushService(prisma);
+        
+        if (role === "performer") {
+          // Виконавець оплатив - відправити Push заказчику
+          const customerDevices = await prisma.device.findMany({
+            where: { userId: order.customerUserId, revokedAt: null },
+            select: { expoPushToken: true },
+          });
+
+          const depositAmount = Number(order.budget) * 0.1;
+          
+          for (const device of customerDevices) {
+            await expo.sendPush({
+              toUserId: order.customerUserId,
+              toExpoToken: device.expoPushToken,
+              title: "Виконавець вніс гарантійну суму",
+              body: `Замовлення #${order.id.slice(-6)}. У вас є 12 годин для внесення гарантійної суми (${depositAmount} ${updated.currency})`,
+              data: {
+                orderId: order.id,
+                type: "deposit_customer_required",
+                role: "customer",
+                depositAmount: depositAmount,
+                currency: updated.currency,
+                deadlineHours: 12,
+              },
+            });
+          }
+
+          // WebSocket сигнал заказчику
+          await publishDomainEvent({
+            type: "deposit.performer_paid",
+            requestId,
+            targets: { userIds: [order.customerUserId] },
+            data: { 
+              orderId: order.id, 
+              performerId: order.performerUserId,
+              depositAmount,
+              currency: updated.currency,
+              deadlineHours: 12,
+            },
+          });
+        } else if (role === "customer") {
+          // Заказчик оплатив - відправити Push виконавцю
+          if (order.performerUserId) {
+            const performerDevices = await prisma.device.findMany({
+              where: { userId: order.performerUserId, revokedAt: null },
+              select: { expoPushToken: true },
+            });
+
+            for (const device of performerDevices) {
+              await expo.sendPush({
+                toUserId: order.performerUserId,
+                toExpoToken: device.expoPushToken,
+                title: "Заказчик вніс гарантійну суму",
+                body: `Замовлення #${order.id.slice(-6)}. Заказчик підтвердив оплату. Можна починати роботу.`,
+                data: {
+                  orderId: order.id,
+                  type: "deposit_customer_paid",
+                  role: "performer",
+                },
+              });
+            }
+
+            // WebSocket сигнал виконавцю
+            await publishDomainEvent({
+              type: "deposit.customer_required",
+              requestId,
+              targets: { userIds: [order.performerUserId] },
+              data: {
+                orderId: order.id,
+                customerId: order.customerUserId,
+              },
+            });
+          }
+        }
+
+        if (order.status === "accepted" || order.status === "requires_confirmation") {
           const customerLock = await prisma.escrowLock.findFirst({ where: { orderId: order.id, role: "customer", status: "locked" } });
           const performerLock = await prisma.escrowLock.findFirst({ where: { orderId: order.id, role: "performer", status: "locked" } });
           if (customerLock && performerLock) {
             await prisma.$transaction([
               prisma.order.update({ where: { id: order.id }, data: { status: "confirmed" } }),
-              prisma.orderStatusEvent.create({ data: { orderId: order.id, fromStatus: "accepted", toStatus: "confirmed", note: null } }),
+              prisma.orderStatusEvent.create({ data: { orderId: order.id, fromStatus: order.status, toStatus: "confirmed", note: null } }),
               prisma.orderMatch.deleteMany({ where: { orderId: order.id } }),
             ]);
             response.order = { id: order.id, status: "confirmed" };
+
+            // WebSocket сигнал обом сторонам про підтвердження
+            await publishDomainEvent({
+              type: "order.status_changed",
+              requestId,
+              targets: { userIds: [order.customerUserId, order.performerUserId!] },
+              data: { orderId: order.id, fromStatus: order.status, toStatus: "confirmed" },
+            });
           }
         }
       }
