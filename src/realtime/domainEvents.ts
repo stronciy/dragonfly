@@ -8,7 +8,8 @@ export type DomainEventType =
   | "agreement.assigned"
   | "escrow.changed"
   | "deposit.performer_paid"
-  | "deposit.customer_required";
+  | "deposit.customer_required"
+  | "deposit.timeout";
 
 export type DomainEvent<T extends DomainEventType = DomainEventType, D = unknown> = {
   eventId: string;

@@ -317,6 +317,46 @@ ws.send(JSON.stringify({
 
 ---
 
+### Подія: `deposit.timeout` (для виконавця + заказчикa)
+
+```typescript
+// Server → Client (performer)
+{
+  "eventId": "evt_timeout",
+  "type": "deposit.timeout",
+  "version": "1.0",
+  "timestamp": "2026-03-22T10:30:00Z",
+  "targets": { "userIds": ["performer_user_id"] },
+  "data": {
+    "orderId": "cmxxx...",
+    "refunded": true,
+    "depositAmount": 4800
+  }
+}
+
+// Server → Client (customer)
+{
+  "eventId": "evt_timeout_cust",
+  "type": "deposit.timeout",
+  "version": "1.0",
+  "timestamp": "2026-03-22T10:30:00Z",
+  "targets": { "userIds": ["customer_user_id"] },
+  "data": {
+    "orderId": "cmxxx...",
+    "returnedToMarketplace": true
+  }
+}
+```
+
+**Обробка клієнтом:**
+1. Отримати подію
+2. Зробити refetch `GET /api/v1/orders/:orderId`
+3. Для виконавця: показати "Гарантійна сума повернута"
+4. Для заказчикa: показати "Замовлення повернуте в біржу"
+5. Видалити замовлення з екрану `requires_confirmation`
+
+---
+
 ### Подія: `order.status_changed`
 
 ```typescript

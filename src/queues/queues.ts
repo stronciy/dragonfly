@@ -27,3 +27,13 @@ export function getMatchNewExecutorQueue() {
   });
   return matchNewExecutorQueue;
 }
+
+let depositDeadlineTimeoutQueue: Queue | null = null;
+export function getDepositDeadlineTimeoutQueue() {
+  if (depositDeadlineTimeoutQueue) return depositDeadlineTimeoutQueue;
+  depositDeadlineTimeoutQueue = new Queue("deposit-deadline-timeout", {
+    connection: getRedisConnectionOptions(),
+    defaultJobOptions,
+  });
+  return depositDeadlineTimeoutQueue;
+}

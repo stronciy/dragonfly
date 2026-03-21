@@ -1,7 +1,12 @@
 import { startMatchNewExecutorWorker } from "./matchNewExecutor.worker";
 import { startMatchNewOrderWorker } from "./matchNewOrder.worker";
+import { startDepositDeadlineTimeoutWorker } from "./depositDeadlineTimeout.worker";
 
-const workers = [startMatchNewOrderWorker(), startMatchNewExecutorWorker()];
+const workers = [
+  startMatchNewOrderWorker(),
+  startMatchNewExecutorWorker(),
+  startDepositDeadlineTimeoutWorker(),
+];
 
 for (const w of workers) {
   w.on("failed", (job, err) => {
