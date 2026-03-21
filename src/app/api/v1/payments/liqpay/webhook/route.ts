@@ -121,6 +121,24 @@ export async function POST(req: Request) {
 
           const depositAmount = Number(order.budget) * 0.1;
           
+          // Створюємо запис в notifications з типом "deposit"
+          await prisma.notification.create({
+            data: {
+              userId: order.customerUserId,
+              type: "deposit",
+              title: "Виконавець вніс гарантійну суму",
+              message: `Замовлення #${order.id.slice(-6)}. У вас є 12 годин для внесення гарантійної суми (${depositAmount} ${updated.currency})`,
+              data: {
+                orderId: order.id,
+                type: "deposit_performer_paid",
+                role: "customer",
+                depositAmount: depositAmount,
+                currency: updated.currency,
+                deadlineHours: 12,
+              } as unknown as InputJsonValue,
+            },
+          });
+          
           for (const device of customerDevices) {
             await expo.sendPush({
               toUserId: order.customerUserId,
@@ -129,7 +147,7 @@ export async function POST(req: Request) {
               body: `Замовлення #${order.id.slice(-6)}. У вас є 12 годин для внесення гарантійної суми (${depositAmount} ${updated.currency})`,
               data: {
                 orderId: order.id,
-                type: "deposit_customer_required",
+                type: "deposit_performer_paid",
                 role: "customer",
                 depositAmount: depositAmount,
                 currency: updated.currency,
@@ -157,6 +175,21 @@ export async function POST(req: Request) {
             const performerDevices = await prisma.device.findMany({
               where: { userId: order.performerUserId, revokedAt: null },
               select: { expoPushToken: true },
+            });
+
+            // Створюємо запис в notifications з типом "deposit"
+            await prisma.notification.create({
+              data: {
+                userId: order.performerUserId,
+                type: "deposit",
+                title: "Заказчик вніс гарантійну суму",
+                message: `Замовлення #${order.id.slice(-6)}. Заказчик підтвердив оплату. Можна починати роботу.`,
+                data: {
+                  orderId: order.id,
+                  type: "deposit_customer_paid",
+                  role: "performer",
+                } as unknown as InputJsonValue,
+              },
             });
 
             for (const device of performerDevices) {

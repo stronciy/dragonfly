@@ -155,18 +155,18 @@
   - `items[].data` может содержать `orderId` для deeplink/обновления экрана
   - `items[].orderId` — вынесен отдельно (если был в `data.orderId`)
   - **Разделение по ролям**: сообщения для депозитов содержат `data.role` и отображаются только в соответствующей панели (customer/performer)
-  - Пример data для депозита заказчика:
+  - Пример data для депозита заказчика (исполнитель оплатил):
     ```json
     {
       "orderId": "cmxxx...",
-      "type": "deposit_customer_required",
+      "type": "deposit_performer_paid",
       "role": "customer",
       "depositAmount": 4800,
       "currency": "UAH",
       "deadlineHours": 12
     }
     ```
-  - Пример data для депозита исполнителя:
+  - Пример data для депозита исполнителя (заказчик оплатил):
     ```json
     {
       "orderId": "cmxxx...",
@@ -174,6 +174,8 @@
       "role": "performer"
     }
     ```
+  - **Типы notifications.type**: `deposit` для всех сообщений о депозитах
+  - **Типы data.type**: `deposit_performer_paid` | `deposit_customer_paid`
 
 ### PATCH `/api/v1/notifications/:notificationId/read`
 - Auth: Bearer
