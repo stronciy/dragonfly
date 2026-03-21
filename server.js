@@ -132,18 +132,17 @@ async function main() {
     const userId = ws.userId;
     addConn(userId, ws);
     await refreshPresence(userId);
-    if (dev) {
-      const count = connectionsByUserId.get(userId)?.size ?? 0;
-      process.stdout.write(
-        JSON.stringify({
-          level: "info",
-          msg: "ws_connected",
-          userId,
-          role: ws.role,
-          connectionsForUser: count,
-        }) + "\n"
-      );
-    }
+    const count = connectionsByUserId.get(userId)?.size ?? 0;
+    process.stdout.write(
+      JSON.stringify({
+        level: "info",
+        msg: "ws_connected",
+        userId,
+        role: ws.role,
+        connectionsForUser: count,
+      }) + "\n"
+    );
+    process.stdout.write(`✅ [WebSocket] Користувач підключився: userId=${userId}, role=${ws.role}, connections=${count}\n`);
 
     ws.isAlive = true;
     ws.on("pong", () => {
@@ -172,17 +171,16 @@ async function main() {
       try {
         await clearPresenceIfNoConnections(userId);
       } catch {}
-      if (dev) {
-        const count = connectionsByUserId.get(userId)?.size ?? 0;
-        process.stdout.write(
-          JSON.stringify({
-            level: "info",
-            msg: "ws_closed",
-            userId,
-            connectionsForUser: count,
-          }) + "\n"
-        );
-      }
+      const count = connectionsByUserId.get(userId)?.size ?? 0;
+      process.stdout.write(
+        JSON.stringify({
+          level: "info",
+          msg: "ws_closed",
+          userId,
+          connectionsForUser: count,
+        }) + "\n"
+      );
+      process.stdout.write(`❌ [WebSocket] Користувач відключився: userId=${userId}, connections=${count}\n`);
     });
   });
 
@@ -228,21 +226,19 @@ async function main() {
       }
     }
     
-    // Детальне логування для відладки
-    if (dev) {
-      process.stdout.write(
-        "\n📩 [WebSocket] Отримано подію з Redis:\n" +
-        `   Type: ${evt?.type || "unknown"}\n` +
-        `   EventId: ${evt?.eventId || "unknown"}\n` +
-        `   Timestamp: ${evt?.timestamp || "unknown"}\n` +
-        `   Targets: ${JSON.stringify(targets)}\n` +
-        `   Data: ${JSON.stringify(evt?.data || {})}\n` +
-        `   Користувачів онлайн: ${deliveredUsers}/${targets.length}\n` +
-        `   Доставлено: ${delivered} повідомлень\n` +
-        `   Отримали: ${deliveredUserIds.length > 0 ? deliveredUserIds.join(", ") : "нікого"}\n` +
-        `   Не отримали (offline): ${missedUserIds.length > 0 ? missedUserIds.join(", ") : "нікого"}\n\n`
-      );
-    }
+    // Детальне логування для відладки (завжди)
+    process.stdout.write(
+      "\n📩 [WebSocket] ОТРИМАНО ПОДІЮ З REDIS:\n" +
+      `   🆔 Type: ${evt?.type || "unknown"}\n` +
+      `   🔑 EventId: ${evt?.eventId || "unknown"}\n` +
+      `   ⏰ Timestamp: ${evt?.timestamp || "unknown"}\n` +
+      `   👥 Targets: ${JSON.stringify(targets)}\n` +
+      `   📦 Data: ${JSON.stringify(evt?.data || {})}\n` +
+      `   ✅ Користувачів онлайн: ${deliveredUsers}/${targets.length}\n` +
+      `   📨 Доставлено: ${delivered} повідомлень\n` +
+      `   📲 Отримали: ${deliveredUserIds.length > 0 ? deliveredUserIds.join(", ") : "нікого"}\n` +
+      `   ❌ Не отримали (offline): ${missedUserIds.length > 0 ? missedUserIds.join(", ") : "нікого"}\n\n`
+    );
   });
 
   server.listen(port, () => {
