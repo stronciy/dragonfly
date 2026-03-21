@@ -23,7 +23,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       prisma.orderMatch.findMany({ where: { orderId }, select: { performerUserId: true } }),
     ]);
 
-    if (!order || order.status !== "published") throw new ApiError(404, "NOT_FOUND", "Order not found");
+    if (!order) throw new ApiError(404, "NOT_FOUND", "Order not found");
+    
+    // Якщо замовлення вже прийнято (requires_confirmation або далі) - повертаємо успіх
+    if (order.status === "requires_confirmation" && order.performerUserId === user.id) {
+      // Вже прийнято цим виконавцем
+      return ok(req, { order: { id: order.id, status: "requires_confirmation" }, agreementId: null }, { message: "Already accepted" });
+    }
+    
+    if (order.status !== "published") throw new ApiError(404, "NOT_FOUND", "Order not found");
     if (order.performerUserId) throw new ApiError(409, "CONFLICT", "Order already accepted");
     if (!payment || payment.userId !== user.id || payment.orderId !== order.id) throw new ApiError(404, "NOT_FOUND", "Payment not found");
     if (payment.status !== "succeeded") throw new ApiError(409, "CONFLICT", "Performer deposit not paid");

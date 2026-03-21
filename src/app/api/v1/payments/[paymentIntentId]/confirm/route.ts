@@ -104,8 +104,55 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
 
         // Відправити Push та WebSocket сповіщення з урахуванням ролей
         const expo = new ExpoPushService(prisma);
-        
+
         if (role === "performer") {
+          // Виконавець оплатив - перевіряємо чи потрібно автоматично прийняти замовлення
+          if (order.status === "published") {
+            // Автоматичне прийняття замовлення після оплати
+            const acceptedAt = new Date();
+            const depositDeadline = new Date(acceptedAt.getTime() + 12 * 60 * 60 * 1000);
+            
+            console.log(
+              "\n🔄 [Confirm] Автоматичне прийняття замовлення:",
+              `\n   OrderId: ${order.id}`,
+              `\n   NewStatus: requires_confirmation`,
+              `\n   DepositDeadline: ${depositDeadline.toISOString()}\n`
+            );
+            
+            await prisma.$transaction([
+              prisma.order.update({
+                where: { id: order.id },
+                data: {
+                  performerUserId: user.id,
+                  status: "requires_confirmation",
+                  acceptedAt,
+                  depositDeadline,
+                },
+              }),
+              prisma.orderStatusEvent.create({
+                data: {
+                  orderId: order.id,
+                  fromStatus: "published",
+                  toStatus: "requires_confirmation",
+                  note: "Автоматичне прийняття після оплати депозиту виконавцем (confirm)",
+                },
+              }),
+              prisma.orderMatch.deleteMany({ where: { orderId: order.id } }),
+            ]);
+            
+            // Оновлюємо локальну змінну статусу
+            order.status = "requires_confirmation";
+            order.performerUserId = user.id;
+            
+            // WebSocket про зміну статусу
+            await publishDomainEvent({
+              type: "order.status_changed",
+              requestId,
+              targets: { userIds: [order.customerUserId, user.id] },
+              data: { orderId: order.id, fromStatus: "published", toStatus: "requires_confirmation" },
+            });
+          }
+          
           // Виконавець оплатив - відправити Push заказчику
           const customerDevices = await prisma.device.findMany({
             where: { userId: order.customerUserId, revokedAt: null },
@@ -113,7 +160,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
           });
 
           const depositAmount = Number(order.budget) * 0.1;
-          
+
           // Створюємо запис в notifications з типом "deposit"
           await prisma.notification.create({
             data: {
@@ -131,7 +178,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
               } as unknown as InputJsonValue,
             },
           });
-          
+
           for (const device of customerDevices) {
             await expo.sendPush({
               toUserId: order.customerUserId,
@@ -150,13 +197,21 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
           }
 
           // WebSocket сигнал заказчику
+          console.log(
+            "\n🔔 [Confirm] Відправка WebSocket deposit.performer_paid:",
+            `\n   OrderId: ${order.id}`,
+            `\n   CustomerUserId: ${order.customerUserId}`,
+            `\n   DepositAmount: ${depositAmount} ${updated.currency}`,
+            `\n   DeadlineHours: 12\n`
+          );
+
           await publishDomainEvent({
             type: "deposit.performer_paid",
             requestId,
             targets: { userIds: [order.customerUserId] },
-            data: { 
-              orderId: order.id, 
-              performerId: order.performerUserId,
+            data: {
+              orderId: order.id,
+              performerId: user.id,
               depositAmount,
               currency: updated.currency,
               deadlineHours: 12,
