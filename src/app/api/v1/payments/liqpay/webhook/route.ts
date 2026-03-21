@@ -157,12 +157,22 @@ export async function POST(req: Request) {
           }
 
           // WebSocket сигнал заказчику
+          if (process.env.NODE_ENV !== "production") {
+            console.log(
+              "\n🔔 [Webhook] Відправка WebSocket deposit.performer_paid:",
+              `\n   OrderId: ${order.id}`,
+              `\n   CustomerUserId: ${order.customerUserId}`,
+              `\n   DepositAmount: ${depositAmount} ${updated.currency}`,
+              `\n   DeadlineHours: 12\n`
+            );
+          }
+          
           await publishDomainEvent({
             type: "deposit.performer_paid",
             requestId,
             targets: { userIds: [order.customerUserId] },
-            data: { 
-              orderId: order.id, 
+            data: {
+              orderId: order.id,
               performerId: order.performerUserId,
               depositAmount,
               currency: updated.currency,
@@ -207,6 +217,15 @@ export async function POST(req: Request) {
             }
 
             // WebSocket сигнал виконавцю
+            if (process.env.NODE_ENV !== "production") {
+              console.log(
+                "\n🔔 [Webhook] Відправка WebSocket deposit.customer_required:",
+                `\n   OrderId: ${order.id}`,
+                `\n   PerformerUserId: ${order.performerUserId}`,
+                `\n   CustomerUserId: ${order.customerUserId}\n`
+              );
+            }
+            
             await publishDomainEvent({
               type: "deposit.customer_required",
               requestId,
@@ -232,6 +251,16 @@ export async function POST(req: Request) {
             ]);
 
             // WebSocket сигнал обом сторонам про підтвердження
+            if (process.env.NODE_ENV !== "production") {
+              console.log(
+                "\n🔔 [Webhook] Відправка WebSocket order.status_changed:",
+                `\n   OrderId: ${order.id}`,
+                `\n   FromStatus: ${order.status}`,
+                `\n   ToStatus: confirmed`,
+                `\n   Targets: [${order.customerUserId}, ${order.performerUserId}]\n`
+              );
+            }
+            
             await publishDomainEvent({
               type: "order.status_changed",
               requestId,

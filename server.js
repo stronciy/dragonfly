@@ -198,27 +198,49 @@ async function main() {
     const targets = evt && evt.targets && Array.isArray(evt.targets.userIds) ? evt.targets.userIds : [];
     let delivered = 0;
     let deliveredUsers = 0;
+    const deliveredUserIds = [];
+    const missedUserIds = [];
+    
     for (const userId of targets) {
       const conns = connectionsByUserId.get(userId);
-      if (!conns) continue;
+      if (!conns) {
+        missedUserIds.push(userId);
+        continue;
+      }
       deliveredUsers += 1;
+      deliveredUserIds.push(userId);
       for (const ws of conns) {
         try {
           ws.send(message);
           delivered += 1;
-        } catch {}
+        } catch (err) {
+          if (dev) {
+            process.stdout.write(
+              JSON.stringify({
+                level: "warn",
+                msg: "ws_send_error",
+                userId,
+                error: err.message,
+              }) + "\n"
+            );
+          }
+        }
       }
     }
-    if (dev && targets.length) {
+    
+    // Детальне логування для відладки
+    if (dev) {
       process.stdout.write(
-        JSON.stringify({
-          level: "info",
-          msg: "ws_broadcast",
-          type: evt?.type,
-          targetUsers: targets.length,
-          usersWithConnections: deliveredUsers,
-          delivered,
-        }) + "\n"
+        "\n📩 [WebSocket] Отримано подію з Redis:\n" +
+        `   Type: ${evt?.type || "unknown"}\n` +
+        `   EventId: ${evt?.eventId || "unknown"}\n` +
+        `   Timestamp: ${evt?.timestamp || "unknown"}\n` +
+        `   Targets: ${JSON.stringify(targets)}\n` +
+        `   Data: ${JSON.stringify(evt?.data || {})}\n` +
+        `   Користувачів онлайн: ${deliveredUsers}/${targets.length}\n` +
+        `   Доставлено: ${delivered} повідомлень\n` +
+        `   Отримали: ${deliveredUserIds.length > 0 ? deliveredUserIds.join(", ") : "нікого"}\n` +
+        `   Не отримали (offline): ${missedUserIds.length > 0 ? missedUserIds.join(", ") : "нікого"}\n\n`
       );
     }
   });

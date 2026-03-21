@@ -16,6 +16,19 @@ export async function publishDomainEvent<T extends DomainEventType, D>(
     data: event.data,
   };
 
+  // Логування для відладки WebSocket повідомлень
+  if (process.env.NODE_ENV !== "production") {
+    console.log(
+      "\n📡 [WebSocket] Відправка події:",
+      `\n   Type: ${payload.type}`,
+      `\n   EventId: ${payload.eventId}`,
+      `\n   Timestamp: ${payload.timestamp}`,
+      `\n   Targets: ${JSON.stringify(payload.targets)}`,
+      `\n   Data: ${JSON.stringify(payload.data)}`,
+      `\n   RequestId: ${payload.requestId || "N/A"}\n`
+    );
+  }
+
   await publishRaw(JSON.stringify(payload));
 }
 
