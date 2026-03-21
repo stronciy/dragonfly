@@ -9,7 +9,12 @@ export async function GET(req: Request) {
     if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
 
     const order = await prisma.order.findFirst({
-      where: { performerUserId: user.id, status: { in: ["confirmed", "started", "completed", "arbitration"] } },
+      where: { 
+        performerUserId: user.id, 
+        status: { 
+          in: ["requires_confirmation", "confirmed", "started", "completed", "arbitration"] 
+        } 
+      },
       orderBy: { updatedAt: "desc" },
     });
 

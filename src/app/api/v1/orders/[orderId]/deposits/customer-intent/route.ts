@@ -26,9 +26,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.customerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Order not found");
-    if (order.status !== "accepted") throw new ApiError(409, "CONFLICT", "Customer deposit is not available for this status");
+    
+    // Дозволяємо оплату для requires_confirmation та accepted (для зворотної сумісності)
+    if (order.status !== "requires_confirmation" && order.status !== "accepted") {
+      throw new ApiError(409, "CONFLICT", "Customer deposit is not available for this status. Available statuses: requires_confirmation, accepted");
+    }
 
-    const amount = Number(order.budget) * 0.1;
+    // Сума: 110% від бюджету (100% робота + 10% гарантійна сума)
+    const amount = Number(order.budget) * 1.1;
 
     const providerIntentId = `liqpay_${crypto.randomUUID()}`;
     const origin = getRequestOrigin(req);
