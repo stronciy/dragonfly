@@ -116,19 +116,17 @@ export async function PUT(req: Request) {
       // Часткове оновлення settings
       if (hasBaseLocation || hasBaseCoordinate || hasCoverage) {
         const updateData: {
+          baseLocationLabel: string;
           baseLat?: number;
           baseLng?: number;
           coverageMode?: "radius" | "country";
           radiusKm?: number | null;
-        } = {};
+        } = {
+          baseLocationLabel: currentSettings?.baseLocationLabel ?? "",
+        };
 
         if (hasBaseLocation) {
-          await tx.performerSettings.update({
-            where: { performerUserId: user.id },
-            data: {
-              baseLocationLabel: body.baseLocationLabel ?? currentSettings?.baseLocationLabel ?? "",
-            },
-          });
+          updateData.baseLocationLabel = body.baseLocationLabel ?? currentSettings?.baseLocationLabel ?? "";
         }
         if (hasBaseCoordinate) {
           updateData.baseLat = body.baseCoordinate!.lat;
@@ -139,20 +137,18 @@ export async function PUT(req: Request) {
           updateData.radiusKm = body.coverage!.mode === "radius" ? (body.coverage!.radiusKm ?? null) : null;
         }
 
-        if (Object.keys(updateData).length > 0) {
-          await tx.performerSettings.upsert({
-            where: { performerUserId: user.id },
-            update: updateData,
-            create: {
-              performerUserId: user.id,
-              baseLocationLabel: currentSettings?.baseLocationLabel ?? "",
-              baseLat: updateData.baseLat ?? currentSettings?.baseLat ?? 0,
-              baseLng: updateData.baseLng ?? currentSettings?.baseLng ?? 0,
-              coverageMode: updateData.coverageMode ?? currentSettings?.coverageMode ?? "country",
-              radiusKm: updateData.radiusKm ?? currentSettings?.radiusKm ?? null,
-            },
-          });
-        }
+        await tx.performerSettings.upsert({
+          where: { performerUserId: user.id },
+          update: updateData,
+          create: {
+            performerUserId: user.id,
+            baseLocationLabel: updateData.baseLocationLabel,
+            baseLat: updateData.baseLat ?? 0,
+            baseLng: updateData.baseLng ?? 0,
+            coverageMode: updateData.coverageMode ?? "country",
+            radiusKm: updateData.radiusKm ?? null,
+          },
+        });
       }
 
       // Часткове оновлення services
