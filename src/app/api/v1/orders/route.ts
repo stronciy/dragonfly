@@ -54,6 +54,7 @@ const listQuerySchema = z.object({
     ])
     .optional(),
   group: z.enum(["all", "active", "closed", "expired"]).optional(),
+  excludeExpired: z.coerce.boolean().optional(),
 });
 
 export async function GET(req: Request) {
@@ -63,9 +64,10 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const { limit, offset } = parsePagination(url);
-    const { status, group } = listQuerySchema.parse({
+    const { status, group, excludeExpired } = listQuerySchema.parse({
       status: url.searchParams.get("status") ?? undefined,
       group: url.searchParams.get("group") ?? undefined,
+      excludeExpired: url.searchParams.get("excludeExpired") ?? undefined,
     });
 
     const activeStatuses = ["draft", "published", "accepted", "requires_confirmation", "pending_deposit", "confirmed", "started", "arbitration"] as const;
@@ -91,6 +93,22 @@ export async function GET(req: Request) {
       };
     } else {
       where = whereBase;
+    }
+    
+    // Фільтр excludeExpired: виключає просрочені замовлення
+    if (excludeExpired) {
+      const expiredFilter = {
+        NOT: {
+          AND: [
+            { status: { in: [...expiredStatuses] } },
+            { depositDeadline: { lt: now } },
+          ],
+        },
+      };
+      where = {
+        ...where,
+        ...expiredFilter,
+      };
     }
 
     const [items, totalCount] = await prisma.$transaction([

@@ -39,6 +39,19 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.customerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Order not found");
     if (order.status !== "completed") throw new ApiError(409, "CONFLICT", "Order is not completed yet");
+    
+    // Перевірка чи вже не було підтвердження завершення
+    // Перевіряємо чи вже є review від цього заказчикa
+    const existingReview = await prisma.review.findFirst({
+      where: {
+        orderId,
+        authorUserId: user.id,
+      },
+    });
+    
+    if (existingReview) {
+      throw new ApiError(409, "CONFLICT", "Order completion already confirmed");
+    }
 
     const expo = new ExpoPushService(prisma);
 
