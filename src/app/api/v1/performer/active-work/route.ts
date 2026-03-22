@@ -10,8 +10,9 @@ export async function GET(req: Request) {
 
     const now = new Date();
 
-    // Повертати замовлення зі статусом requires_confirmation ТІЛЬКИ якщо depositDeadline ще не минув
-    const order = await prisma.order.findFirst({
+    // Повертати ВСІ замовлення виконавця з відповідними статусами
+    // Для requires_confirmation/accepted — тільки якщо depositDeadline ще не минув
+    const orders = await prisma.order.findMany({
       where: {
         performerUserId: user.id,
         OR: [
@@ -23,21 +24,63 @@ export async function GET(req: Request) {
         ],
       },
       orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        status: true,
+        locationLabel: true,
+        areaHa: true,
+        budget: true,
+        currency: true,
+        customerUserId: true,
+        acceptedAt: true,
+        depositDeadline: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
-    if (!order) return ok(req, { activeWork: null });
+    if (orders.length === 0) {
+      return ok(req, { 
+        items: [], 
+        active_work: [],
+        totalCount: 0,
+      });
+    }
 
-    const customer = await prisma.user.findUnique({ where: { id: order.customerUserId }, select: { id: true, name: true, phone: true } });
+    // Отримуємо інформацію про заказчиків
+    const customerIds = Array.from(new Set(orders.map(o => o.customerUserId)));
+    const customers = await prisma.user.findMany({
+      where: { id: { in: customerIds } },
+      select: { id: true, name: true, phone: true },
+    });
+    const customerMap = new Map(customers.map(c => [c.id, c]));
 
-    return ok(req, {
-      activeWork: {
-        orderId: order.id,
-        status: order.status,
-        title: order.locationLabel,
-        areaHa: Number(order.areaHa),
-        locationLabel: order.locationLabel,
-        customer: customer ? { id: customer.id, name: customer.name, phone: customer.phone } : null,
-      },
+    const items = orders.map(order => ({
+      orderId: order.id,
+      id: order.id,
+      status: order.status,
+      title: order.locationLabel,
+      areaHa: Number(order.areaHa),
+      locationLabel: order.locationLabel,
+      budget: Number(order.budget),
+      currency: order.currency,
+      acceptedAt: order.acceptedAt,
+      depositDeadline: order.depositDeadline,
+      customer: customerMap.get(order.customerUserId) 
+        ? { 
+            id: customerMap.get(order.customerUserId)!.id, 
+            name: customerMap.get(order.customerUserId)!.name, 
+            phone: customerMap.get(order.customerUserId)!.phone 
+          } 
+        : null,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+    }));
+
+    return ok(req, { 
+      items,
+      active_work: items,
+      totalCount: items.length,
     });
   } catch (err) {
     return fail(req, err);
