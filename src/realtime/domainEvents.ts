@@ -3,6 +3,8 @@ export type DomainEventType =
   | "order.updated"
   | "order.deleted"
   | "order.status_changed"
+  | "order.started"
+  | "order.completed"
   | "marketplace.match_added"
   | "marketplace.match_removed"
   | "agreement.assigned"

@@ -4,6 +4,8 @@ import { ApiError } from "@/lib/errors";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/lib/prisma";
 import { publishDomainEvent } from "@/realtime/publishDomainEvent";
+import { ExpoPushService } from "@/services/expoPush.service";
+import type { InputJsonValue } from "@/generated/prisma/internal/prismaNamespace";
 
 const schema = z.object({
   status: z.enum(["started", "completed"]),
@@ -44,11 +46,115 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       return u;
     });
 
+    // Відправляємо Push сповіщення заказчику
+    const expo = new ExpoPushService(prisma);
+    
+    if (body.status === "started") {
+      // Створюємо запис в notifications
+      await prisma.notification.create({
+        data: {
+          userId: order.customerUserId,
+          type: "order",
+          title: "Виконавець почав роботу",
+          message: `Замовлення #${orderId.slice(-6)}. Виконавець розпочав виконання робіт.`,
+          data: {
+            orderId,
+            type: "order_started",
+            role: "customer",
+            newStatus: "started",
+          } as unknown as InputJsonValue,
+        },
+      });
+      
+      // Відправляємо Push
+      const customerDevices = await prisma.device.findMany({
+        where: { userId: order.customerUserId, revokedAt: null },
+        select: { expoPushToken: true },
+      });
+      
+      for (const device of customerDevices) {
+        await expo.sendPush({
+          toUserId: order.customerUserId,
+          toExpoToken: device.expoPushToken,
+          title: "Виконавець почав роботу",
+          body: `Замовлення #${orderId.slice(-6)}. Виконавець розпочав виконання робіт.`,
+          data: {
+            orderId,
+            type: "order_started",
+            role: "customer",
+            newStatus: "started",
+          },
+        });
+      }
+      
+      console.log(
+        "\n🔔 [Status] Відправка Push order.started:",
+        `\n   OrderId: ${orderId}`,
+        `\n   CustomerUserId: ${order.customerUserId}\n`
+      );
+    } else if (body.status === "completed") {
+      // Створюємо запис в notifications
+      await prisma.notification.create({
+        data: {
+          userId: order.customerUserId,
+          type: "order",
+          title: "Виконавець завершив роботу",
+          message: `Замовлення #${orderId.slice(-6)}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`,
+          data: {
+            orderId,
+            type: "order_completed",
+            role: "customer",
+            newStatus: "completed",
+          } as unknown as InputJsonValue,
+        },
+      });
+      
+      // Відправляємо Push
+      const customerDevices = await prisma.device.findMany({
+        where: { userId: order.customerUserId, revokedAt: null },
+        select: { expoPushToken: true },
+      });
+      
+      for (const device of customerDevices) {
+        await expo.sendPush({
+          toUserId: order.customerUserId,
+          toExpoToken: device.expoPushToken,
+          title: "Виконавець завершив роботу",
+          body: `Замовлення #${orderId.slice(-6)}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`,
+          data: {
+            orderId,
+            type: "order_completed",
+            role: "customer",
+            newStatus: "completed",
+          },
+        });
+      }
+      
+      console.log(
+        "\n🔔 [Status] Відправка Push order.completed:",
+        `\n   OrderId: ${orderId}`,
+        `\n   CustomerUserId: ${order.customerUserId}\n`
+      );
+    }
+
+    // WebSocket для оновлення екрану
     await publishDomainEvent({
       type: "order.status_changed",
       requestId,
       targets: { userIds: [updated.customerUserId, updated.performerUserId!].filter(Boolean) as string[] },
       data: { orderId: updated.id, fromStatus: order.status, toStatus: updated.status },
+    });
+    
+    // Додаткове специфічне сповіщення
+    await publishDomainEvent({
+      type: body.status === "started" ? "order.started" : "order.completed",
+      requestId,
+      targets: { userIds: [updated.customerUserId] },
+      data: { 
+        orderId: updated.id, 
+        status: updated.status,
+        performerId: updated.performerUserId,
+      },
     });
 
     return ok(req, { order: { id: updated.id, status: updated.status } }, { message: "Status updated" });
