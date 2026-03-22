@@ -15,16 +15,16 @@ const serviceSchema = z.object({
 });
 
 const putSchema = z.object({
-  baseLocationLabel: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
+  baseLocationLabel: z.preprocess((v) => (typeof v === "string" ? (v.trim() === "" ? null : v.trim()) : v), z.string().min(1).nullable().optional()),
   baseCoordinate: z.object({
     lat: z.coerce.number().min(-90).max(90),
     lng: z.coerce.number().min(-180).max(180),
-  }),
+  }).optional(),
   coverage: z.object({
     mode: z.enum(["radius", "country"]),
     radiusKm: z.coerce.number().int().min(0).max(500).nullable().optional(),
-  }),
-  services: z.array(serviceSchema).min(1),
+  }).optional(),
+  services: z.array(serviceSchema).min(1).optional(),
 });
 
 export async function GET(req: Request) {
@@ -74,9 +74,23 @@ export async function PUT(req: Request) {
     if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
 
     const body = putSchema.parse(await req.json());
-    if (body.coverage.mode === "radius" && (body.coverage.radiusKm ?? null) === null) {
+    
+    // Перевірка: coverage.mode = radius вимагає radiusKm
+    if (body.coverage?.mode === "radius" && (body.coverage.radiusKm ?? null) === null) {
       throw new ApiError(400, "VALIDATION_ERROR", "radiusKm is required for radius mode", {
         fieldErrors: { "coverage.radiusKm": ["Required for radius mode"] },
+      });
+    }
+    
+    // Перевірка: хоча б одне поле має бути заповнено
+    const hasBaseLocation = body.baseLocationLabel !== undefined && body.baseLocationLabel !== null;
+    const hasBaseCoordinate = body.baseCoordinate !== undefined;
+    const hasCoverage = body.coverage !== undefined;
+    const hasServices = body.services !== undefined;
+    
+    if (!hasBaseLocation && !hasBaseCoordinate && !hasCoverage && !hasServices) {
+      throw new ApiError(400, "VALIDATION_ERROR", "At least one field must be provided", {
+        fieldErrors: { _: ["At least one field must be provided"] },
       });
     }
 
@@ -87,37 +101,77 @@ export async function PUT(req: Request) {
         create: { userId: user.id },
       });
 
-      await tx.performerSettings.upsert({
+      // Отримуємо поточні налаштування для часткового оновлення
+      const currentSettings = await tx.performerSettings.findUnique({
         where: { performerUserId: user.id },
-        update: {
-          baseLocationLabel: body.baseLocationLabel,
-          baseLat: body.baseCoordinate.lat,
-          baseLng: body.baseCoordinate.lng,
-          coverageMode: body.coverage.mode,
-          radiusKm: body.coverage.mode === "radius" ? (body.coverage.radiusKm ?? null) : null,
-        },
-        create: {
-          performerUserId: user.id,
-          baseLocationLabel: body.baseLocationLabel,
-          baseLat: body.baseCoordinate.lat,
-          baseLng: body.baseCoordinate.lng,
-          coverageMode: body.coverage.mode,
-          radiusKm: body.coverage.mode === "radius" ? (body.coverage.radiusKm ?? null) : null,
+        select: {
+          baseLocationLabel: true,
+          baseLat: true,
+          baseLng: true,
+          coverageMode: true,
+          radiusKm: true,
         },
       });
 
-      await tx.performerService.deleteMany({ where: { performerUserId: user.id } });
-      await tx.performerService.createMany({
-        data: body.services.map((s) => ({
-          performerUserId: user.id,
-          serviceCategoryId: s.serviceCategoryId,
-          serviceSubCategoryId: s.serviceSubCategoryId,
-          serviceTypeId: s.serviceTypeId ?? null,
-        })),
-      });
+      // Часткове оновлення settings
+      if (hasBaseLocation || hasBaseCoordinate || hasCoverage) {
+        const updateData: {
+          baseLat?: number;
+          baseLng?: number;
+          coverageMode?: "radius" | "country";
+          radiusKm?: number | null;
+        } = {};
+
+        if (hasBaseLocation) {
+          await tx.performerSettings.update({
+            where: { performerUserId: user.id },
+            data: {
+              baseLocationLabel: body.baseLocationLabel ?? currentSettings?.baseLocationLabel ?? "",
+            },
+          });
+        }
+        if (hasBaseCoordinate) {
+          updateData.baseLat = body.baseCoordinate!.lat;
+          updateData.baseLng = body.baseCoordinate!.lng;
+        }
+        if (hasCoverage) {
+          updateData.coverageMode = body.coverage!.mode;
+          updateData.radiusKm = body.coverage!.mode === "radius" ? (body.coverage!.radiusKm ?? null) : null;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await tx.performerSettings.upsert({
+            where: { performerUserId: user.id },
+            update: updateData,
+            create: {
+              performerUserId: user.id,
+              baseLocationLabel: currentSettings?.baseLocationLabel ?? "",
+              baseLat: updateData.baseLat ?? currentSettings?.baseLat ?? 0,
+              baseLng: updateData.baseLng ?? currentSettings?.baseLng ?? 0,
+              coverageMode: updateData.coverageMode ?? currentSettings?.coverageMode ?? "country",
+              radiusKm: updateData.radiusKm ?? currentSettings?.radiusKm ?? null,
+            },
+          });
+        }
+      }
+
+      // Часткове оновлення services
+      if (hasServices && body.services) {
+        await tx.performerService.deleteMany({ where: { performerUserId: user.id } });
+        await tx.performerService.createMany({
+          data: body.services.map((s) => ({
+            performerUserId: user.id,
+            serviceCategoryId: s.serviceCategoryId,
+            serviceSubCategoryId: s.serviceSubCategoryId,
+            serviceTypeId: s.serviceTypeId ?? null,
+          })),
+        });
+      }
     });
 
-    await enqueueMatchNewExecutor(user.id);
+    if (body.services !== undefined || body.coverage !== undefined || body.baseCoordinate !== undefined) {
+      await enqueueMatchNewExecutor(user.id);
+    }
 
     return ok(req, { ok: true }, { message: "Saved" });
   } catch (err) {
