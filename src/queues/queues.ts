@@ -37,3 +37,13 @@ export function getDepositDeadlineTimeoutQueue() {
   });
   return depositDeadlineTimeoutQueue;
 }
+
+let expiredOrdersQueue: Queue | null = null;
+export function getExpiredOrdersQueue() {
+  if (expiredOrdersQueue) return expiredOrdersQueue;
+  expiredOrdersQueue = new Queue("expired-orders", {
+    connection: getRedisConnectionOptions(),
+    defaultJobOptions,
+  });
+  return expiredOrdersQueue;
+}

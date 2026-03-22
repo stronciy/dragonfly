@@ -107,18 +107,22 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
 
         if (role === "performer") {
           // Виконавець оплатив - перевіряємо чи потрібно автоматично прийняти замовлення
-          if (order.status === "published") {
+          // Змінюємо статус якщо замовлення ще не прийнято (published або requires_confirmation)
+          const shouldUpdateOrder = order.status === "published" || order.status === "requires_confirmation";
+          
+          if (shouldUpdateOrder && !order.performerUserId) {
             // Автоматичне прийняття замовлення після оплати
             const acceptedAt = new Date();
             const depositDeadline = new Date(acceptedAt.getTime() + 12 * 60 * 60 * 1000);
-            
+
             console.log(
               "\n🔄 [Confirm] Автоматичне прийняття замовлення:",
               `\n   OrderId: ${order.id}`,
+              `\n   CurrentStatus: ${order.status}`,
               `\n   NewStatus: requires_confirmation`,
               `\n   DepositDeadline: ${depositDeadline.toISOString()}\n`
             );
-            
+
             await prisma.$transaction([
               prisma.order.update({
                 where: { id: order.id },
@@ -132,25 +136,32 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
               prisma.orderStatusEvent.create({
                 data: {
                   orderId: order.id,
-                  fromStatus: "published",
+                  fromStatus: order.status,
                   toStatus: "requires_confirmation",
                   note: "Автоматичне прийняття після оплати депозиту виконавцем (confirm)",
                 },
               }),
               prisma.orderMatch.deleteMany({ where: { orderId: order.id } }),
             ]);
-            
+
             // Оновлюємо локальну змінну статусу
             order.status = "requires_confirmation";
             order.performerUserId = user.id;
-            
+
             // WebSocket про зміну статусу
             await publishDomainEvent({
               type: "order.status_changed",
               requestId,
               targets: { userIds: [order.customerUserId, user.id] },
-              data: { orderId: order.id, fromStatus: "published", toStatus: "requires_confirmation" },
+              data: { orderId: order.id, fromStatus: order.status, toStatus: "requires_confirmation" },
             });
+          } else if (shouldUpdateOrder && order.performerUserId === user.id) {
+            // Вже прийнято цим виконавцем - просто лог
+            console.log(
+              "\nℹ️ [Confirm] Замовлення вже прийнято цим виконавцем:",
+              `\n   OrderId: ${order.id}`,
+              `\n   PerformerUserId: ${order.performerUserId}\n`
+            );
           }
           
           // Виконавець оплатив - відправити Push заказчику

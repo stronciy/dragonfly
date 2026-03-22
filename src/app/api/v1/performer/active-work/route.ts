@@ -8,12 +8,19 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
 
+    const now = new Date();
+
+    // Повертати замовлення зі статусом requires_confirmation ТІЛЬКИ якщо depositDeadline ще не минув
     const order = await prisma.order.findFirst({
-      where: { 
-        performerUserId: user.id, 
-        status: { 
-          in: ["requires_confirmation", "confirmed", "started", "completed", "arbitration"] 
-        } 
+      where: {
+        performerUserId: user.id,
+        OR: [
+          { status: { in: ["confirmed", "started", "completed", "arbitration"] } },
+          {
+            status: { in: ["requires_confirmation", "accepted"] },
+            depositDeadline: { gte: now }, // ще не просрочено
+          },
+        ],
       },
       orderBy: { updatedAt: "desc" },
     });

@@ -53,7 +53,7 @@ const listQuerySchema = z.object({
       "cancelled",
     ])
     .optional(),
-  group: z.enum(["all", "active", "closed"]).optional(),
+  group: z.enum(["all", "active", "closed", "expired"]).optional(),
 });
 
 export async function GET(req: Request) {
@@ -70,16 +70,28 @@ export async function GET(req: Request) {
 
     const activeStatuses = ["draft", "published", "accepted", "requires_confirmation", "pending_deposit", "confirmed", "started", "arbitration"] as const;
     const closedStatuses = ["completed", "cancelled"] as const;
+    const expiredStatuses = ["requires_confirmation", "accepted"] as const;
+    const now = new Date();
 
     const whereBase = { customerUserId: user.id };
-    const where =
-      status
-        ? { ...whereBase, status }
-        : group === "active"
-          ? { ...whereBase, status: { in: [...activeStatuses] } }
-          : group === "closed"
-            ? { ...whereBase, status: { in: [...closedStatuses] } }
-            : whereBase;
+    let where;
+
+    if (status) {
+      where = { ...whereBase, status };
+    } else if (group === "active") {
+      where = { ...whereBase, status: { in: [...activeStatuses] } };
+    } else if (group === "closed") {
+      where = { ...whereBase, status: { in: [...closedStatuses] } };
+    } else if (group === "expired") {
+      // Просрочені замовлення: requires_confirmation або accepted з depositDeadline < now
+      where = {
+        ...whereBase,
+        status: { in: [...expiredStatuses] },
+        depositDeadline: { lt: now },
+      };
+    } else {
+      where = whereBase;
+    }
 
     const [items, totalCount] = await prisma.$transaction([
       prisma.order.findMany({

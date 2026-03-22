@@ -1,11 +1,13 @@
 import { startMatchNewExecutorWorker } from "./matchNewExecutor.worker";
 import { startMatchNewOrderWorker } from "./matchNewOrder.worker";
 import { startDepositDeadlineTimeoutWorker } from "./depositDeadlineTimeout.worker";
+import { startExpiredOrdersWorker } from "./expiredOrders.worker";
 
 const workers = [
   startMatchNewOrderWorker(),
   startMatchNewExecutorWorker(),
   startDepositDeadlineTimeoutWorker(),
+  startExpiredOrdersWorker(),
 ];
 
 for (const w of workers) {
