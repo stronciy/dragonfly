@@ -296,6 +296,13 @@ model PerformerProfile {
   userId String @unique @map("user_id")
 
   companyName String?  @map("company_name")
+  companyEdrpou String? @map("company_edrpou")
+  billingEmail String? @map("billing_email")
+  iban         String? @map("iban")
+  taxSystem    TaxSystem? @map("tax_system")
+  vatPayer     Boolean @default(false) @map("vat_payer")
+  legalAddress String? @map("legal_address")
+  
   rating      Decimal  @default(0) @db.Decimal(3, 2)
   jobsDone    Int      @default(0) @map("jobs_done")
 

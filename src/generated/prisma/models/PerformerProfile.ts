@@ -40,6 +40,12 @@ export type PerformerProfileMinAggregateOutputType = {
   id: string | null
   userId: string | null
   companyName: string | null
+  companyEdrpou: string | null
+  billingEmail: string | null
+  iban: string | null
+  taxSystem: $Enums.TaxSystem | null
+  vatPayer: boolean | null
+  legalAddress: string | null
   rating: runtime.Decimal | null
   jobsDone: number | null
   createdAt: Date | null
@@ -50,6 +56,12 @@ export type PerformerProfileMaxAggregateOutputType = {
   id: string | null
   userId: string | null
   companyName: string | null
+  companyEdrpou: string | null
+  billingEmail: string | null
+  iban: string | null
+  taxSystem: $Enums.TaxSystem | null
+  vatPayer: boolean | null
+  legalAddress: string | null
   rating: runtime.Decimal | null
   jobsDone: number | null
   createdAt: Date | null
@@ -60,6 +72,12 @@ export type PerformerProfileCountAggregateOutputType = {
   id: number
   userId: number
   companyName: number
+  companyEdrpou: number
+  billingEmail: number
+  iban: number
+  taxSystem: number
+  vatPayer: number
+  legalAddress: number
   rating: number
   jobsDone: number
   createdAt: number
@@ -82,6 +100,12 @@ export type PerformerProfileMinAggregateInputType = {
   id?: true
   userId?: true
   companyName?: true
+  companyEdrpou?: true
+  billingEmail?: true
+  iban?: true
+  taxSystem?: true
+  vatPayer?: true
+  legalAddress?: true
   rating?: true
   jobsDone?: true
   createdAt?: true
@@ -92,6 +116,12 @@ export type PerformerProfileMaxAggregateInputType = {
   id?: true
   userId?: true
   companyName?: true
+  companyEdrpou?: true
+  billingEmail?: true
+  iban?: true
+  taxSystem?: true
+  vatPayer?: true
+  legalAddress?: true
   rating?: true
   jobsDone?: true
   createdAt?: true
@@ -102,6 +132,12 @@ export type PerformerProfileCountAggregateInputType = {
   id?: true
   userId?: true
   companyName?: true
+  companyEdrpou?: true
+  billingEmail?: true
+  iban?: true
+  taxSystem?: true
+  vatPayer?: true
+  legalAddress?: true
   rating?: true
   jobsDone?: true
   createdAt?: true
@@ -199,6 +235,12 @@ export type PerformerProfileGroupByOutputType = {
   id: string
   userId: string
   companyName: string | null
+  companyEdrpou: string | null
+  billingEmail: string | null
+  iban: string | null
+  taxSystem: $Enums.TaxSystem | null
+  vatPayer: boolean
+  legalAddress: string | null
   rating: runtime.Decimal
   jobsDone: number
   createdAt: Date
@@ -232,6 +274,12 @@ export type PerformerProfileWhereInput = {
   id?: Prisma.StringFilter<"PerformerProfile"> | string
   userId?: Prisma.StringFilter<"PerformerProfile"> | string
   companyName?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
+  companyEdrpou?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
+  billingEmail?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
+  iban?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
+  taxSystem?: Prisma.EnumTaxSystemNullableFilter<"PerformerProfile"> | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFilter<"PerformerProfile"> | boolean
+  legalAddress?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
   rating?: Prisma.DecimalFilter<"PerformerProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntFilter<"PerformerProfile"> | number
   createdAt?: Prisma.DateTimeFilter<"PerformerProfile"> | Date | string
@@ -245,6 +293,12 @@ export type PerformerProfileOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   companyName?: Prisma.SortOrderInput | Prisma.SortOrder
+  companyEdrpou?: Prisma.SortOrderInput | Prisma.SortOrder
+  billingEmail?: Prisma.SortOrderInput | Prisma.SortOrder
+  iban?: Prisma.SortOrderInput | Prisma.SortOrder
+  taxSystem?: Prisma.SortOrderInput | Prisma.SortOrder
+  vatPayer?: Prisma.SortOrder
+  legalAddress?: Prisma.SortOrderInput | Prisma.SortOrder
   rating?: Prisma.SortOrder
   jobsDone?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -261,6 +315,12 @@ export type PerformerProfileWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.PerformerProfileWhereInput[]
   NOT?: Prisma.PerformerProfileWhereInput | Prisma.PerformerProfileWhereInput[]
   companyName?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
+  companyEdrpou?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
+  billingEmail?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
+  iban?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
+  taxSystem?: Prisma.EnumTaxSystemNullableFilter<"PerformerProfile"> | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFilter<"PerformerProfile"> | boolean
+  legalAddress?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
   rating?: Prisma.DecimalFilter<"PerformerProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntFilter<"PerformerProfile"> | number
   createdAt?: Prisma.DateTimeFilter<"PerformerProfile"> | Date | string
@@ -274,6 +334,12 @@ export type PerformerProfileOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   companyName?: Prisma.SortOrderInput | Prisma.SortOrder
+  companyEdrpou?: Prisma.SortOrderInput | Prisma.SortOrder
+  billingEmail?: Prisma.SortOrderInput | Prisma.SortOrder
+  iban?: Prisma.SortOrderInput | Prisma.SortOrder
+  taxSystem?: Prisma.SortOrderInput | Prisma.SortOrder
+  vatPayer?: Prisma.SortOrder
+  legalAddress?: Prisma.SortOrderInput | Prisma.SortOrder
   rating?: Prisma.SortOrder
   jobsDone?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -292,6 +358,12 @@ export type PerformerProfileScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"PerformerProfile"> | string
   userId?: Prisma.StringWithAggregatesFilter<"PerformerProfile"> | string
   companyName?: Prisma.StringNullableWithAggregatesFilter<"PerformerProfile"> | string | null
+  companyEdrpou?: Prisma.StringNullableWithAggregatesFilter<"PerformerProfile"> | string | null
+  billingEmail?: Prisma.StringNullableWithAggregatesFilter<"PerformerProfile"> | string | null
+  iban?: Prisma.StringNullableWithAggregatesFilter<"PerformerProfile"> | string | null
+  taxSystem?: Prisma.EnumTaxSystemNullableWithAggregatesFilter<"PerformerProfile"> | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolWithAggregatesFilter<"PerformerProfile"> | boolean
+  legalAddress?: Prisma.StringNullableWithAggregatesFilter<"PerformerProfile"> | string | null
   rating?: Prisma.DecimalWithAggregatesFilter<"PerformerProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntWithAggregatesFilter<"PerformerProfile"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PerformerProfile"> | Date | string
@@ -301,6 +373,12 @@ export type PerformerProfileScalarWhereWithAggregatesInput = {
 export type PerformerProfileCreateInput = {
   id?: string
   companyName?: string | null
+  companyEdrpou?: string | null
+  billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   rating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: number
   createdAt?: Date | string
@@ -314,6 +392,12 @@ export type PerformerProfileUncheckedCreateInput = {
   id?: string
   userId: string
   companyName?: string | null
+  companyEdrpou?: string | null
+  billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   rating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: number
   createdAt?: Date | string
@@ -325,6 +409,12 @@ export type PerformerProfileUncheckedCreateInput = {
 export type PerformerProfileUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -338,6 +428,12 @@ export type PerformerProfileUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -350,6 +446,12 @@ export type PerformerProfileCreateManyInput = {
   id?: string
   userId: string
   companyName?: string | null
+  companyEdrpou?: string | null
+  billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   rating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: number
   createdAt?: Date | string
@@ -359,6 +461,12 @@ export type PerformerProfileCreateManyInput = {
 export type PerformerProfileUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -369,6 +477,12 @@ export type PerformerProfileUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -384,6 +498,12 @@ export type PerformerProfileCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   companyName?: Prisma.SortOrder
+  companyEdrpou?: Prisma.SortOrder
+  billingEmail?: Prisma.SortOrder
+  iban?: Prisma.SortOrder
+  taxSystem?: Prisma.SortOrder
+  vatPayer?: Prisma.SortOrder
+  legalAddress?: Prisma.SortOrder
   rating?: Prisma.SortOrder
   jobsDone?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -399,6 +519,12 @@ export type PerformerProfileMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   companyName?: Prisma.SortOrder
+  companyEdrpou?: Prisma.SortOrder
+  billingEmail?: Prisma.SortOrder
+  iban?: Prisma.SortOrder
+  taxSystem?: Prisma.SortOrder
+  vatPayer?: Prisma.SortOrder
+  legalAddress?: Prisma.SortOrder
   rating?: Prisma.SortOrder
   jobsDone?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -409,6 +535,12 @@ export type PerformerProfileMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   companyName?: Prisma.SortOrder
+  companyEdrpou?: Prisma.SortOrder
+  billingEmail?: Prisma.SortOrder
+  iban?: Prisma.SortOrder
+  taxSystem?: Prisma.SortOrder
+  vatPayer?: Prisma.SortOrder
+  legalAddress?: Prisma.SortOrder
   rating?: Prisma.SortOrder
   jobsDone?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -488,6 +620,12 @@ export type PerformerProfileUpdateOneRequiredWithoutServicesNestedInput = {
 export type PerformerProfileCreateWithoutUserInput = {
   id?: string
   companyName?: string | null
+  companyEdrpou?: string | null
+  billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   rating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: number
   createdAt?: Date | string
@@ -499,6 +637,12 @@ export type PerformerProfileCreateWithoutUserInput = {
 export type PerformerProfileUncheckedCreateWithoutUserInput = {
   id?: string
   companyName?: string | null
+  companyEdrpou?: string | null
+  billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   rating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: number
   createdAt?: Date | string
@@ -526,6 +670,12 @@ export type PerformerProfileUpdateToOneWithWhereWithoutUserInput = {
 export type PerformerProfileUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -537,6 +687,12 @@ export type PerformerProfileUpdateWithoutUserInput = {
 export type PerformerProfileUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -548,6 +704,12 @@ export type PerformerProfileUncheckedUpdateWithoutUserInput = {
 export type PerformerProfileCreateWithoutSettingsInput = {
   id?: string
   companyName?: string | null
+  companyEdrpou?: string | null
+  billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   rating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: number
   createdAt?: Date | string
@@ -560,6 +722,12 @@ export type PerformerProfileUncheckedCreateWithoutSettingsInput = {
   id?: string
   userId: string
   companyName?: string | null
+  companyEdrpou?: string | null
+  billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   rating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: number
   createdAt?: Date | string
@@ -586,6 +754,12 @@ export type PerformerProfileUpdateToOneWithWhereWithoutSettingsInput = {
 export type PerformerProfileUpdateWithoutSettingsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -598,6 +772,12 @@ export type PerformerProfileUncheckedUpdateWithoutSettingsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -608,6 +788,12 @@ export type PerformerProfileUncheckedUpdateWithoutSettingsInput = {
 export type PerformerProfileCreateWithoutServicesInput = {
   id?: string
   companyName?: string | null
+  companyEdrpou?: string | null
+  billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   rating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: number
   createdAt?: Date | string
@@ -620,6 +806,12 @@ export type PerformerProfileUncheckedCreateWithoutServicesInput = {
   id?: string
   userId: string
   companyName?: string | null
+  companyEdrpou?: string | null
+  billingEmail?: string | null
+  iban?: string | null
+  taxSystem?: $Enums.TaxSystem | null
+  vatPayer?: boolean
+  legalAddress?: string | null
   rating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: number
   createdAt?: Date | string
@@ -646,6 +838,12 @@ export type PerformerProfileUpdateToOneWithWhereWithoutServicesInput = {
 export type PerformerProfileUpdateWithoutServicesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -658,6 +856,12 @@ export type PerformerProfileUncheckedUpdateWithoutServicesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  companyEdrpou?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iban?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
+  vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   jobsDone?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -700,6 +904,12 @@ export type PerformerProfileSelect<ExtArgs extends runtime.Types.Extensions.Inte
   id?: boolean
   userId?: boolean
   companyName?: boolean
+  companyEdrpou?: boolean
+  billingEmail?: boolean
+  iban?: boolean
+  taxSystem?: boolean
+  vatPayer?: boolean
+  legalAddress?: boolean
   rating?: boolean
   jobsDone?: boolean
   createdAt?: boolean
@@ -714,6 +924,12 @@ export type PerformerProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   userId?: boolean
   companyName?: boolean
+  companyEdrpou?: boolean
+  billingEmail?: boolean
+  iban?: boolean
+  taxSystem?: boolean
+  vatPayer?: boolean
+  legalAddress?: boolean
   rating?: boolean
   jobsDone?: boolean
   createdAt?: boolean
@@ -725,6 +941,12 @@ export type PerformerProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   userId?: boolean
   companyName?: boolean
+  companyEdrpou?: boolean
+  billingEmail?: boolean
+  iban?: boolean
+  taxSystem?: boolean
+  vatPayer?: boolean
+  legalAddress?: boolean
   rating?: boolean
   jobsDone?: boolean
   createdAt?: boolean
@@ -736,13 +958,19 @@ export type PerformerProfileSelectScalar = {
   id?: boolean
   userId?: boolean
   companyName?: boolean
+  companyEdrpou?: boolean
+  billingEmail?: boolean
+  iban?: boolean
+  taxSystem?: boolean
+  vatPayer?: boolean
+  legalAddress?: boolean
   rating?: boolean
   jobsDone?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PerformerProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "companyName" | "rating" | "jobsDone" | "createdAt" | "updatedAt", ExtArgs["result"]["performerProfile"]>
+export type PerformerProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "companyName" | "companyEdrpou" | "billingEmail" | "iban" | "taxSystem" | "vatPayer" | "legalAddress" | "rating" | "jobsDone" | "createdAt" | "updatedAt", ExtArgs["result"]["performerProfile"]>
 export type PerformerProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   settings?: boolean | Prisma.PerformerProfile$settingsArgs<ExtArgs>
   services?: boolean | Prisma.PerformerProfile$servicesArgs<ExtArgs>
@@ -767,6 +995,12 @@ export type $PerformerProfilePayload<ExtArgs extends runtime.Types.Extensions.In
     id: string
     userId: string
     companyName: string | null
+    companyEdrpou: string | null
+    billingEmail: string | null
+    iban: string | null
+    taxSystem: $Enums.TaxSystem | null
+    vatPayer: boolean
+    legalAddress: string | null
     rating: runtime.Decimal
     jobsDone: number
     createdAt: Date
@@ -1200,6 +1434,12 @@ export interface PerformerProfileFieldRefs {
   readonly id: Prisma.FieldRef<"PerformerProfile", 'String'>
   readonly userId: Prisma.FieldRef<"PerformerProfile", 'String'>
   readonly companyName: Prisma.FieldRef<"PerformerProfile", 'String'>
+  readonly companyEdrpou: Prisma.FieldRef<"PerformerProfile", 'String'>
+  readonly billingEmail: Prisma.FieldRef<"PerformerProfile", 'String'>
+  readonly iban: Prisma.FieldRef<"PerformerProfile", 'String'>
+  readonly taxSystem: Prisma.FieldRef<"PerformerProfile", 'TaxSystem'>
+  readonly vatPayer: Prisma.FieldRef<"PerformerProfile", 'Boolean'>
+  readonly legalAddress: Prisma.FieldRef<"PerformerProfile", 'String'>
   readonly rating: Prisma.FieldRef<"PerformerProfile", 'Decimal'>
   readonly jobsDone: Prisma.FieldRef<"PerformerProfile", 'Int'>
   readonly createdAt: Prisma.FieldRef<"PerformerProfile", 'DateTime'>
