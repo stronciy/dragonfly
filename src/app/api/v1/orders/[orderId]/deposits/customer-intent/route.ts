@@ -32,8 +32,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       throw new ApiError(409, "CONFLICT", "Customer deposit is not available for this status. Available statuses: requires_confirmation, accepted");
     }
 
-    // Сума: 110% від бюджету (100% робота + 10% гарантійна сума)
-    const amount = Number(order.budget) * 1.1;
+    // Сума: 10% від бюджету (гарантійна сума)
+    const amount = Number(order.budget) * 0.1;
 
     const providerIntentId = `liqpay_${crypto.randomUUID()}`;
     const origin = getRequestOrigin(req);
