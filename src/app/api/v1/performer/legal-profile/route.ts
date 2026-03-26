@@ -42,7 +42,7 @@ export async function GET(req: Request) {
       where: { userId: user.id },
       select: {
         companyName: true,
-        companyEdrpou: true,
+        edrpou: true,
         iban: true,
         vatPayer: true,
         legalAddress: true,
@@ -53,7 +53,7 @@ export async function GET(req: Request) {
     return ok(req, {
       legalProfile: {
         companyName: profile?.companyName ?? null,
-        edrpou: profile?.companyEdrpou ?? null,
+        edrpou: profile?.edrpou ?? null,
         iban: profile?.iban ?? null,
         vatPayer: profile?.vatPayer ?? false,
         legalAddress: profile?.legalAddress ?? null,
@@ -77,21 +77,21 @@ export async function PATCH(req: Request) {
       create: {
         userId: user.id,
         companyName: body.companyName,
-        companyEdrpou: body.edrpou,
+        edrpou: body.edrpou,
         iban: body.iban,
         vatPayer: body.vatPayer,
         legalAddress: body.legalAddress,
       },
       update: {
         companyName: body.companyName,
-        companyEdrpou: body.edrpou,
+        edrpou: body.edrpou,
         iban: body.iban,
         vatPayer: body.vatPayer,
         legalAddress: body.legalAddress,
       },
       select: {
         companyName: true,
-        companyEdrpou: true,
+        edrpou: true,
         iban: true,
         vatPayer: true,
         legalAddress: true,
@@ -102,7 +102,7 @@ export async function PATCH(req: Request) {
     return ok(req, {
       legalProfile: {
         companyName: profile.companyName,
-        edrpou: profile.companyEdrpou,
+        edrpou: profile.edrpou,
         iban: profile.iban,
         vatPayer: profile.vatPayer,
         legalAddress: profile.legalAddress,

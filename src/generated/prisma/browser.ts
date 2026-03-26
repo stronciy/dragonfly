@@ -73,11 +73,6 @@ export type CustomerCropStat = Prisma.CustomerCropStatModel
  */
 export type PerformerProfile = Prisma.PerformerProfileModel
 /**
- * Model PerformerSettings
- * 
- */
-export type PerformerSettings = Prisma.PerformerSettingsModel
-/**
  * Model PerformerService
  * 
  */

@@ -395,7 +395,6 @@ export const ModelName = {
   TwoFactorSetup: 'TwoFactorSetup',
   CustomerCropStat: 'CustomerCropStat',
   PerformerProfile: 'PerformerProfile',
-  PerformerSettings: 'PerformerSettings',
   PerformerService: 'PerformerService',
   Field: 'Field',
   Order: 'Order',
@@ -427,7 +426,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "serviceCategory" | "serviceSubcategory" | "serviceType" | "crop" | "user" | "refreshToken" | "customerProfile" | "review" | "twoFactorSetup" | "customerCropStat" | "performerProfile" | "performerSettings" | "performerService" | "field" | "order" | "escrowLock" | "payment" | "orderStatusEvent" | "orderMatch" | "arbitrationCase" | "arbitrationMedia" | "notification" | "device" | "orderReportMedia" | "agreement" | "agreementDocument" | "payout" | "reserveTransaction"
+    modelProps: "serviceCategory" | "serviceSubcategory" | "serviceType" | "crop" | "user" | "refreshToken" | "customerProfile" | "review" | "twoFactorSetup" | "customerCropStat" | "performerProfile" | "performerService" | "field" | "order" | "escrowLock" | "payment" | "orderStatusEvent" | "orderMatch" | "arbitrationCase" | "arbitrationMedia" | "notification" | "device" | "orderReportMedia" | "agreement" | "agreementDocument" | "payout" | "reserveTransaction"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1242,80 +1241,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.PerformerProfileCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.PerformerProfileCountAggregateOutputType> | number
-        }
-      }
-    }
-    PerformerSettings: {
-      payload: Prisma.$PerformerSettingsPayload<ExtArgs>
-      fields: Prisma.PerformerSettingsFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.PerformerSettingsFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PerformerSettingsPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.PerformerSettingsFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PerformerSettingsPayload>
-        }
-        findFirst: {
-          args: Prisma.PerformerSettingsFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PerformerSettingsPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.PerformerSettingsFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PerformerSettingsPayload>
-        }
-        findMany: {
-          args: Prisma.PerformerSettingsFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PerformerSettingsPayload>[]
-        }
-        create: {
-          args: Prisma.PerformerSettingsCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PerformerSettingsPayload>
-        }
-        createMany: {
-          args: Prisma.PerformerSettingsCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.PerformerSettingsCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PerformerSettingsPayload>[]
-        }
-        delete: {
-          args: Prisma.PerformerSettingsDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PerformerSettingsPayload>
-        }
-        update: {
-          args: Prisma.PerformerSettingsUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PerformerSettingsPayload>
-        }
-        deleteMany: {
-          args: Prisma.PerformerSettingsDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.PerformerSettingsUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.PerformerSettingsUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PerformerSettingsPayload>[]
-        }
-        upsert: {
-          args: Prisma.PerformerSettingsUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PerformerSettingsPayload>
-        }
-        aggregate: {
-          args: Prisma.PerformerSettingsAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregatePerformerSettings>
-        }
-        groupBy: {
-          args: Prisma.PerformerSettingsGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.PerformerSettingsGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.PerformerSettingsCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.PerformerSettingsCountAggregateOutputType> | number
         }
       }
     }
@@ -2684,34 +2609,24 @@ export const PerformerProfileScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   companyName: 'companyName',
-  companyEdrpou: 'companyEdrpou',
+  edrpou: 'edrpou',
   billingEmail: 'billingEmail',
   iban: 'iban',
   taxSystem: 'taxSystem',
   vatPayer: 'vatPayer',
   legalAddress: 'legalAddress',
-  rating: 'rating',
-  jobsDone: 'jobsDone',
+  baseLocation: 'baseLocation',
+  baseLat: 'baseLat',
+  baseLng: 'baseLng',
+  coverageMode: 'coverageMode',
+  radiusKm: 'radiusKm',
+  avgRating: 'avgRating',
+  reviewCount: 'reviewCount',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type PerformerProfileScalarFieldEnum = (typeof PerformerProfileScalarFieldEnum)[keyof typeof PerformerProfileScalarFieldEnum]
-
-
-export const PerformerSettingsScalarFieldEnum = {
-  id: 'id',
-  performerUserId: 'performerUserId',
-  baseLocationLabel: 'baseLocationLabel',
-  baseLat: 'baseLat',
-  baseLng: 'baseLng',
-  coverageMode: 'coverageMode',
-  radiusKm: 'radiusKm',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type PerformerSettingsScalarFieldEnum = (typeof PerformerSettingsScalarFieldEnum)[keyof typeof PerformerSettingsScalarFieldEnum]
 
 
 export const PerformerServiceScalarFieldEnum = {
@@ -3355,7 +3270,6 @@ export type GlobalOmitConfig = {
   twoFactorSetup?: Prisma.TwoFactorSetupOmit
   customerCropStat?: Prisma.CustomerCropStatOmit
   performerProfile?: Prisma.PerformerProfileOmit
-  performerSettings?: Prisma.PerformerSettingsOmit
   performerService?: Prisma.PerformerServiceOmit
   field?: Prisma.FieldOmit
   order?: Prisma.OrderOmit

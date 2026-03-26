@@ -295,18 +295,24 @@ model PerformerProfile {
   id     String @id @default(cuid())
   userId String @unique @map("user_id")
 
-  companyName String?  @map("company_name")
-  companyEdrpou String? @map("company_edrpou")
+  companyName  String? @map("company_name")
+  edrpou       String? @map("edrpou")
   billingEmail String? @map("billing_email")
   iban         String? @map("iban")
   taxSystem    TaxSystem? @map("tax_system")
   vatPayer     Boolean @default(false) @map("vat_payer")
   legalAddress String? @map("legal_address")
   
-  rating      Decimal  @default(0) @db.Decimal(3, 2)
-  jobsDone    Int      @default(0) @map("jobs_done")
+  baseLocation String? @map("base_location")
+  baseLat      Decimal? @db.Decimal(9, 6) @map("base_lat")
+  baseLng      Decimal? @db.Decimal(9, 6) @map("base_lng")
 
-  settings PerformerSettings?
+  coverageMode CoverageMode @default(radius) @map("coverage_mode")
+  radiusKm     Int?         @map("radius_km")
+
+  avgRating    Decimal @default(0) @db.Decimal(3, 2) @map("avg_rating")
+  reviewCount  Int     @default(0) @map("review_count")
+
   services PerformerService[]
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -315,26 +321,6 @@ model PerformerProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("performer_profiles")
-}
-
-model PerformerSettings {
-  id              String @id @default(cuid())
-  performerUserId String @unique @map("performer_user_id")
-
-  baseLocationLabel String  @map("base_location_label")
-  baseLat           Decimal @db.Decimal(9, 6) @map("base_lat")
-  baseLng           Decimal @db.Decimal(9, 6) @map("base_lng")
-
-  coverageMode CoverageMode @default(radius) @map("coverage_mode")
-  radiusKm     Int?         @map("radius_km")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  performer PerformerProfile @relation(fields: [performerUserId], references: [userId], onDelete: Cascade)
-
-  @@index([coverageMode])
-  @@map("performer_settings")
 }
 
 model PerformerService {

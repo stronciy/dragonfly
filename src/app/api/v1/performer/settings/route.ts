@@ -32,10 +32,10 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
 
-    const settings = await prisma.performerSettings.findUnique({
-      where: { performerUserId: user.id },
+    const profile = await prisma.performerProfile.findUnique({
+      where: { userId: user.id },
       select: {
-        baseLocationLabel: true,
+        baseLocation: true,
         baseLat: true,
         baseLng: true,
         coverageMode: true,
@@ -54,11 +54,11 @@ export async function GET(req: Request) {
     });
 
     return ok(req, {
-      settings: settings
+      settings: profile
         ? {
-            baseLocationLabel: settings.baseLocationLabel,
-            baseCoordinate: { lat: Number(settings.baseLat), lng: Number(settings.baseLng) },
-            coverage: { mode: settings.coverageMode, radiusKm: settings.radiusKm },
+            baseLocationLabel: profile.baseLocation,
+            baseCoordinate: { lat: Number(profile.baseLat), lng: Number(profile.baseLng) },
+            coverage: { mode: profile.coverageMode, radiusKm: profile.radiusKm },
             services,
           }
         : null,
@@ -95,17 +95,11 @@ export async function PUT(req: Request) {
     }
 
     await prisma.$transaction(async (tx) => {
-      await tx.performerProfile.upsert({
-        where: { userId: user.id },
-        update: {},
-        create: { userId: user.id },
-      });
-
       // Отримуємо поточні налаштування для часткового оновлення
-      const currentSettings = await tx.performerSettings.findUnique({
-        where: { performerUserId: user.id },
+      const current = await tx.performerProfile.findUnique({
+        where: { userId: user.id },
         select: {
-          baseLocationLabel: true,
+          baseLocation: true,
           baseLat: true,
           baseLng: true,
           coverageMode: true,
@@ -113,20 +107,18 @@ export async function PUT(req: Request) {
         },
       });
 
-      // Часткове оновлення settings
+      // Часткове оновлення profile (geo settings)
       if (hasBaseLocation || hasBaseCoordinate || hasCoverage) {
         const updateData: {
-          baseLocationLabel: string;
+          baseLocation?: string;
           baseLat?: number;
           baseLng?: number;
           coverageMode?: "radius" | "country";
           radiusKm?: number | null;
-        } = {
-          baseLocationLabel: currentSettings?.baseLocationLabel ?? "",
-        };
+        } = {};
 
         if (hasBaseLocation) {
-          updateData.baseLocationLabel = body.baseLocationLabel ?? currentSettings?.baseLocationLabel ?? "";
+          updateData.baseLocation = body.baseLocationLabel ?? current?.baseLocation ?? "";
         }
         if (hasBaseCoordinate) {
           updateData.baseLat = body.baseCoordinate!.lat;
@@ -137,12 +129,12 @@ export async function PUT(req: Request) {
           updateData.radiusKm = body.coverage!.mode === "radius" ? (body.coverage!.radiusKm ?? null) : null;
         }
 
-        await tx.performerSettings.upsert({
-          where: { performerUserId: user.id },
+        await tx.performerProfile.upsert({
+          where: { userId: user.id },
           update: updateData,
           create: {
-            performerUserId: user.id,
-            baseLocationLabel: updateData.baseLocationLabel,
+            userId: user.id,
+            baseLocation: updateData.baseLocation ?? "",
             baseLat: updateData.baseLat ?? 0,
             baseLng: updateData.baseLng ?? 0,
             coverageMode: updateData.coverageMode ?? "country",

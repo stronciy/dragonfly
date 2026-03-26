@@ -62,7 +62,6 @@ export const ModelName = {
   TwoFactorSetup: 'TwoFactorSetup',
   CustomerCropStat: 'CustomerCropStat',
   PerformerProfile: 'PerformerProfile',
-  PerformerSettings: 'PerformerSettings',
   PerformerService: 'PerformerService',
   Field: 'Field',
   Order: 'Order',
@@ -239,34 +238,24 @@ export const PerformerProfileScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   companyName: 'companyName',
-  companyEdrpou: 'companyEdrpou',
+  edrpou: 'edrpou',
   billingEmail: 'billingEmail',
   iban: 'iban',
   taxSystem: 'taxSystem',
   vatPayer: 'vatPayer',
   legalAddress: 'legalAddress',
-  rating: 'rating',
-  jobsDone: 'jobsDone',
+  baseLocation: 'baseLocation',
+  baseLat: 'baseLat',
+  baseLng: 'baseLng',
+  coverageMode: 'coverageMode',
+  radiusKm: 'radiusKm',
+  avgRating: 'avgRating',
+  reviewCount: 'reviewCount',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type PerformerProfileScalarFieldEnum = (typeof PerformerProfileScalarFieldEnum)[keyof typeof PerformerProfileScalarFieldEnum]
-
-
-export const PerformerSettingsScalarFieldEnum = {
-  id: 'id',
-  performerUserId: 'performerUserId',
-  baseLocationLabel: 'baseLocationLabel',
-  baseLat: 'baseLat',
-  baseLng: 'baseLng',
-  coverageMode: 'coverageMode',
-  radiusKm: 'radiusKm',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type PerformerSettingsScalarFieldEnum = (typeof PerformerSettingsScalarFieldEnum)[keyof typeof PerformerSettingsScalarFieldEnum]
 
 
 export const PerformerServiceScalarFieldEnum = {
