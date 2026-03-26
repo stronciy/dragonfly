@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/lib/prisma";
 import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 import { ExpoPushService } from "@/services/expoPush.service";
-import type { InputJsonValue } from "@/generated/prisma/internal/prismaNamespace";
+import { Prisma } from "@/generated/prisma";
 
 const schema = z.object({ reason: z.string().max(2000).optional() });
 
@@ -90,7 +90,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
             role: "performer",
             reason: body.reason,
             expired: isExpired,
-          } as unknown as InputJsonValue,
+          } as unknown as Prisma.InputJsonValue,
         },
       });
     }

@@ -1,6 +1,6 @@
 import { Expo, type ExpoPushMessage } from "expo-server-sdk";
 import type { PrismaClient } from "../generated/prisma/client";
-import type { InputJsonValue } from "../generated/prisma/internal/prismaNamespace";
+import { Prisma } from "../generated/prisma";
 
 type ExpoTicket =
   | { status: "ok"; id: string }
@@ -115,7 +115,7 @@ export class ExpoPushService {
         type: "marketplace",
         title: v.title,
         message: v.body,
-        data: { ...(v.data ?? {}), expo: { ticket: ticketsByIndex[i] ?? null } } as unknown as InputJsonValue,
+        data: { ...(v.data ?? {}), expo: { ticket: ticketsByIndex[i] ?? null } } as unknown as Prisma.InputJsonValue,
       })),
     });
 

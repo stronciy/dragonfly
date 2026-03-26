@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/lib/prisma";
 import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 import { ExpoPushService } from "@/services/expoPush.service";
-import type { InputJsonValue } from "@/generated/prisma/internal/prismaNamespace";
+import { Prisma } from "@/generated/prisma";
 
 const schema = z.object({
   status: z.enum(["active", "completed"]),
@@ -37,11 +37,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       });
       if (body.status === "completed") {
         await tx.orderMatch.deleteMany({ where: { orderId } });
-        await tx.agreement.upsert({
-          where: { orderId },
-          update: { performedAt: new Date(), amountTotal: u.budget, currency: u.currency, customerUserId: u.customerUserId, performerUserId: u.performerUserId! },
-          create: { orderId, performedAt: new Date(), amountTotal: u.budget, currency: u.currency, customerUserId: u.customerUserId, performerUserId: u.performerUserId! },
-        });
       }
       return u;
     });
@@ -62,7 +57,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
             type: "order_started",
             role: "customer",
             newStatus: "started",
-          } as unknown as InputJsonValue,
+          } as unknown as Prisma.InputJsonValue,
         },
       });
       
@@ -105,7 +100,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
             type: "order_completed",
             role: "customer",
             newStatus: "completed",
-          } as unknown as InputJsonValue,
+          } as unknown as Prisma.InputJsonValue,
         },
       });
       

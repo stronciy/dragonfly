@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/lib/prisma";
 import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 import { ExpoPushService } from "@/services/expoPush.service";
-import type { InputJsonValue } from "@/generated/prisma/internal/prismaNamespace";
+import { Prisma } from "@/generated/prisma";
 
 const schema = z.object({
   accepted: z.boolean(),
@@ -100,7 +100,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
             type: "order_confirmed_completed",
             role: "customer",
             accepted: true,
-          } as unknown as InputJsonValue,
+          } as unknown as Prisma.InputJsonValue,
         },
       });
 
@@ -140,7 +140,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
               role: "performer",
               accepted: true,
               rating: body.rating,
-            } as unknown as InputJsonValue,
+            } as unknown as Prisma.InputJsonValue,
           },
         });
 
@@ -197,7 +197,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
             type: "order_rejected_completion",
             role: "customer",
             accepted: false,
-          } as unknown as InputJsonValue,
+          } as unknown as Prisma.InputJsonValue,
         },
       });
 
@@ -235,7 +235,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
               type: "order_rejected_completion",
               role: "performer",
               accepted: false,
-            } as unknown as InputJsonValue,
+            } as unknown as Prisma.InputJsonValue,
           },
         });
 
