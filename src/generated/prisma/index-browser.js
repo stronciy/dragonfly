@@ -173,6 +173,7 @@ exports.Prisma.CustomerCropStatScalarFieldEnum = {
   season: 'season',
   cropId: 'cropId',
   areaHa: 'areaHa',
+  yieldT: 'yieldT',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

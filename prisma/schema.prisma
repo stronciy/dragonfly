@@ -115,6 +115,7 @@ model CustomerCropStat {
   season         Int
   cropId         String @map("crop_id")
   areaHa         Float  @map("area_ha")
+  yieldT         Float? @map("yield_t")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

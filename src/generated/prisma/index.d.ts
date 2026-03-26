@@ -7410,11 +7410,13 @@ export namespace Prisma {
   export type CustomerCropStatAvgAggregateOutputType = {
     season: number | null
     areaHa: number | null
+    yieldT: number | null
   }
 
   export type CustomerCropStatSumAggregateOutputType = {
     season: number | null
     areaHa: number | null
+    yieldT: number | null
   }
 
   export type CustomerCropStatMinAggregateOutputType = {
@@ -7423,6 +7425,7 @@ export namespace Prisma {
     season: number | null
     cropId: string | null
     areaHa: number | null
+    yieldT: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -7433,6 +7436,7 @@ export namespace Prisma {
     season: number | null
     cropId: string | null
     areaHa: number | null
+    yieldT: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -7443,6 +7447,7 @@ export namespace Prisma {
     season: number
     cropId: number
     areaHa: number
+    yieldT: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -7452,11 +7457,13 @@ export namespace Prisma {
   export type CustomerCropStatAvgAggregateInputType = {
     season?: true
     areaHa?: true
+    yieldT?: true
   }
 
   export type CustomerCropStatSumAggregateInputType = {
     season?: true
     areaHa?: true
+    yieldT?: true
   }
 
   export type CustomerCropStatMinAggregateInputType = {
@@ -7465,6 +7472,7 @@ export namespace Prisma {
     season?: true
     cropId?: true
     areaHa?: true
+    yieldT?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -7475,6 +7483,7 @@ export namespace Prisma {
     season?: true
     cropId?: true
     areaHa?: true
+    yieldT?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -7485,6 +7494,7 @@ export namespace Prisma {
     season?: true
     cropId?: true
     areaHa?: true
+    yieldT?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -7582,6 +7592,7 @@ export namespace Prisma {
     season: number
     cropId: string
     areaHa: number
+    yieldT: number | null
     createdAt: Date
     updatedAt: Date
     _count: CustomerCropStatCountAggregateOutputType | null
@@ -7611,6 +7622,7 @@ export namespace Prisma {
     season?: boolean
     cropId?: boolean
     areaHa?: boolean
+    yieldT?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     customer?: boolean | CustomerProfileDefaultArgs<ExtArgs>
@@ -7623,6 +7635,7 @@ export namespace Prisma {
     season?: boolean
     cropId?: boolean
     areaHa?: boolean
+    yieldT?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     customer?: boolean | CustomerProfileDefaultArgs<ExtArgs>
@@ -7635,6 +7648,7 @@ export namespace Prisma {
     season?: boolean
     cropId?: boolean
     areaHa?: boolean
+    yieldT?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     customer?: boolean | CustomerProfileDefaultArgs<ExtArgs>
@@ -7647,11 +7661,12 @@ export namespace Prisma {
     season?: boolean
     cropId?: boolean
     areaHa?: boolean
+    yieldT?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type CustomerCropStatOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "customerUserId" | "season" | "cropId" | "areaHa" | "createdAt" | "updatedAt", ExtArgs["result"]["customerCropStat"]>
+  export type CustomerCropStatOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "customerUserId" | "season" | "cropId" | "areaHa" | "yieldT" | "createdAt" | "updatedAt", ExtArgs["result"]["customerCropStat"]>
   export type CustomerCropStatInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     customer?: boolean | CustomerProfileDefaultArgs<ExtArgs>
     crop?: boolean | CropDefaultArgs<ExtArgs>
@@ -7677,6 +7692,7 @@ export namespace Prisma {
       season: number
       cropId: string
       areaHa: number
+      yieldT: number | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["customerCropStat"]>
@@ -8109,6 +8125,7 @@ export namespace Prisma {
     readonly season: FieldRef<"CustomerCropStat", 'Int'>
     readonly cropId: FieldRef<"CustomerCropStat", 'String'>
     readonly areaHa: FieldRef<"CustomerCropStat", 'Float'>
+    readonly yieldT: FieldRef<"CustomerCropStat", 'Float'>
     readonly createdAt: FieldRef<"CustomerCropStat", 'DateTime'>
     readonly updatedAt: FieldRef<"CustomerCropStat", 'DateTime'>
   }
@@ -22442,6 +22459,7 @@ export namespace Prisma {
     season: 'season',
     cropId: 'cropId',
     areaHa: 'areaHa',
+    yieldT: 'yieldT',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -23137,6 +23155,7 @@ export namespace Prisma {
     season?: IntFilter<"CustomerCropStat"> | number
     cropId?: StringFilter<"CustomerCropStat"> | string
     areaHa?: FloatFilter<"CustomerCropStat"> | number
+    yieldT?: FloatNullableFilter<"CustomerCropStat"> | number | null
     createdAt?: DateTimeFilter<"CustomerCropStat"> | Date | string
     updatedAt?: DateTimeFilter<"CustomerCropStat"> | Date | string
     customer?: XOR<CustomerProfileScalarRelationFilter, CustomerProfileWhereInput>
@@ -23149,6 +23168,7 @@ export namespace Prisma {
     season?: SortOrder
     cropId?: SortOrder
     areaHa?: SortOrder
+    yieldT?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     customer?: CustomerProfileOrderByWithRelationInput
@@ -23165,6 +23185,7 @@ export namespace Prisma {
     season?: IntFilter<"CustomerCropStat"> | number
     cropId?: StringFilter<"CustomerCropStat"> | string
     areaHa?: FloatFilter<"CustomerCropStat"> | number
+    yieldT?: FloatNullableFilter<"CustomerCropStat"> | number | null
     createdAt?: DateTimeFilter<"CustomerCropStat"> | Date | string
     updatedAt?: DateTimeFilter<"CustomerCropStat"> | Date | string
     customer?: XOR<CustomerProfileScalarRelationFilter, CustomerProfileWhereInput>
@@ -23177,6 +23198,7 @@ export namespace Prisma {
     season?: SortOrder
     cropId?: SortOrder
     areaHa?: SortOrder
+    yieldT?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: CustomerCropStatCountOrderByAggregateInput
@@ -23195,6 +23217,7 @@ export namespace Prisma {
     season?: IntWithAggregatesFilter<"CustomerCropStat"> | number
     cropId?: StringWithAggregatesFilter<"CustomerCropStat"> | string
     areaHa?: FloatWithAggregatesFilter<"CustomerCropStat"> | number
+    yieldT?: FloatNullableWithAggregatesFilter<"CustomerCropStat"> | number | null
     createdAt?: DateTimeWithAggregatesFilter<"CustomerCropStat"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"CustomerCropStat"> | Date | string
   }
@@ -24504,6 +24527,7 @@ export namespace Prisma {
     id?: string
     season: number
     areaHa: number
+    yieldT?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     customer: CustomerProfileCreateNestedOneWithoutCropStatsInput
@@ -24516,6 +24540,7 @@ export namespace Prisma {
     season: number
     cropId: string
     areaHa: number
+    yieldT?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -24524,6 +24549,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     season?: IntFieldUpdateOperationsInput | number
     areaHa?: FloatFieldUpdateOperationsInput | number
+    yieldT?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerProfileUpdateOneRequiredWithoutCropStatsNestedInput
@@ -24536,6 +24562,7 @@ export namespace Prisma {
     season?: IntFieldUpdateOperationsInput | number
     cropId?: StringFieldUpdateOperationsInput | string
     areaHa?: FloatFieldUpdateOperationsInput | number
+    yieldT?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -24546,6 +24573,7 @@ export namespace Prisma {
     season: number
     cropId: string
     areaHa: number
+    yieldT?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -24554,6 +24582,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     season?: IntFieldUpdateOperationsInput | number
     areaHa?: FloatFieldUpdateOperationsInput | number
+    yieldT?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -24564,6 +24593,7 @@ export namespace Prisma {
     season?: IntFieldUpdateOperationsInput | number
     cropId?: StringFieldUpdateOperationsInput | string
     areaHa?: FloatFieldUpdateOperationsInput | number
+    yieldT?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -26046,6 +26076,17 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
+  export type FloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
   export type CustomerProfileScalarRelationFilter = {
     is?: CustomerProfileWhereInput
     isNot?: CustomerProfileWhereInput
@@ -26068,6 +26109,7 @@ export namespace Prisma {
     season?: SortOrder
     cropId?: SortOrder
     areaHa?: SortOrder
+    yieldT?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -26075,6 +26117,7 @@ export namespace Prisma {
   export type CustomerCropStatAvgOrderByAggregateInput = {
     season?: SortOrder
     areaHa?: SortOrder
+    yieldT?: SortOrder
   }
 
   export type CustomerCropStatMaxOrderByAggregateInput = {
@@ -26083,6 +26126,7 @@ export namespace Prisma {
     season?: SortOrder
     cropId?: SortOrder
     areaHa?: SortOrder
+    yieldT?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -26093,6 +26137,7 @@ export namespace Prisma {
     season?: SortOrder
     cropId?: SortOrder
     areaHa?: SortOrder
+    yieldT?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -26100,6 +26145,7 @@ export namespace Prisma {
   export type CustomerCropStatSumOrderByAggregateInput = {
     season?: SortOrder
     areaHa?: SortOrder
+    yieldT?: SortOrder
   }
 
   export type FloatWithAggregatesFilter<$PrismaModel = never> = {
@@ -26118,7 +26164,7 @@ export namespace Prisma {
     _max?: NestedFloatFilter<$PrismaModel>
   }
 
-  export type FloatNullableFilter<$PrismaModel = never> = {
+  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel> | null
     in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
     notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
@@ -26126,7 +26172,12 @@ export namespace Prisma {
     lte?: number | FloatFieldRefInput<$PrismaModel>
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
   export type IntNullableFilter<$PrismaModel = never> = {
@@ -26227,22 +26278,6 @@ export namespace Prisma {
     coverageRadiusKm?: SortOrder
     avgRating?: SortOrder
     reviewCount?: SortOrder
-  }
-
-  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
   export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -27363,6 +27398,14 @@ export namespace Prisma {
     divide?: number
   }
 
+  export type NullableFloatFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type CustomerProfileUpdateOneRequiredWithoutCropStatsNestedInput = {
     create?: XOR<CustomerProfileCreateWithoutCropStatsInput, CustomerProfileUncheckedCreateWithoutCropStatsInput>
     connectOrCreate?: CustomerProfileCreateOrConnectWithoutCropStatsInput
@@ -27397,14 +27440,6 @@ export namespace Prisma {
     connectOrCreate?: PerformerServiceCreateOrConnectWithoutPerformerInput | PerformerServiceCreateOrConnectWithoutPerformerInput[]
     createMany?: PerformerServiceCreateManyPerformerInputEnvelope
     connect?: PerformerServiceWhereUniqueInput | PerformerServiceWhereUniqueInput[]
-  }
-
-  export type NullableFloatFieldUpdateOperationsInput = {
-    set?: number | null
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
   }
 
   export type NullableIntFieldUpdateOperationsInput = {
@@ -28045,6 +28080,17 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
   export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel>
     in?: number[] | ListFloatFieldRefInput<$PrismaModel>
@@ -28059,17 +28105,6 @@ export namespace Prisma {
     _sum?: NestedFloatFilter<$PrismaModel>
     _min?: NestedFloatFilter<$PrismaModel>
     _max?: NestedFloatFilter<$PrismaModel>
-  }
-
-  export type NestedFloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -28892,6 +28927,7 @@ export namespace Prisma {
     id?: string
     season: number
     areaHa: number
+    yieldT?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     crop: CropCreateNestedOneWithoutStatsInput
@@ -28902,6 +28938,7 @@ export namespace Prisma {
     season: number
     cropId: string
     areaHa: number
+    yieldT?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -29026,6 +29063,7 @@ export namespace Prisma {
     season?: IntFilter<"CustomerCropStat"> | number
     cropId?: StringFilter<"CustomerCropStat"> | string
     areaHa?: FloatFilter<"CustomerCropStat"> | number
+    yieldT?: FloatNullableFilter<"CustomerCropStat"> | number | null
     createdAt?: DateTimeFilter<"CustomerCropStat"> | Date | string
     updatedAt?: DateTimeFilter<"CustomerCropStat"> | Date | string
   }
@@ -30306,6 +30344,7 @@ export namespace Prisma {
     id?: string
     season: number
     areaHa: number
+    yieldT?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     customer: CustomerProfileCreateNestedOneWithoutCropStatsInput
@@ -30316,6 +30355,7 @@ export namespace Prisma {
     customerUserId: string
     season: number
     areaHa: number
+    yieldT?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -31097,6 +31137,7 @@ export namespace Prisma {
     season: number
     cropId: string
     areaHa: number
+    yieldT?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -31141,6 +31182,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     season?: IntFieldUpdateOperationsInput | number
     areaHa?: FloatFieldUpdateOperationsInput | number
+    yieldT?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     crop?: CropUpdateOneRequiredWithoutStatsNestedInput
@@ -31151,6 +31193,7 @@ export namespace Prisma {
     season?: IntFieldUpdateOperationsInput | number
     cropId?: StringFieldUpdateOperationsInput | string
     areaHa?: FloatFieldUpdateOperationsInput | number
+    yieldT?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -31160,6 +31203,7 @@ export namespace Prisma {
     season?: IntFieldUpdateOperationsInput | number
     cropId?: StringFieldUpdateOperationsInput | string
     areaHa?: FloatFieldUpdateOperationsInput | number
+    yieldT?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -31367,6 +31411,7 @@ export namespace Prisma {
     customerUserId: string
     season: number
     areaHa: number
+    yieldT?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -31375,6 +31420,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     season?: IntFieldUpdateOperationsInput | number
     areaHa?: FloatFieldUpdateOperationsInput | number
+    yieldT?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerProfileUpdateOneRequiredWithoutCropStatsNestedInput
@@ -31385,6 +31431,7 @@ export namespace Prisma {
     customerUserId?: StringFieldUpdateOperationsInput | string
     season?: IntFieldUpdateOperationsInput | number
     areaHa?: FloatFieldUpdateOperationsInput | number
+    yieldT?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -31394,6 +31441,7 @@ export namespace Prisma {
     customerUserId?: StringFieldUpdateOperationsInput | string
     season?: IntFieldUpdateOperationsInput | number
     areaHa?: FloatFieldUpdateOperationsInput | number
+    yieldT?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
