@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node server.js",
     "dev:next": "next dev",
-    "build": "npm run prisma:generate && next build",
+    "build": "rm -rf .next && npm run prisma:generate && next build",
     "build:with-db-reset": "npm run db:reset && npm run prisma:generate && next build",
     "build:worker": "tsc -p tsconfig.worker.json",
     "start": "node server.js",
