@@ -20,11 +20,11 @@ export function startMatchNewExecutorWorker() {
 
       const settings = await prisma.performerProfile.findUnique({
         where: { userId: performerUserId },
-        select: { coverageMode: true, radiusKm: true },
+        select: { coverageMode: true, coverageRadiusKm: true },
       });
 
       if (!settings) return;
-      if (settings.coverageMode === "radius" && !settings.radiusKm) return;
+      if (settings.coverageMode === "radius" && !settings.coverageRadiusKm) return;
 
       const matches = (await prisma.$queryRaw<Array<{ order_id: string; distance_km: number }>>`
         SELECT
@@ -32,9 +32,9 @@ export function startMatchNewExecutorWorker() {
           (
             6371.0 * acos(
               least(1.0, greatest(-1.0,
-                cos(radians(pp.base_lat)) * cos(radians(o.lat)) *
-                cos(radians(o.lng) - radians(pp.base_lng)) +
-                sin(radians(pp.base_lat)) * sin(radians(o.lat))
+                cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                cos(radians(o.lng) - radians(pp.base_longitude)) +
+                sin(radians(pp.base_latitude)) * sin(radians(o.lat))
               ))
             )
           ) AS distance_km
@@ -57,16 +57,16 @@ export function startMatchNewExecutorWorker() {
             pp.coverage_mode = 'country'
             OR (
               pp.coverage_mode = 'radius'
-              AND pp.radius_km IS NOT NULL
+              AND pp.coverage_radius_km IS NOT NULL
               AND (
                 6371.0 * acos(
                   least(1.0, greatest(-1.0,
-                    cos(radians(pp.base_lat)) * cos(radians(o.lat)) *
-                    cos(radians(o.lng) - radians(pp.base_lng)) +
-                    sin(radians(pp.base_lat)) * sin(radians(o.lat))
+                    cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                    cos(radians(o.lng) - radians(pp.base_longitude)) +
+                    sin(radians(pp.base_latitude)) * sin(radians(o.lat))
                   ))
                 )
-              ) <= pp.radius_km
+              ) <= pp.coverage_radius_km
             )
           )
         ORDER BY distance_km ASC

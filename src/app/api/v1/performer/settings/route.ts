@@ -35,11 +35,11 @@ export async function GET(req: Request) {
     const profile = await prisma.performerProfile.findUnique({
       where: { userId: user.id },
       select: {
-        baseLocation: true,
-        baseLat: true,
-        baseLng: true,
+        baseLocationLabel: true,
+        baseLatitude: true,
+        baseLongitude: true,
         coverageMode: true,
-        radiusKm: true,
+        coverageRadiusKm: true,
       },
     });
 
@@ -56,9 +56,9 @@ export async function GET(req: Request) {
     return ok(req, {
       settings: profile
         ? {
-            baseLocationLabel: profile.baseLocation,
-            baseCoordinate: { lat: Number(profile.baseLat), lng: Number(profile.baseLng) },
-            coverage: { mode: profile.coverageMode, radiusKm: profile.radiusKm },
+            baseLocationLabel: profile.baseLocationLabel,
+            baseCoordinate: { lat: profile.baseLatitude, lng: profile.baseLongitude },
+            coverage: { mode: profile.coverageMode, radiusKm: profile.coverageRadiusKm },
             services,
           }
         : null,
@@ -99,34 +99,34 @@ export async function PUT(req: Request) {
       const current = await tx.performerProfile.findUnique({
         where: { userId: user.id },
         select: {
-          baseLocation: true,
-          baseLat: true,
-          baseLng: true,
+          baseLocationLabel: true,
+          baseLatitude: true,
+          baseLongitude: true,
           coverageMode: true,
-          radiusKm: true,
+          coverageRadiusKm: true,
         },
       });
 
       // Часткове оновлення profile (geo settings)
       if (hasBaseLocation || hasBaseCoordinate || hasCoverage) {
         const updateData: {
-          baseLocation?: string;
-          baseLat?: number;
-          baseLng?: number;
-          coverageMode?: "radius" | "country";
-          radiusKm?: number | null;
+          baseLocationLabel?: string;
+          baseLatitude?: number;
+          baseLongitude?: number;
+          coverageMode?: string;
+          coverageRadiusKm?: number | null;
         } = {};
 
         if (hasBaseLocation) {
-          updateData.baseLocation = body.baseLocationLabel ?? current?.baseLocation ?? "";
+          updateData.baseLocationLabel = body.baseLocationLabel ?? current?.baseLocationLabel ?? "";
         }
         if (hasBaseCoordinate) {
-          updateData.baseLat = body.baseCoordinate!.lat;
-          updateData.baseLng = body.baseCoordinate!.lng;
+          updateData.baseLatitude = body.baseCoordinate!.lat;
+          updateData.baseLongitude = body.baseCoordinate!.lng;
         }
         if (hasCoverage) {
           updateData.coverageMode = body.coverage!.mode;
-          updateData.radiusKm = body.coverage!.mode === "radius" ? (body.coverage!.radiusKm ?? null) : null;
+          updateData.coverageRadiusKm = body.coverage!.mode === "radius" ? (body.coverage!.radiusKm ?? null) : null;
         }
 
         await tx.performerProfile.upsert({
@@ -134,11 +134,14 @@ export async function PUT(req: Request) {
           update: updateData,
           create: {
             userId: user.id,
-            baseLocation: updateData.baseLocation ?? "",
-            baseLat: updateData.baseLat ?? 0,
-            baseLng: updateData.baseLng ?? 0,
-            coverageMode: updateData.coverageMode ?? "country",
-            radiusKm: updateData.radiusKm ?? null,
+            baseLocationLabel: updateData.baseLocationLabel ?? "",
+            baseLatitude: updateData.baseLatitude ?? 0,
+            baseLongitude: updateData.baseLongitude ?? 0,
+            coverageMode: updateData.coverageMode ?? "radius",
+            coverageRadiusKm: updateData.coverageRadiusKm ?? 50,
+            vatPayer: false,
+            avgRating: 0,
+            reviewCount: 0,
           },
         });
       }

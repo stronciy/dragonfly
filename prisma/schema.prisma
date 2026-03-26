@@ -303,14 +303,14 @@ model PerformerProfile {
   vatPayer     Boolean @default(false) @map("vat_payer")
   legalAddress String? @map("legal_address")
   
-  baseLocation String? @map("base_location")
-  baseLat      Decimal? @db.Decimal(9, 6) @map("base_lat")
-  baseLng      Decimal? @db.Decimal(9, 6) @map("base_lng")
+  baseLocationLabel String? @map("base_location_label")
+  baseLatitude      Float?  @map("base_latitude")
+  baseLongitude     Float?  @map("base_longitude")
 
-  coverageMode CoverageMode @default(radius) @map("coverage_mode")
-  radiusKm     Int?         @map("radius_km")
+  coverageMode      String? @default("radius") @map("coverage_mode")
+  coverageRadiusKm  Int?    @default(50) @map("coverage_radius_km")
 
-  avgRating    Decimal @default(0) @db.Decimal(3, 2) @map("avg_rating")
+  avgRating    Float   @default(0) @map("avg_rating")
   reviewCount  Int     @default(0) @map("review_count")
 
   services PerformerService[]

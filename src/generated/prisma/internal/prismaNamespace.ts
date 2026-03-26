@@ -2615,11 +2615,11 @@ export const PerformerProfileScalarFieldEnum = {
   taxSystem: 'taxSystem',
   vatPayer: 'vatPayer',
   legalAddress: 'legalAddress',
-  baseLocation: 'baseLocation',
-  baseLat: 'baseLat',
-  baseLng: 'baseLng',
+  baseLocationLabel: 'baseLocationLabel',
+  baseLatitude: 'baseLatitude',
+  baseLongitude: 'baseLongitude',
   coverageMode: 'coverageMode',
-  radiusKm: 'radiusKm',
+  coverageRadiusKm: 'coverageRadiusKm',
   avgRating: 'avgRating',
   reviewCount: 'reviewCount',
   createdAt: 'createdAt',
@@ -2998,16 +2998,16 @@ export type ListEnumTaxSystemFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
 
 
 /**
- * Reference to a field of type 'CoverageMode'
+ * Reference to a field of type 'Float'
  */
-export type EnumCoverageModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CoverageMode'>
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
     
 
 
 /**
- * Reference to a field of type 'CoverageMode[]'
+ * Reference to a field of type 'Float[]'
  */
-export type ListEnumCoverageModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CoverageMode[]'>
+export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
 
 
@@ -3148,20 +3148,6 @@ export type EnumPayoutStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
  * Reference to a field of type 'PayoutStatus[]'
  */
 export type ListEnumPayoutStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PayoutStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'Float'
- */
-export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
-    
-
-
-/**
- * Reference to a field of type 'Float[]'
- */
-export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
 
 /**

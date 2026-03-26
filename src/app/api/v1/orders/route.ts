@@ -281,73 +281,73 @@ export async function POST(req: Request) {
     if (order.status === "published") {
       if (process.env.NODE_ENV !== "production") {
         const eligibleCountRows = await prisma.$queryRaw<Array<{ count: bigint }>>`
-          SELECT COUNT(DISTINCT ps.performer_user_id)::bigint AS count
+          SELECT COUNT(DISTINCT pp.user_id)::bigint AS count
           FROM performer_services srv
-          JOIN performer_settings ps ON ps.performer_user_id = srv.performer_user_id
-          JOIN users u ON u.id = ps.performer_user_id
+          JOIN performer_profiles pp ON pp.user_id = srv.performerUserId
+          JOIN users u ON u.id = pp.user_id
           JOIN orders o ON o.id = ${order.id}
           WHERE srv.service_category_id = o.service_category_id
             AND srv.service_subcategory_id = o.service_subcategory_id
             AND u.role = 'performer'
-            AND ps.performer_user_id <> o.customer_user_id
+            AND pp.user_id <> o.customer_user_id
             AND (srv.service_type_id IS NULL OR o.service_type_id IS NULL OR srv.service_type_id = o.service_type_id)
             AND (
-              ps.coverage_mode = 'country'
+              pp.coverage_mode = 'country'
               OR (
-                ps.coverage_mode = 'radius'
-                AND ps.radius_km IS NOT NULL
+                pp.coverage_mode = 'radius'
+                AND pp.coverage_radius_km IS NOT NULL
                 AND (
                   6371.0 * acos(
                     least(1.0, greatest(-1.0,
-                      cos(radians(ps.base_lat)) * cos(radians(o.lat)) *
-                      cos(radians(o.lng) - radians(ps.base_lng)) +
-                      sin(radians(ps.base_lat)) * sin(radians(o.lat))
+                      cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                      cos(radians(o.lng) - radians(pp.base_longitude)) +
+                      sin(radians(pp.base_latitude)) * sin(radians(o.lat))
                     ))
                   )
-                ) <= ps.radius_km
+                ) <= pp.coverage_radius_km
               )
             )
         `;
 
         const topRows = await prisma.$queryRaw<
-          Array<{ performerUserId: string; coverageMode: string; radiusKm: number | null; distanceKm: number | null }>
+          Array<{ performerUserId: string; coverageMode: string; coverageRadiusKm: number | null; distanceKm: number | null }>
         >`
           SELECT
-            srv.performer_user_id AS "performerUserId",
-            ps.coverage_mode AS "coverageMode",
-            ps.radius_km AS "radiusKm",
+            pp.user_id AS "performerUserId",
+            pp.coverage_mode AS "coverageMode",
+            pp.coverage_radius_km AS "coverageRadiusKm",
             (
               6371.0 * acos(
                 least(1.0, greatest(-1.0,
-                  cos(radians(ps.base_lat)) * cos(radians(o.lat)) *
-                  cos(radians(o.lng) - radians(ps.base_lng)) +
-                  sin(radians(ps.base_lat)) * sin(radians(o.lat))
+                  cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                  cos(radians(o.lng) - radians(pp.base_longitude)) +
+                  sin(radians(pp.base_latitude)) * sin(radians(o.lat))
                 ))
               )
             ) AS "distanceKm"
           FROM performer_services srv
-          JOIN performer_settings ps ON ps.performer_user_id = srv.performer_user_id
-          JOIN users u ON u.id = ps.performer_user_id
+          JOIN performer_profiles pp ON pp.user_id = srv.performerUserId
+          JOIN users u ON u.id = pp.user_id
           JOIN orders o ON o.id = ${order.id}
           WHERE srv.service_category_id = o.service_category_id
             AND srv.service_subcategory_id = o.service_subcategory_id
             AND u.role = 'performer'
-            AND ps.performer_user_id <> o.customer_user_id
+            AND pp.user_id <> o.customer_user_id
             AND (srv.service_type_id IS NULL OR o.service_type_id IS NULL OR srv.service_type_id = o.service_type_id)
             AND (
-              ps.coverage_mode = 'country'
+              pp.coverage_mode = 'country'
               OR (
-                ps.coverage_mode = 'radius'
-                AND ps.radius_km IS NOT NULL
+                pp.coverage_mode = 'radius'
+                AND pp.coverage_radius_km IS NOT NULL
                 AND (
                   6371.0 * acos(
                     least(1.0, greatest(-1.0,
-                      cos(radians(ps.base_lat)) * cos(radians(o.lat)) *
-                      cos(radians(o.lng) - radians(ps.base_lng)) +
-                      sin(radians(ps.base_lat)) * sin(radians(o.lat))
+                      cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                      cos(radians(o.lng) - radians(pp.base_longitude)) +
+                      sin(radians(pp.base_latitude)) * sin(radians(o.lat))
                     ))
                   )
-                ) <= ps.radius_km
+                ) <= pp.coverage_radius_km
               )
             )
           ORDER BY "distanceKm" ASC NULLS LAST

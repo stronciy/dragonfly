@@ -30,7 +30,14 @@ export async function PATCH(req: Request) {
         await tx.performerProfile.upsert({
           where: { userId: user.id },
           update: {},
-          create: { userId: user.id },
+          create: {
+            userId: user.id,
+            coverageMode: "radius",
+            coverageRadiusKm: 50,
+            vatPayer: false,
+            avgRating: 0,
+            reviewCount: 0,
+          },
         });
       }
 

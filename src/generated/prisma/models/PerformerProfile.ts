@@ -27,18 +27,18 @@ export type AggregatePerformerProfile = {
 }
 
 export type PerformerProfileAvgAggregateOutputType = {
-  baseLat: runtime.Decimal | null
-  baseLng: runtime.Decimal | null
-  radiusKm: number | null
-  avgRating: runtime.Decimal | null
+  baseLatitude: number | null
+  baseLongitude: number | null
+  coverageRadiusKm: number | null
+  avgRating: number | null
   reviewCount: number | null
 }
 
 export type PerformerProfileSumAggregateOutputType = {
-  baseLat: runtime.Decimal | null
-  baseLng: runtime.Decimal | null
-  radiusKm: number | null
-  avgRating: runtime.Decimal | null
+  baseLatitude: number | null
+  baseLongitude: number | null
+  coverageRadiusKm: number | null
+  avgRating: number | null
   reviewCount: number | null
 }
 
@@ -52,12 +52,12 @@ export type PerformerProfileMinAggregateOutputType = {
   taxSystem: $Enums.TaxSystem | null
   vatPayer: boolean | null
   legalAddress: string | null
-  baseLocation: string | null
-  baseLat: runtime.Decimal | null
-  baseLng: runtime.Decimal | null
-  coverageMode: $Enums.CoverageMode | null
-  radiusKm: number | null
-  avgRating: runtime.Decimal | null
+  baseLocationLabel: string | null
+  baseLatitude: number | null
+  baseLongitude: number | null
+  coverageMode: string | null
+  coverageRadiusKm: number | null
+  avgRating: number | null
   reviewCount: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -73,12 +73,12 @@ export type PerformerProfileMaxAggregateOutputType = {
   taxSystem: $Enums.TaxSystem | null
   vatPayer: boolean | null
   legalAddress: string | null
-  baseLocation: string | null
-  baseLat: runtime.Decimal | null
-  baseLng: runtime.Decimal | null
-  coverageMode: $Enums.CoverageMode | null
-  radiusKm: number | null
-  avgRating: runtime.Decimal | null
+  baseLocationLabel: string | null
+  baseLatitude: number | null
+  baseLongitude: number | null
+  coverageMode: string | null
+  coverageRadiusKm: number | null
+  avgRating: number | null
   reviewCount: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -94,11 +94,11 @@ export type PerformerProfileCountAggregateOutputType = {
   taxSystem: number
   vatPayer: number
   legalAddress: number
-  baseLocation: number
-  baseLat: number
-  baseLng: number
+  baseLocationLabel: number
+  baseLatitude: number
+  baseLongitude: number
   coverageMode: number
-  radiusKm: number
+  coverageRadiusKm: number
   avgRating: number
   reviewCount: number
   createdAt: number
@@ -108,17 +108,17 @@ export type PerformerProfileCountAggregateOutputType = {
 
 
 export type PerformerProfileAvgAggregateInputType = {
-  baseLat?: true
-  baseLng?: true
-  radiusKm?: true
+  baseLatitude?: true
+  baseLongitude?: true
+  coverageRadiusKm?: true
   avgRating?: true
   reviewCount?: true
 }
 
 export type PerformerProfileSumAggregateInputType = {
-  baseLat?: true
-  baseLng?: true
-  radiusKm?: true
+  baseLatitude?: true
+  baseLongitude?: true
+  coverageRadiusKm?: true
   avgRating?: true
   reviewCount?: true
 }
@@ -133,11 +133,11 @@ export type PerformerProfileMinAggregateInputType = {
   taxSystem?: true
   vatPayer?: true
   legalAddress?: true
-  baseLocation?: true
-  baseLat?: true
-  baseLng?: true
+  baseLocationLabel?: true
+  baseLatitude?: true
+  baseLongitude?: true
   coverageMode?: true
-  radiusKm?: true
+  coverageRadiusKm?: true
   avgRating?: true
   reviewCount?: true
   createdAt?: true
@@ -154,11 +154,11 @@ export type PerformerProfileMaxAggregateInputType = {
   taxSystem?: true
   vatPayer?: true
   legalAddress?: true
-  baseLocation?: true
-  baseLat?: true
-  baseLng?: true
+  baseLocationLabel?: true
+  baseLatitude?: true
+  baseLongitude?: true
   coverageMode?: true
-  radiusKm?: true
+  coverageRadiusKm?: true
   avgRating?: true
   reviewCount?: true
   createdAt?: true
@@ -175,11 +175,11 @@ export type PerformerProfileCountAggregateInputType = {
   taxSystem?: true
   vatPayer?: true
   legalAddress?: true
-  baseLocation?: true
-  baseLat?: true
-  baseLng?: true
+  baseLocationLabel?: true
+  baseLatitude?: true
+  baseLongitude?: true
   coverageMode?: true
-  radiusKm?: true
+  coverageRadiusKm?: true
   avgRating?: true
   reviewCount?: true
   createdAt?: true
@@ -283,12 +283,12 @@ export type PerformerProfileGroupByOutputType = {
   taxSystem: $Enums.TaxSystem | null
   vatPayer: boolean
   legalAddress: string | null
-  baseLocation: string | null
-  baseLat: runtime.Decimal | null
-  baseLng: runtime.Decimal | null
-  coverageMode: $Enums.CoverageMode
-  radiusKm: number | null
-  avgRating: runtime.Decimal
+  baseLocationLabel: string | null
+  baseLatitude: number | null
+  baseLongitude: number | null
+  coverageMode: string | null
+  coverageRadiusKm: number | null
+  avgRating: number
   reviewCount: number
   createdAt: Date
   updatedAt: Date
@@ -327,12 +327,12 @@ export type PerformerProfileWhereInput = {
   taxSystem?: Prisma.EnumTaxSystemNullableFilter<"PerformerProfile"> | $Enums.TaxSystem | null
   vatPayer?: Prisma.BoolFilter<"PerformerProfile"> | boolean
   legalAddress?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
-  baseLocation?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
-  baseLat?: Prisma.DecimalNullableFilter<"PerformerProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: Prisma.DecimalNullableFilter<"PerformerProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: Prisma.EnumCoverageModeFilter<"PerformerProfile"> | $Enums.CoverageMode
-  radiusKm?: Prisma.IntNullableFilter<"PerformerProfile"> | number | null
-  avgRating?: Prisma.DecimalFilter<"PerformerProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
+  baseLatitude?: Prisma.FloatNullableFilter<"PerformerProfile"> | number | null
+  baseLongitude?: Prisma.FloatNullableFilter<"PerformerProfile"> | number | null
+  coverageMode?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
+  coverageRadiusKm?: Prisma.IntNullableFilter<"PerformerProfile"> | number | null
+  avgRating?: Prisma.FloatFilter<"PerformerProfile"> | number
   reviewCount?: Prisma.IntFilter<"PerformerProfile"> | number
   createdAt?: Prisma.DateTimeFilter<"PerformerProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PerformerProfile"> | Date | string
@@ -350,11 +350,11 @@ export type PerformerProfileOrderByWithRelationInput = {
   taxSystem?: Prisma.SortOrderInput | Prisma.SortOrder
   vatPayer?: Prisma.SortOrder
   legalAddress?: Prisma.SortOrderInput | Prisma.SortOrder
-  baseLocation?: Prisma.SortOrderInput | Prisma.SortOrder
-  baseLat?: Prisma.SortOrderInput | Prisma.SortOrder
-  baseLng?: Prisma.SortOrderInput | Prisma.SortOrder
-  coverageMode?: Prisma.SortOrder
-  radiusKm?: Prisma.SortOrderInput | Prisma.SortOrder
+  baseLocationLabel?: Prisma.SortOrderInput | Prisma.SortOrder
+  baseLatitude?: Prisma.SortOrderInput | Prisma.SortOrder
+  baseLongitude?: Prisma.SortOrderInput | Prisma.SortOrder
+  coverageMode?: Prisma.SortOrderInput | Prisma.SortOrder
+  coverageRadiusKm?: Prisma.SortOrderInput | Prisma.SortOrder
   avgRating?: Prisma.SortOrder
   reviewCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -376,12 +376,12 @@ export type PerformerProfileWhereUniqueInput = Prisma.AtLeast<{
   taxSystem?: Prisma.EnumTaxSystemNullableFilter<"PerformerProfile"> | $Enums.TaxSystem | null
   vatPayer?: Prisma.BoolFilter<"PerformerProfile"> | boolean
   legalAddress?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
-  baseLocation?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
-  baseLat?: Prisma.DecimalNullableFilter<"PerformerProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: Prisma.DecimalNullableFilter<"PerformerProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: Prisma.EnumCoverageModeFilter<"PerformerProfile"> | $Enums.CoverageMode
-  radiusKm?: Prisma.IntNullableFilter<"PerformerProfile"> | number | null
-  avgRating?: Prisma.DecimalFilter<"PerformerProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
+  baseLatitude?: Prisma.FloatNullableFilter<"PerformerProfile"> | number | null
+  baseLongitude?: Prisma.FloatNullableFilter<"PerformerProfile"> | number | null
+  coverageMode?: Prisma.StringNullableFilter<"PerformerProfile"> | string | null
+  coverageRadiusKm?: Prisma.IntNullableFilter<"PerformerProfile"> | number | null
+  avgRating?: Prisma.FloatFilter<"PerformerProfile"> | number
   reviewCount?: Prisma.IntFilter<"PerformerProfile"> | number
   createdAt?: Prisma.DateTimeFilter<"PerformerProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PerformerProfile"> | Date | string
@@ -399,11 +399,11 @@ export type PerformerProfileOrderByWithAggregationInput = {
   taxSystem?: Prisma.SortOrderInput | Prisma.SortOrder
   vatPayer?: Prisma.SortOrder
   legalAddress?: Prisma.SortOrderInput | Prisma.SortOrder
-  baseLocation?: Prisma.SortOrderInput | Prisma.SortOrder
-  baseLat?: Prisma.SortOrderInput | Prisma.SortOrder
-  baseLng?: Prisma.SortOrderInput | Prisma.SortOrder
-  coverageMode?: Prisma.SortOrder
-  radiusKm?: Prisma.SortOrderInput | Prisma.SortOrder
+  baseLocationLabel?: Prisma.SortOrderInput | Prisma.SortOrder
+  baseLatitude?: Prisma.SortOrderInput | Prisma.SortOrder
+  baseLongitude?: Prisma.SortOrderInput | Prisma.SortOrder
+  coverageMode?: Prisma.SortOrderInput | Prisma.SortOrder
+  coverageRadiusKm?: Prisma.SortOrderInput | Prisma.SortOrder
   avgRating?: Prisma.SortOrder
   reviewCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -428,12 +428,12 @@ export type PerformerProfileScalarWhereWithAggregatesInput = {
   taxSystem?: Prisma.EnumTaxSystemNullableWithAggregatesFilter<"PerformerProfile"> | $Enums.TaxSystem | null
   vatPayer?: Prisma.BoolWithAggregatesFilter<"PerformerProfile"> | boolean
   legalAddress?: Prisma.StringNullableWithAggregatesFilter<"PerformerProfile"> | string | null
-  baseLocation?: Prisma.StringNullableWithAggregatesFilter<"PerformerProfile"> | string | null
-  baseLat?: Prisma.DecimalNullableWithAggregatesFilter<"PerformerProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: Prisma.DecimalNullableWithAggregatesFilter<"PerformerProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: Prisma.EnumCoverageModeWithAggregatesFilter<"PerformerProfile"> | $Enums.CoverageMode
-  radiusKm?: Prisma.IntNullableWithAggregatesFilter<"PerformerProfile"> | number | null
-  avgRating?: Prisma.DecimalWithAggregatesFilter<"PerformerProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: Prisma.StringNullableWithAggregatesFilter<"PerformerProfile"> | string | null
+  baseLatitude?: Prisma.FloatNullableWithAggregatesFilter<"PerformerProfile"> | number | null
+  baseLongitude?: Prisma.FloatNullableWithAggregatesFilter<"PerformerProfile"> | number | null
+  coverageMode?: Prisma.StringNullableWithAggregatesFilter<"PerformerProfile"> | string | null
+  coverageRadiusKm?: Prisma.IntNullableWithAggregatesFilter<"PerformerProfile"> | number | null
+  avgRating?: Prisma.FloatWithAggregatesFilter<"PerformerProfile"> | number
   reviewCount?: Prisma.IntWithAggregatesFilter<"PerformerProfile"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PerformerProfile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PerformerProfile"> | Date | string
@@ -448,12 +448,12 @@ export type PerformerProfileCreateInput = {
   taxSystem?: $Enums.TaxSystem | null
   vatPayer?: boolean
   legalAddress?: string | null
-  baseLocation?: string | null
-  baseLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: $Enums.CoverageMode
-  radiusKm?: number | null
-  avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: string | null
+  baseLatitude?: number | null
+  baseLongitude?: number | null
+  coverageMode?: string | null
+  coverageRadiusKm?: number | null
+  avgRating?: number
   reviewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -471,12 +471,12 @@ export type PerformerProfileUncheckedCreateInput = {
   taxSystem?: $Enums.TaxSystem | null
   vatPayer?: boolean
   legalAddress?: string | null
-  baseLocation?: string | null
-  baseLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: $Enums.CoverageMode
-  radiusKm?: number | null
-  avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: string | null
+  baseLatitude?: number | null
+  baseLongitude?: number | null
+  coverageMode?: string | null
+  coverageRadiusKm?: number | null
+  avgRating?: number
   reviewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -492,12 +492,12 @@ export type PerformerProfileUpdateInput = {
   taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
   vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: Prisma.EnumCoverageModeFieldUpdateOperationsInput | $Enums.CoverageMode
-  radiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baseLatitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  baseLongitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  coverageMode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverageRadiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  avgRating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -515,12 +515,12 @@ export type PerformerProfileUncheckedUpdateInput = {
   taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
   vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: Prisma.EnumCoverageModeFieldUpdateOperationsInput | $Enums.CoverageMode
-  radiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baseLatitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  baseLongitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  coverageMode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverageRadiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  avgRating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -537,12 +537,12 @@ export type PerformerProfileCreateManyInput = {
   taxSystem?: $Enums.TaxSystem | null
   vatPayer?: boolean
   legalAddress?: string | null
-  baseLocation?: string | null
-  baseLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: $Enums.CoverageMode
-  radiusKm?: number | null
-  avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: string | null
+  baseLatitude?: number | null
+  baseLongitude?: number | null
+  coverageMode?: string | null
+  coverageRadiusKm?: number | null
+  avgRating?: number
   reviewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -557,12 +557,12 @@ export type PerformerProfileUpdateManyMutationInput = {
   taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
   vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: Prisma.EnumCoverageModeFieldUpdateOperationsInput | $Enums.CoverageMode
-  radiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baseLatitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  baseLongitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  coverageMode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverageRadiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  avgRating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -578,12 +578,12 @@ export type PerformerProfileUncheckedUpdateManyInput = {
   taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
   vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: Prisma.EnumCoverageModeFieldUpdateOperationsInput | $Enums.CoverageMode
-  radiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baseLatitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  baseLongitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  coverageMode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverageRadiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  avgRating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -604,11 +604,11 @@ export type PerformerProfileCountOrderByAggregateInput = {
   taxSystem?: Prisma.SortOrder
   vatPayer?: Prisma.SortOrder
   legalAddress?: Prisma.SortOrder
-  baseLocation?: Prisma.SortOrder
-  baseLat?: Prisma.SortOrder
-  baseLng?: Prisma.SortOrder
+  baseLocationLabel?: Prisma.SortOrder
+  baseLatitude?: Prisma.SortOrder
+  baseLongitude?: Prisma.SortOrder
   coverageMode?: Prisma.SortOrder
-  radiusKm?: Prisma.SortOrder
+  coverageRadiusKm?: Prisma.SortOrder
   avgRating?: Prisma.SortOrder
   reviewCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -616,9 +616,9 @@ export type PerformerProfileCountOrderByAggregateInput = {
 }
 
 export type PerformerProfileAvgOrderByAggregateInput = {
-  baseLat?: Prisma.SortOrder
-  baseLng?: Prisma.SortOrder
-  radiusKm?: Prisma.SortOrder
+  baseLatitude?: Prisma.SortOrder
+  baseLongitude?: Prisma.SortOrder
+  coverageRadiusKm?: Prisma.SortOrder
   avgRating?: Prisma.SortOrder
   reviewCount?: Prisma.SortOrder
 }
@@ -633,11 +633,11 @@ export type PerformerProfileMaxOrderByAggregateInput = {
   taxSystem?: Prisma.SortOrder
   vatPayer?: Prisma.SortOrder
   legalAddress?: Prisma.SortOrder
-  baseLocation?: Prisma.SortOrder
-  baseLat?: Prisma.SortOrder
-  baseLng?: Prisma.SortOrder
+  baseLocationLabel?: Prisma.SortOrder
+  baseLatitude?: Prisma.SortOrder
+  baseLongitude?: Prisma.SortOrder
   coverageMode?: Prisma.SortOrder
-  radiusKm?: Prisma.SortOrder
+  coverageRadiusKm?: Prisma.SortOrder
   avgRating?: Prisma.SortOrder
   reviewCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -654,11 +654,11 @@ export type PerformerProfileMinOrderByAggregateInput = {
   taxSystem?: Prisma.SortOrder
   vatPayer?: Prisma.SortOrder
   legalAddress?: Prisma.SortOrder
-  baseLocation?: Prisma.SortOrder
-  baseLat?: Prisma.SortOrder
-  baseLng?: Prisma.SortOrder
+  baseLocationLabel?: Prisma.SortOrder
+  baseLatitude?: Prisma.SortOrder
+  baseLongitude?: Prisma.SortOrder
   coverageMode?: Prisma.SortOrder
-  radiusKm?: Prisma.SortOrder
+  coverageRadiusKm?: Prisma.SortOrder
   avgRating?: Prisma.SortOrder
   reviewCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -666,9 +666,9 @@ export type PerformerProfileMinOrderByAggregateInput = {
 }
 
 export type PerformerProfileSumOrderByAggregateInput = {
-  baseLat?: Prisma.SortOrder
-  baseLng?: Prisma.SortOrder
-  radiusKm?: Prisma.SortOrder
+  baseLatitude?: Prisma.SortOrder
+  baseLongitude?: Prisma.SortOrder
+  coverageRadiusKm?: Prisma.SortOrder
   avgRating?: Prisma.SortOrder
   reviewCount?: Prisma.SortOrder
 }
@@ -710,12 +710,24 @@ export type PerformerProfileUncheckedUpdateOneWithoutUserNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.PerformerProfileUpdateToOneWithWhereWithoutUserInput, Prisma.PerformerProfileUpdateWithoutUserInput>, Prisma.PerformerProfileUncheckedUpdateWithoutUserInput>
 }
 
-export type EnumCoverageModeFieldUpdateOperationsInput = {
-  set?: $Enums.CoverageMode
+export type NullableFloatFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type NullableIntFieldUpdateOperationsInput = {
   set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
+export type FloatFieldUpdateOperationsInput = {
+  set?: number
   increment?: number
   decrement?: number
   multiply?: number
@@ -745,12 +757,12 @@ export type PerformerProfileCreateWithoutUserInput = {
   taxSystem?: $Enums.TaxSystem | null
   vatPayer?: boolean
   legalAddress?: string | null
-  baseLocation?: string | null
-  baseLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: $Enums.CoverageMode
-  radiusKm?: number | null
-  avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: string | null
+  baseLatitude?: number | null
+  baseLongitude?: number | null
+  coverageMode?: string | null
+  coverageRadiusKm?: number | null
+  avgRating?: number
   reviewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -766,12 +778,12 @@ export type PerformerProfileUncheckedCreateWithoutUserInput = {
   taxSystem?: $Enums.TaxSystem | null
   vatPayer?: boolean
   legalAddress?: string | null
-  baseLocation?: string | null
-  baseLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: $Enums.CoverageMode
-  radiusKm?: number | null
-  avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: string | null
+  baseLatitude?: number | null
+  baseLongitude?: number | null
+  coverageMode?: string | null
+  coverageRadiusKm?: number | null
+  avgRating?: number
   reviewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -803,12 +815,12 @@ export type PerformerProfileUpdateWithoutUserInput = {
   taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
   vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: Prisma.EnumCoverageModeFieldUpdateOperationsInput | $Enums.CoverageMode
-  radiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baseLatitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  baseLongitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  coverageMode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverageRadiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  avgRating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -824,12 +836,12 @@ export type PerformerProfileUncheckedUpdateWithoutUserInput = {
   taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
   vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: Prisma.EnumCoverageModeFieldUpdateOperationsInput | $Enums.CoverageMode
-  radiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baseLatitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  baseLongitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  coverageMode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverageRadiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  avgRating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -845,12 +857,12 @@ export type PerformerProfileCreateWithoutServicesInput = {
   taxSystem?: $Enums.TaxSystem | null
   vatPayer?: boolean
   legalAddress?: string | null
-  baseLocation?: string | null
-  baseLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: $Enums.CoverageMode
-  radiusKm?: number | null
-  avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: string | null
+  baseLatitude?: number | null
+  baseLongitude?: number | null
+  coverageMode?: string | null
+  coverageRadiusKm?: number | null
+  avgRating?: number
   reviewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -867,12 +879,12 @@ export type PerformerProfileUncheckedCreateWithoutServicesInput = {
   taxSystem?: $Enums.TaxSystem | null
   vatPayer?: boolean
   legalAddress?: string | null
-  baseLocation?: string | null
-  baseLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: $Enums.CoverageMode
-  radiusKm?: number | null
-  avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: string | null
+  baseLatitude?: number | null
+  baseLongitude?: number | null
+  coverageMode?: string | null
+  coverageRadiusKm?: number | null
+  avgRating?: number
   reviewCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -903,12 +915,12 @@ export type PerformerProfileUpdateWithoutServicesInput = {
   taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
   vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: Prisma.EnumCoverageModeFieldUpdateOperationsInput | $Enums.CoverageMode
-  radiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baseLatitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  baseLongitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  coverageMode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverageRadiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  avgRating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -925,12 +937,12 @@ export type PerformerProfileUncheckedUpdateWithoutServicesInput = {
   taxSystem?: Prisma.NullableEnumTaxSystemFieldUpdateOperationsInput | $Enums.TaxSystem | null
   vatPayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   legalAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  baseLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  baseLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  coverageMode?: Prisma.EnumCoverageModeFieldUpdateOperationsInput | $Enums.CoverageMode
-  radiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  baseLocationLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baseLatitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  baseLongitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  coverageMode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverageRadiusKm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  avgRating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviewCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -977,11 +989,11 @@ export type PerformerProfileSelect<ExtArgs extends runtime.Types.Extensions.Inte
   taxSystem?: boolean
   vatPayer?: boolean
   legalAddress?: boolean
-  baseLocation?: boolean
-  baseLat?: boolean
-  baseLng?: boolean
+  baseLocationLabel?: boolean
+  baseLatitude?: boolean
+  baseLongitude?: boolean
   coverageMode?: boolean
-  radiusKm?: boolean
+  coverageRadiusKm?: boolean
   avgRating?: boolean
   reviewCount?: boolean
   createdAt?: boolean
@@ -1001,11 +1013,11 @@ export type PerformerProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   taxSystem?: boolean
   vatPayer?: boolean
   legalAddress?: boolean
-  baseLocation?: boolean
-  baseLat?: boolean
-  baseLng?: boolean
+  baseLocationLabel?: boolean
+  baseLatitude?: boolean
+  baseLongitude?: boolean
   coverageMode?: boolean
-  radiusKm?: boolean
+  coverageRadiusKm?: boolean
   avgRating?: boolean
   reviewCount?: boolean
   createdAt?: boolean
@@ -1023,11 +1035,11 @@ export type PerformerProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   taxSystem?: boolean
   vatPayer?: boolean
   legalAddress?: boolean
-  baseLocation?: boolean
-  baseLat?: boolean
-  baseLng?: boolean
+  baseLocationLabel?: boolean
+  baseLatitude?: boolean
+  baseLongitude?: boolean
   coverageMode?: boolean
-  radiusKm?: boolean
+  coverageRadiusKm?: boolean
   avgRating?: boolean
   reviewCount?: boolean
   createdAt?: boolean
@@ -1045,18 +1057,18 @@ export type PerformerProfileSelectScalar = {
   taxSystem?: boolean
   vatPayer?: boolean
   legalAddress?: boolean
-  baseLocation?: boolean
-  baseLat?: boolean
-  baseLng?: boolean
+  baseLocationLabel?: boolean
+  baseLatitude?: boolean
+  baseLongitude?: boolean
   coverageMode?: boolean
-  radiusKm?: boolean
+  coverageRadiusKm?: boolean
   avgRating?: boolean
   reviewCount?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PerformerProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "companyName" | "edrpou" | "billingEmail" | "iban" | "taxSystem" | "vatPayer" | "legalAddress" | "baseLocation" | "baseLat" | "baseLng" | "coverageMode" | "radiusKm" | "avgRating" | "reviewCount" | "createdAt" | "updatedAt", ExtArgs["result"]["performerProfile"]>
+export type PerformerProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "companyName" | "edrpou" | "billingEmail" | "iban" | "taxSystem" | "vatPayer" | "legalAddress" | "baseLocationLabel" | "baseLatitude" | "baseLongitude" | "coverageMode" | "coverageRadiusKm" | "avgRating" | "reviewCount" | "createdAt" | "updatedAt", ExtArgs["result"]["performerProfile"]>
 export type PerformerProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   services?: boolean | Prisma.PerformerProfile$servicesArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1085,12 +1097,12 @@ export type $PerformerProfilePayload<ExtArgs extends runtime.Types.Extensions.In
     taxSystem: $Enums.TaxSystem | null
     vatPayer: boolean
     legalAddress: string | null
-    baseLocation: string | null
-    baseLat: runtime.Decimal | null
-    baseLng: runtime.Decimal | null
-    coverageMode: $Enums.CoverageMode
-    radiusKm: number | null
-    avgRating: runtime.Decimal
+    baseLocationLabel: string | null
+    baseLatitude: number | null
+    baseLongitude: number | null
+    coverageMode: string | null
+    coverageRadiusKm: number | null
+    avgRating: number
     reviewCount: number
     createdAt: Date
     updatedAt: Date
@@ -1528,12 +1540,12 @@ export interface PerformerProfileFieldRefs {
   readonly taxSystem: Prisma.FieldRef<"PerformerProfile", 'TaxSystem'>
   readonly vatPayer: Prisma.FieldRef<"PerformerProfile", 'Boolean'>
   readonly legalAddress: Prisma.FieldRef<"PerformerProfile", 'String'>
-  readonly baseLocation: Prisma.FieldRef<"PerformerProfile", 'String'>
-  readonly baseLat: Prisma.FieldRef<"PerformerProfile", 'Decimal'>
-  readonly baseLng: Prisma.FieldRef<"PerformerProfile", 'Decimal'>
-  readonly coverageMode: Prisma.FieldRef<"PerformerProfile", 'CoverageMode'>
-  readonly radiusKm: Prisma.FieldRef<"PerformerProfile", 'Int'>
-  readonly avgRating: Prisma.FieldRef<"PerformerProfile", 'Decimal'>
+  readonly baseLocationLabel: Prisma.FieldRef<"PerformerProfile", 'String'>
+  readonly baseLatitude: Prisma.FieldRef<"PerformerProfile", 'Float'>
+  readonly baseLongitude: Prisma.FieldRef<"PerformerProfile", 'Float'>
+  readonly coverageMode: Prisma.FieldRef<"PerformerProfile", 'String'>
+  readonly coverageRadiusKm: Prisma.FieldRef<"PerformerProfile", 'Int'>
+  readonly avgRating: Prisma.FieldRef<"PerformerProfile", 'Float'>
   readonly reviewCount: Prisma.FieldRef<"PerformerProfile", 'Int'>
   readonly createdAt: Prisma.FieldRef<"PerformerProfile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"PerformerProfile", 'DateTime'>
