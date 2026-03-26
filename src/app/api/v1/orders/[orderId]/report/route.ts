@@ -16,10 +16,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       (user.role === "performer" && order.performerUserId === user.id);
     if (!canRead) throw new ApiError(404, "NOT_FOUND", "Order not found");
 
-    const items = await prisma.orderReportMedia.findMany({
-      where: { orderId },
+    const items = await prisma.notification.findMany({
+      where: { userId: user.id, type: "report" },
       orderBy: { createdAt: "asc" },
-      select: { id: true, url: true, createdAt: true, metadata: true },
+      select: { id: true, data: true, createdAt: true },
     });
 
     return ok(req, { report: { items } });

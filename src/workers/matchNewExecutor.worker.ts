@@ -96,9 +96,8 @@ export function startMatchNewExecutorWorker() {
               create: {
                 performerUserId,
                 orderId: m.order_id,
-                distanceKm: m.distance_km,
               },
-              update: { distanceKm: m.distance_km },
+              update: {},
             })
           ),
           ...(removedOrderIds.length

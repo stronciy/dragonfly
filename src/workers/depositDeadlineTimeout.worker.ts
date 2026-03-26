@@ -270,9 +270,8 @@ export function startDepositDeadlineTimeoutWorker() {
                 create: {
                   performerUserId: c.performer_user_id,
                   orderId,
-                  distanceKm: c.distance_km,
                 },
-                update: { distanceKm: c.distance_km },
+                update: {},
               })
             )
           );

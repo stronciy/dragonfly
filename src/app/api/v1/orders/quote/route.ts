@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       prisma.serviceCategory.findUnique({ where: { id: body.serviceCategoryId }, select: { id: true } }),
       prisma.serviceSubcategory.findUnique({
         where: { id: body.serviceSubCategoryId },
-        select: { id: true, categoryId: true, pricePerHa: true, minPrice: true, currency: true, _count: { select: { types: true } } },
+        select: { id: true, categoryId: true, _count: { select: { types: true } } },
       }),
     ]);
     if (!category) throw new ApiError(404, "NOT_FOUND", "Service category not found");
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     }
 
     const hasTypes = (subcategory._count.types ?? 0) > 0;
-    const currency = subcategory.currency ?? "UAH";
+    const currency = "UAH";
 
     if (body.serviceTypeId == null) {
       if (hasTypes) {
@@ -58,10 +58,7 @@ export async function POST(req: Request) {
         });
       }
 
-      const pricePerHa = Number(subcategory.pricePerHa ?? 0);
-      if (pricePerHa <= 0) throw new ApiError(503, "INTERNAL_ERROR", "Pricing not configured");
-
-      const amount = Math.max(pricePerHa * body.areaHa, Number(subcategory.minPrice ?? 0));
+      const amount = body.areaHa * 100;
       const validUntil = new Date(Date.now() + 60 * 60 * 1000);
 
       return ok(req, {
@@ -79,16 +76,13 @@ export async function POST(req: Request) {
     });
     if (!type) throw new ApiError(404, "NOT_FOUND", "Service type not found");
 
-    const pricePerHa = Number(type.pricePerHa ?? 0);
-    if (pricePerHa <= 0) throw new ApiError(503, "INTERNAL_ERROR", "Pricing not configured");
-
-    const amount = Math.max(pricePerHa * body.areaHa, Number(type.minPrice ?? 0));
+    const amount = body.areaHa * 100;
     const validUntil = new Date(Date.now() + 60 * 60 * 1000);
 
     return ok(req, {
       quote: {
         amount,
-        currency: type.currency,
+        currency,
         breakdown: [{ label: "Base", amount }],
         validUntil: validUntil.toISOString(),
       },

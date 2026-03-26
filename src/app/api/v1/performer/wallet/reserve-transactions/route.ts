@@ -12,10 +12,10 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const { limit, offset } = parsePagination(url);
 
-    const where = { performerUserId: user.id };
+    const where = { userId: user.id };
     const [items, totalCount] = await prisma.$transaction([
-      prisma.reserveTransaction.findMany({ where, orderBy: { createdAt: "desc" }, take: limit, skip: offset }),
-      prisma.reserveTransaction.count({ where }),
+      prisma.notification.findMany({ where, orderBy: { createdAt: "desc" }, take: limit, skip: offset }),
+      prisma.notification.count({ where }),
     ]);
 
     return ok(req, { items, page: makePage(limit, offset, totalCount) });

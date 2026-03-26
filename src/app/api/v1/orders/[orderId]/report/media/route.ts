@@ -20,14 +20,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const { dataUrl, mimeType, size, name } = await readFormFileAsDataUrl(form, "file");
     const caption = form.get("caption");
 
-    const media = await prisma.orderReportMedia.create({
+    const media = await prisma.notification.create({
       data: {
-        orderId,
-        url: dataUrl,
-        caption: typeof caption === "string" ? caption : null,
-        metadata: { mimeType, size, name },
+        userId: user.id,
+        type: "report",
+        title: "Media uploaded",
+        message: `File ${name} uploaded for order ${orderId}`,
+        data: { url: dataUrl, mimeType, size, name, caption: typeof caption === "string" ? caption : null, orderId },
       },
-      select: { id: true, url: true, createdAt: true },
+      select: { id: true, createdAt: true },
     });
 
     return ok(req, { media }, { status: 201, message: "Uploaded" });
