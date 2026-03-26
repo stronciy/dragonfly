@@ -66,48 +66,48 @@ export function startMatchNewOrderWorker() {
         Array<{ performer_user_id: string; distance_km: number }>
       >`
         SELECT
-          ps.performer_user_id,
+          pp.user_id AS performer_user_id,
           (
             6371.0 * acos(
               least(1.0, greatest(-1.0,
-                cos(radians(ps.base_lat)) * cos(radians(o.lat)) *
-                cos(radians(o.lng) - radians(ps.base_lng)) +
-                sin(radians(ps.base_lat)) * sin(radians(o.lat))
+                cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                cos(radians(o.lng) - radians(pp.base_longitude)) +
+                sin(radians(pp.base_latitude)) * sin(radians(o.lat))
               ))
             )
           ) AS distance_km
-        FROM performer_settings ps
+        FROM performer_profiles pp
         JOIN users u
-          ON u.id = ps.performer_user_id
-        JOIN performer_services psvc
-          ON psvc.performer_user_id = ps.performer_user_id
+          ON u.id = pp.user_id
+        JOIN performer_service psvc
+          ON psvc.performerUserId = pp.user_id
         JOIN orders o
           ON o.id = ${orderId}
         WHERE
           o.status = 'published'
           AND u.role = 'performer'
-          AND ps.performer_user_id <> o.customer_user_id
-          AND psvc.service_category_id = o.service_category_id
-          AND psvc.service_subcategory_id = o.service_subcategory_id
+          AND pp.user_id <> o.customer_user_id
+          AND psvc.serviceCategoryId = o.service_category_id
+          AND psvc.serviceSubCategoryId = o.service_subcategory_id
           AND (
-            psvc.service_type_id IS NULL
+            psvc.serviceTypeId IS NULL
             OR o.service_type_id IS NULL
-            OR psvc.service_type_id = o.service_type_id
+            OR psvc.serviceTypeId = o.service_type_id
           )
           AND (
-            ps.coverage_mode = 'country'
+            pp.coverage_mode = 'country'
             OR (
-              ps.coverage_mode = 'radius'
-              AND ps.radius_km IS NOT NULL
+              pp.coverage_mode = 'radius'
+              AND pp.coverage_radius_km IS NOT NULL
               AND (
                 6371.0 * acos(
                   least(1.0, greatest(-1.0,
-                    cos(radians(ps.base_lat)) * cos(radians(o.lat)) *
-                    cos(radians(o.lng) - radians(ps.base_lng)) +
-                    sin(radians(ps.base_lat)) * sin(radians(o.lat))
+                    cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                    cos(radians(o.lng) - radians(pp.base_longitude)) +
+                    sin(radians(pp.base_latitude)) * sin(radians(o.lat))
                   ))
                 )
-              ) <= ps.radius_km
+              ) <= pp.coverage_radius_km
             )
           )
         ORDER BY distance_km ASC

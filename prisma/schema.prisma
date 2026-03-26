@@ -101,7 +101,7 @@ model ServiceCategory {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([sort, name])
-  @@map("service_categories")
+  @@map("service_category")
 }
 
 model ServiceSubcategory {
@@ -121,7 +121,7 @@ model ServiceSubcategory {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([categoryId, sort, name])
-  @@map("service_subcategories")
+  @@map("service_subcategory")
 }
 
 model ServiceType {
@@ -141,7 +141,7 @@ model ServiceType {
 
   @@id([subcategoryId, id])
   @@index([subcategoryId, sort, name])
-  @@map("service_types")
+  @@map("service_type")
 }
 
 model Crop {
@@ -165,14 +165,14 @@ model User {
   name         String
   email        String   @unique
   phone        String?  @db.VarChar(32)
-  passwordHash String   @map("password_hash")
+  passwordHash String   @map("passwordHash")
 
-  biometricsEnabled Boolean @default(false) @map("biometrics_enabled")
-  twoFactorSecret   String? @map("two_factor_secret")
-  twoFactorEnabledAt DateTime? @map("two_factor_enabled_at")
+  biometricsEnabled Boolean @default(false) @map("biometricsEnabled")
+  twoFactorSecret   String? @map("twoFactorSecret")
+  twoFactorEnabledAt DateTime? @map("twoFactorEnabledAt")
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
 
   customerProfile  CustomerProfile?
   performerProfile PerformerProfile?
@@ -192,57 +192,57 @@ model User {
   authoredReviews Review[] @relation("AuthoredReviews")
   performerReviews Review[] @relation("PerformerReviews")
 
-  @@map("users")
+  @@map("user")
 }
 
 model RefreshToken {
   id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  tokenHash String   @unique @map("token_hash")
-  expiresAt DateTime @map("expires_at")
-  revokedAt DateTime? @map("revoked_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  userId    String   @map("userId")
+  tokenHash String   @unique @map("tokenHash")
+  expiresAt DateTime @map("expiresAt")
+  revokedAt DateTime? @map("revokedAt")
+  createdAt DateTime @default(now()) @map("createdAt")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
-  @@map("refresh_tokens")
+  @@map("refresh_token")
 }
 
 model CustomerProfile {
   id     String @id @default(cuid())
-  userId String @unique @map("user_id")
+  userId String @unique @map("userId")
 
-  companyName  String? @map("company_name")
-  companyEdrpou String? @map("company_edrpou")
-  billingEmail String? @map("billing_email")
+  companyName  String? @map("companyName")
+  companyEdrpou String? @map("companyEdrpou")
+  billingEmail String? @map("billingEmail")
   iban         String? @map("iban")
-  taxSystem    TaxSystem? @map("tax_system")
-  vatPayer     Boolean @default(false) @map("vat_payer")
-  legalAddress String? @map("legal_address")
+  taxSystem    TaxSystem? @map("taxSystem")
+  vatPayer     Boolean @default(false) @map("vatPayer")
+  legalAddress String? @map("legalAddress")
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   fields Field[]
   cropStats CustomerCropStat[]
 
-  @@map("customer_profiles")
+  @@map("customer_profile")
 }
 
 model Review {
   id String @id @default(cuid())
 
-  orderId         String @map("order_id")
-  performerUserId String @map("performer_user_id")
-  authorUserId    String @map("author_user_id")
+  orderId         String @map("orderId")
+  performerUserId String @map("performerUserId")
+  authorUserId    String @map("authorUserId")
 
   rating Int
   text   String? @db.Text
 
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("createdAt")
 
   order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   performer User  @relation("PerformerReviews", fields: [performerUserId], references: [id], onDelete: Cascade)
@@ -288,30 +288,30 @@ model CustomerCropStat {
 
   @@unique([customerUserId, season, cropId], name: "uniq_cropstat_customer_season_crop")
   @@index([customerUserId, season])
-  @@map("customer_crop_stats")
+  @@map("customer_crop_stat")
 }
 
 model PerformerProfile {
   id     String @id @default(cuid())
-  userId String @unique @map("user_id")
+  userId String @unique @map("userId")
 
-  companyName  String? @map("company_name")
+  companyName  String? @map("companyName")
   edrpou       String? @map("edrpou")
-  billingEmail String? @map("billing_email")
+  billingEmail String? @map("billingEmail")
   iban         String? @map("iban")
-  taxSystem    TaxSystem? @map("tax_system")
-  vatPayer     Boolean @default(false) @map("vat_payer")
-  legalAddress String? @map("legal_address")
+  taxSystem    TaxSystem? @map("taxSystem")
+  vatPayer     Boolean @default(false) @map("vatPayer")
+  legalAddress String? @map("legalAddress")
   
-  baseLocationLabel String? @map("base_location_label")
-  baseLatitude      Float?  @map("base_latitude")
-  baseLongitude     Float?  @map("base_longitude")
+  baseLocationLabel String? @map("baseLocationLabel")
+  baseLatitude      Float?  @map("baseLatitude")
+  baseLongitude     Float?  @map("baseLongitude")
 
-  coverageMode      String? @default("radius") @map("coverage_mode")
-  coverageRadiusKm  Int?    @default(50) @map("coverage_radius_km")
+  coverageMode      String? @default("radius") @map("coverageMode")
+  coverageRadiusKm  Int?    @default(50) @map("coverageRadiusKm")
 
-  avgRating    Float   @default(0) @map("avg_rating")
-  reviewCount  Int     @default(0) @map("review_count")
+  avgRating    Float   @default(0) @map("avgRating")
+  reviewCount  Int     @default(0) @map("reviewCount")
 
   services PerformerService[]
 
@@ -320,24 +320,24 @@ model PerformerProfile {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("performer_profiles")
+  @@map("performer_profile")
 }
 
 model PerformerService {
   id               String  @id @default(cuid())
-  performerUserId  String  @map("performer_user_id")
-  serviceCategoryId String @map("service_category_id")
-  serviceSubCategoryId String @map("service_subcategory_id")
-  serviceTypeId    String? @map("service_type_id")
+  performerUserId  String  @map("performerUserId")
+  serviceCategoryId String @map("serviceCategoryId")
+  serviceSubCategoryId String @map("serviceSubCategoryId")
+  serviceTypeId    String? @map("serviceTypeId")
 
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("createdAt")
 
   performer PerformerProfile @relation(fields: [performerUserId], references: [userId], onDelete: Cascade)
 
   @@unique([performerUserId, serviceCategoryId, serviceSubCategoryId, serviceTypeId], name: "uniq_performer_service")
   @@index([performerUserId])
   @@index([serviceCategoryId, serviceSubCategoryId, serviceTypeId])
-  @@map("performer_services")
+  @@map("performer_service")
 }
 
 model Field {
@@ -361,7 +361,7 @@ model Field {
   owner CustomerProfile @relation(fields: [ownerUserId], references: [userId], onDelete: Cascade)
 
   @@index([ownerUserId])
-  @@map("fields")
+  @@map("field")
 }
 
 model Order {
@@ -416,7 +416,7 @@ model Order {
   @@index([performerUserId, status, createdAt])
   @@index([status, createdAt])
   @@index([serviceCategoryId, serviceSubCategoryId, serviceTypeId])
-  @@map("orders")
+  @@map("order")
 }
 
 model EscrowLock {
@@ -442,7 +442,7 @@ model EscrowLock {
   @@unique([orderId, role], name: "uniq_order_role_lock")
   @@index([userId, status])
   @@index([orderId, status])
-  @@map("escrow_locks")
+  @@map("escrow_lock")
 }
 
 model Payment {
@@ -469,7 +469,7 @@ model Payment {
   @@unique([provider, providerIntentId], name: "uniq_provider_intent")
   @@index([orderId])
   @@index([userId, createdAt])
-  @@map("payments")
+  @@map("payment")
 }
 
 model OrderStatusEvent {
@@ -485,7 +485,7 @@ model OrderStatusEvent {
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId, at])
-  @@map("order_status_events")
+  @@map("order_status_event")
 }
 
 model OrderMatch {
@@ -502,7 +502,7 @@ model OrderMatch {
   @@unique([performerUserId, orderId], name: "uniq_performer_order_match")
   @@index([performerUserId, createdAt])
   @@index([orderId])
-  @@map("order_matches")
+  @@map("order_match")
 }
 
 model ArbitrationCase {
@@ -521,7 +521,7 @@ model ArbitrationCase {
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
-  @@map("arbitration_cases")
+  @@map("arbitration_case")
 }
 
 model ArbitrationMedia {
@@ -555,7 +555,7 @@ model Notification {
 
   @@index([userId, createdAt])
   @@index([userId, readAt])
-  @@map("notifications")
+  @@map("notification")
 }
 
 model Device {
@@ -573,7 +573,7 @@ model Device {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, revokedAt])
-  @@map("devices")
+  @@map("device")
 }
 
 model OrderReportMedia {
@@ -611,7 +611,7 @@ model Agreement {
 
   @@index([customerUserId, createdAt])
   @@index([performerUserId, createdAt])
-  @@map("agreements")
+  @@map("agreement")
 }
 
 model AgreementDocument {
@@ -626,7 +626,7 @@ model AgreementDocument {
   agreement Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
 
   @@index([agreementId, createdAt])
-  @@map("agreement_documents")
+  @@map("agreement_document")
 }
 
 model Payout {
@@ -646,7 +646,7 @@ model Payout {
 
   @@index([performerUserId, createdAt])
   @@index([status, createdAt])
-  @@map("payouts")
+  @@map("payout")
 }
 
 model ReserveTransaction {
@@ -664,5 +664,5 @@ model ReserveTransaction {
 
   @@index([performerUserId, createdAt])
   @@index([orderId])
-  @@map("reserve_transactions")
+  @@map("reserve_transaction")
 }
