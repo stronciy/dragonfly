@@ -72,10 +72,10 @@ export async function POST(req: Request) {
         ownerUserId: user.id,
         name: body.name,
         areaHa: body.areaHa,
-        regionName: body.regionName ?? null,
-        geometry: body.geometry ?? null,
-        centroidLat: body.centroid?.lat ?? null,
-        centroidLng: body.centroid?.lng ?? null,
+        addressLabel: body.addressLabel ?? null,
+        lat: body.lat ?? null,
+        lng: body.lng ?? null,
+        points: body.points ?? null,
       },
     });
 

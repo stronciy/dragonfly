@@ -37,7 +37,7 @@ export async function GET(req: Request) {
         ? [{ order: { budget: "desc" as const } }]
         : q.sort === "date"
           ? [{ order: { createdAt: "desc" as const } }]
-          : [{ distanceKm: "asc" as const }];
+          : [{ createdAt: "asc" as const }];
 
     const orderWhere = {
       status: "published" as const,
@@ -88,7 +88,6 @@ export async function GET(req: Request) {
         price: Number(m.order.budget),
         budget: Number(m.order.budget),
         currency: m.order.currency,
-        distanceKm: Number(m.distanceKm),
         dateFrom: m.order.dateFrom,
         dateTo: m.order.dateTo,
         locationLabel: m.order.locationLabel,
