@@ -283,7 +283,7 @@ export async function POST(req: Request) {
         const eligibleCountRows = await prisma.$queryRaw<Array<{ count: bigint }>>`
           SELECT COUNT(DISTINCT pp.user_id)::bigint AS count
           FROM performer_services srv
-          JOIN performer_profiles pp ON pp.user_id = srv.performerUserId
+          JOIN performer_profiles pp ON pp.user_id = srv.performer_user_id
           JOIN users u ON u.id = pp.user_id
           JOIN orders o ON o.id = ${order.id}
           WHERE srv.service_category_id = o.service_category_id
@@ -326,7 +326,7 @@ export async function POST(req: Request) {
               )
             ) AS "distanceKm"
           FROM performer_services srv
-          JOIN performer_profiles pp ON pp.user_id = srv.performerUserId
+          JOIN performer_profiles pp ON pp.user_id = srv.performer_user_id
           JOIN users u ON u.id = pp.user_id
           JOIN orders o ON o.id = ${order.id}
           WHERE srv.service_category_id = o.service_category_id

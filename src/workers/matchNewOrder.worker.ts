@@ -79,20 +79,20 @@ export function startMatchNewOrderWorker() {
         FROM performer_profiles pp
         JOIN users u
           ON u.id = pp.user_id
-        JOIN performer_service psvc
-          ON psvc.performerUserId = pp.user_id
+        JOIN performer_services psvc
+          ON psvc.performer_user_id = pp.user_id
         JOIN orders o
           ON o.id = ${orderId}
         WHERE
           o.status = 'published'
           AND u.role = 'performer'
           AND pp.user_id <> o.customer_user_id
-          AND psvc.serviceCategoryId = o.service_category_id
-          AND psvc.serviceSubCategoryId = o.service_subcategory_id
+          AND psvc.service_category_id = o.service_category_id
+          AND psvc.service_subcategory_id = o.service_subcategory_id
           AND (
-            psvc.serviceTypeId IS NULL
+            psvc.service_type_id IS NULL
             OR o.service_type_id IS NULL
-            OR psvc.serviceTypeId = o.service_type_id
+            OR psvc.service_type_id = o.service_type_id
           )
           AND (
             pp.coverage_mode = 'country'

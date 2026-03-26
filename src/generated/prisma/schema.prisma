@@ -1,0 +1,333 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  customer
+  performer
+  admin
+}
+
+enum TaxSystem {
+  group1
+  group2
+  group3
+  general
+}
+
+model User {
+  id           String   @id @default(cuid())
+  role         UserRole @default(customer)
+  name         String
+  email        String   @unique
+  phone        String?  @db.VarChar(32)
+  passwordHash String   @map("password_hash")
+
+  biometricsEnabled  Boolean   @default(false) @map("biometrics_enabled")
+  twoFactorSecret    String?   @map("two_factor_secret")
+  twoFactorEnabledAt DateTime? @map("two_factor_enabled_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  customerProfile  CustomerProfile?
+  performerProfile PerformerProfile?
+
+  refreshTokens    RefreshToken[]
+  authoredReviews  Review[]       @relation("AuthoredReviews")
+  performerReviews Review[]       @relation("PerformerReviews")
+  orders           Order[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model CustomerProfile {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
+  companyName   String?    @map("company_name")
+  companyEdrpou String?    @map("company_edrpou")
+  billingEmail  String?    @map("billing_email")
+  iban          String?    @map("iban")
+  taxSystem     TaxSystem? @map("tax_system")
+  vatPayer      Boolean    @default(false) @map("vat_payer")
+  legalAddress  String?    @map("legal_address")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fields    Field[]
+  cropStats CustomerCropStat[]
+
+  @@map("customer_profiles")
+}
+
+model Review {
+  id String @id @default(cuid())
+
+  orderId         String @map("order_id")
+  performerUserId String @map("performer_user_id")
+  authorUserId    String @map("author_user_id")
+
+  rating Int
+  text   String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  performer User  @relation("PerformerReviews", fields: [performerUserId], references: [id], onDelete: Cascade)
+  author    User  @relation("AuthoredReviews", fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([performerUserId, createdAt])
+  @@index([authorUserId, createdAt])
+  @@map("reviews")
+}
+
+model CustomerCropStat {
+  id             String @id @default(cuid())
+  customerUserId String @map("customer_user_id")
+  season         Int
+  cropId         String @map("crop_id")
+  areaHa         Float  @map("area_ha")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  customer CustomerProfile @relation(fields: [customerUserId], references: [userId], onDelete: Cascade)
+  crop     Crop            @relation(fields: [cropId], references: [id], onDelete: Cascade)
+
+  @@unique([customerUserId, season, cropId], name: "uniq_cropstat_customer_season_crop")
+  @@index([customerUserId, season])
+  @@map("customer_crop_stats")
+}
+
+model PerformerProfile {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
+  companyName  String?    @map("company_name")
+  edrpou       String?    @map("edrpou")
+  billingEmail String?    @map("billing_email")
+  iban         String?    @map("iban")
+  taxSystem    TaxSystem? @map("tax_system")
+  vatPayer     Boolean    @default(false) @map("vat_payer")
+  legalAddress String?    @map("legal_address")
+
+  baseLocationLabel String? @map("base_location_label")
+  baseLatitude      Float?  @map("base_latitude")
+  baseLongitude     Float?  @map("base_longitude")
+
+  coverageMode     String? @default("radius") @map("coverage_mode")
+  coverageRadiusKm Int?    @default(50) @map("coverage_radius_km")
+
+  avgRating   Float @default(0) @map("avg_rating")
+  reviewCount Int   @default(0) @map("review_count")
+
+  services PerformerService[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("performer_profiles")
+}
+
+model PerformerService {
+  id                   String  @id @default(cuid())
+  performerUserId      String  @map("performer_user_id")
+  serviceCategoryId    String  @map("service_category_id")
+  serviceSubCategoryId String  @map("service_subcategory_id")
+  serviceTypeId        String? @map("service_type_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  performer PerformerProfile @relation(fields: [performerUserId], references: [userId], onDelete: Cascade)
+
+  @@unique([performerUserId, serviceCategoryId, serviceSubCategoryId, serviceTypeId], name: "uniq_performer_service")
+  @@index([performerUserId])
+  @@index([serviceCategoryId, serviceSubCategoryId, serviceTypeId])
+  @@map("performer_services")
+}
+
+model Field {
+  id           String  @id @default(cuid())
+  ownerUserId  String  @map("owner_user_id")
+  name         String
+  areaHa       Float   @map("area_ha")
+  addressLabel String? @map("address_label")
+  lat          Float?
+  lng          Float?
+
+  points Json? // List of {lat, lng}
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner CustomerProfile @relation(fields: [ownerUserId], references: [userId], onDelete: Cascade)
+
+  @@index([ownerUserId])
+  @@map("fields")
+}
+
+model Order {
+  id              String  @id @default(cuid())
+  customerUserId  String  @map("customer_user_id")
+  performerUserId String? @map("performer_user_id")
+
+  serviceCategoryId    String  @map("service_category_id")
+  serviceSubCategoryId String  @map("service_subcategory_id")
+  serviceTypeId        String? @map("service_type_id")
+
+  areaHa   Float     @map("area_ha")
+  dateFrom DateTime? @map("date_from")
+  dateTo   DateTime? @map("date_to")
+
+  locationLabel String  @map("location_label")
+  regionName    String? @map("region_name")
+  lat           Float
+  lng           Float
+
+  comment  String? @db.Text
+  budget   Decimal @db.Decimal(12, 2)
+  currency String  @default("UAH")
+
+  status String @default("draft") // draft, published, accepted, pending_deposit, requires_confirmation, confirmed, started, completed, arbitration, cancelled
+
+  acceptedAt      DateTime? @map("accepted_at")
+  depositDeadline DateTime? @map("deposit_deadline")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  customer     User               @relation(fields: [customerUserId], references: [id], onDelete: Cascade)
+  statusEvents OrderStatusEvent[]
+  matches      OrderMatch[]
+  reviews      Review[]
+
+  @@index([customerUserId, status, createdAt])
+  @@index([performerUserId, status, createdAt])
+  @@index([status, createdAt])
+  @@index([serviceCategoryId, serviceSubCategoryId, serviceTypeId])
+  @@map("orders")
+}
+
+model ServiceCategory {
+  id     String  @id @default(cuid())
+  name   String
+  nameUa String  @map("name_ua")
+  icon   String?
+  sort   Int     @default(0)
+
+  subcategories ServiceSubcategory[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([sort, name])
+  @@map("service_categories")
+}
+
+model ServiceSubcategory {
+  id         String  @id @default(cuid())
+  categoryId String  @map("category_id")
+  name       String
+  nameUa     String  @map("name_ua")
+  icon       String?
+  sort       Int     @default(0)
+
+  category ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  types    ServiceType[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([categoryId, sort, name])
+  @@map("service_subcategories")
+}
+
+model ServiceType {
+  subcategoryId String @map("subcategory_id")
+  id            String
+  name          String
+  nameUa        String @map("name_ua")
+  sort          Int    @default(0)
+
+  subcategory ServiceSubcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([subcategoryId, id])
+  @@index([subcategoryId, sort, name])
+  @@map("service_types")
+}
+
+model Crop {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  nameUa String  @map("name_ua")
+  group  String? // grain, tech, etc
+  icon   String?
+
+  stats CustomerCropStat[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("crops")
+}
+
+model OrderStatusEvent {
+  id         String   @id @default(cuid())
+  orderId    String   @map("order_id")
+  fromStatus String?  @map("from_status")
+  toStatus   String   @map("to_status")
+  note       String?  @db.Text
+  at         DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, at])
+  @@map("order_status_events")
+}
+
+model OrderMatch {
+  id              String @id @default(cuid())
+  orderId         String @map("order_id")
+  performerUserId String @map("performer_user_id")
+
+  status String @default("pending") // pending, ignored, matched
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([performerUserId, orderId], name: "uniq_performer_order_match")
+  @@index([performerUserId, createdAt])
+  @@index([orderId])
+  @@map("order_matches")
+}

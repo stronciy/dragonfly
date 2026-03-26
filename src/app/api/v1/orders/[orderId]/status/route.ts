@@ -8,12 +8,12 @@ import { ExpoPushService } from "@/services/expoPush.service";
 import type { InputJsonValue } from "@/generated/prisma/internal/prismaNamespace";
 
 const schema = z.object({
-  status: z.enum(["started", "completed"]),
+  status: z.enum(["active", "completed"]),
 });
 
 const allowedTransitions: Record<string, Array<string>> = {
-  confirmed: ["started"],
-  started: ["completed"],
+  accepted: ["active"],
+  active: ["completed"],
 };
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
@@ -33,7 +33,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
     const updated = await prisma.$transaction(async (tx) => {
       const u = await tx.order.update({ where: { id: orderId }, data: { status: body.status } });
       await tx.orderStatusEvent.create({
-        data: { orderId, fromStatus: order.status, toStatus: body.status, note: null },
+        data: { orderId, status: body.status, note: null },
       });
       if (body.status === "completed") {
         await tx.orderMatch.deleteMany({ where: { orderId } });
@@ -49,7 +49,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
     // Відправляємо Push сповіщення заказчику
     const expo = new ExpoPushService(prisma);
     
-    if (body.status === "started") {
+    if (body.status === "active") {
       // Створюємо запис в notifications
       await prisma.notification.create({
         data: {
@@ -147,7 +147,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
     
     // Додаткове специфічне сповіщення
     await publishDomainEvent({
-      type: body.status === "started" ? "order.started" : "order.completed",
+      type: body.status === "active" ? "order.started" : "order.completed",
       requestId,
       targets: { userIds: [updated.customerUserId] },
       data: { 

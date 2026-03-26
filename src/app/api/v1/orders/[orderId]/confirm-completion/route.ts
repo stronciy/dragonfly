@@ -179,8 +179,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         prisma.orderStatusEvent.create({
           data: {
             orderId,
-            fromStatus: "completed",
-            toStatus: "arbitration",
+            status: "arbitration",
             note: body.comment ?? "Заказчик відхилив завершення",
           },
         }),
