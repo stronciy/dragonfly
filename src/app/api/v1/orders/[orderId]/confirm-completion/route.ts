@@ -81,8 +81,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
           await tx.performerProfile.update({
             where: { userId: order.performerUserId! },
             data: {
-              rating: avgRating,
-              jobsDone: { increment: 1 },
+              avgRating: avgRating,
+              reviewCount: { increment: 1 },
             },
           });
         }
