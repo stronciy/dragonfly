@@ -308,6 +308,9 @@ exports.Prisma.DeviceScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   expoPushToken: 'expoPushToken',
+  platform: 'platform',
+  deviceId: 'deviceId',
+  appVersion: 'appVersion',
   revokedAt: 'revokedAt',
   createdAt: 'createdAt'
 };

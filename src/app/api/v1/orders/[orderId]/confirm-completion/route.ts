@@ -171,7 +171,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       }, { message: "Completion confirmed" });
     } else {
       // Заказчик відхиляє завершення → арбітраж
-      const updated = await prisma.$transaction([
+      await prisma.$transaction([
         prisma.order.update({
           where: { id: orderId },
           data: { status: "arbitration" },

@@ -341,6 +341,9 @@ model Device {
   id            String    @id @default(cuid())
   userId        String    @map("user_id")
   expoPushToken String    @unique @map("expo_push_token")
+  platform      String?   @map("platform")
+  deviceId      String?   @map("device_id")
+  appVersion    String?   @map("app_version")
   revokedAt     DateTime? @map("revoked_at")
   createdAt     DateTime  @default(now()) @map("created_at")
 

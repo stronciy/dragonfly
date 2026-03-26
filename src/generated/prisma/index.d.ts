@@ -20233,6 +20233,9 @@ export namespace Prisma {
     id: string | null
     userId: string | null
     expoPushToken: string | null
+    platform: string | null
+    deviceId: string | null
+    appVersion: string | null
     revokedAt: Date | null
     createdAt: Date | null
   }
@@ -20241,6 +20244,9 @@ export namespace Prisma {
     id: string | null
     userId: string | null
     expoPushToken: string | null
+    platform: string | null
+    deviceId: string | null
+    appVersion: string | null
     revokedAt: Date | null
     createdAt: Date | null
   }
@@ -20249,6 +20255,9 @@ export namespace Prisma {
     id: number
     userId: number
     expoPushToken: number
+    platform: number
+    deviceId: number
+    appVersion: number
     revokedAt: number
     createdAt: number
     _all: number
@@ -20259,6 +20268,9 @@ export namespace Prisma {
     id?: true
     userId?: true
     expoPushToken?: true
+    platform?: true
+    deviceId?: true
+    appVersion?: true
     revokedAt?: true
     createdAt?: true
   }
@@ -20267,6 +20279,9 @@ export namespace Prisma {
     id?: true
     userId?: true
     expoPushToken?: true
+    platform?: true
+    deviceId?: true
+    appVersion?: true
     revokedAt?: true
     createdAt?: true
   }
@@ -20275,6 +20290,9 @@ export namespace Prisma {
     id?: true
     userId?: true
     expoPushToken?: true
+    platform?: true
+    deviceId?: true
+    appVersion?: true
     revokedAt?: true
     createdAt?: true
     _all?: true
@@ -20356,6 +20374,9 @@ export namespace Prisma {
     id: string
     userId: string
     expoPushToken: string
+    platform: string | null
+    deviceId: string | null
+    appVersion: string | null
     revokedAt: Date | null
     createdAt: Date
     _count: DeviceCountAggregateOutputType | null
@@ -20381,6 +20402,9 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     expoPushToken?: boolean
+    platform?: boolean
+    deviceId?: boolean
+    appVersion?: boolean
     revokedAt?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -20390,6 +20414,9 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     expoPushToken?: boolean
+    platform?: boolean
+    deviceId?: boolean
+    appVersion?: boolean
     revokedAt?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -20399,6 +20426,9 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     expoPushToken?: boolean
+    platform?: boolean
+    deviceId?: boolean
+    appVersion?: boolean
     revokedAt?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -20408,11 +20438,14 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     expoPushToken?: boolean
+    platform?: boolean
+    deviceId?: boolean
+    appVersion?: boolean
     revokedAt?: boolean
     createdAt?: boolean
   }
 
-  export type DeviceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "expoPushToken" | "revokedAt" | "createdAt", ExtArgs["result"]["device"]>
+  export type DeviceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "expoPushToken" | "platform" | "deviceId" | "appVersion" | "revokedAt" | "createdAt", ExtArgs["result"]["device"]>
   export type DeviceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -20432,6 +20465,9 @@ export namespace Prisma {
       id: string
       userId: string
       expoPushToken: string
+      platform: string | null
+      deviceId: string | null
+      appVersion: string | null
       revokedAt: Date | null
       createdAt: Date
     }, ExtArgs["result"]["device"]>
@@ -20861,6 +20897,9 @@ export namespace Prisma {
     readonly id: FieldRef<"Device", 'String'>
     readonly userId: FieldRef<"Device", 'String'>
     readonly expoPushToken: FieldRef<"Device", 'String'>
+    readonly platform: FieldRef<"Device", 'String'>
+    readonly deviceId: FieldRef<"Device", 'String'>
+    readonly appVersion: FieldRef<"Device", 'String'>
     readonly revokedAt: FieldRef<"Device", 'DateTime'>
     readonly createdAt: FieldRef<"Device", 'DateTime'>
   }
@@ -22627,6 +22666,9 @@ export namespace Prisma {
     id: 'id',
     userId: 'userId',
     expoPushToken: 'expoPushToken',
+    platform: 'platform',
+    deviceId: 'deviceId',
+    appVersion: 'appVersion',
     revokedAt: 'revokedAt',
     createdAt: 'createdAt'
   };
@@ -24041,6 +24083,9 @@ export namespace Prisma {
     id?: StringFilter<"Device"> | string
     userId?: StringFilter<"Device"> | string
     expoPushToken?: StringFilter<"Device"> | string
+    platform?: StringNullableFilter<"Device"> | string | null
+    deviceId?: StringNullableFilter<"Device"> | string | null
+    appVersion?: StringNullableFilter<"Device"> | string | null
     revokedAt?: DateTimeNullableFilter<"Device"> | Date | string | null
     createdAt?: DateTimeFilter<"Device"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -24050,6 +24095,9 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     expoPushToken?: SortOrder
+    platform?: SortOrderInput | SortOrder
+    deviceId?: SortOrderInput | SortOrder
+    appVersion?: SortOrderInput | SortOrder
     revokedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     user?: UserOrderByWithRelationInput
@@ -24062,6 +24110,9 @@ export namespace Prisma {
     OR?: DeviceWhereInput[]
     NOT?: DeviceWhereInput | DeviceWhereInput[]
     userId?: StringFilter<"Device"> | string
+    platform?: StringNullableFilter<"Device"> | string | null
+    deviceId?: StringNullableFilter<"Device"> | string | null
+    appVersion?: StringNullableFilter<"Device"> | string | null
     revokedAt?: DateTimeNullableFilter<"Device"> | Date | string | null
     createdAt?: DateTimeFilter<"Device"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -24071,6 +24122,9 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     expoPushToken?: SortOrder
+    platform?: SortOrderInput | SortOrder
+    deviceId?: SortOrderInput | SortOrder
+    appVersion?: SortOrderInput | SortOrder
     revokedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: DeviceCountOrderByAggregateInput
@@ -24085,6 +24139,9 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Device"> | string
     userId?: StringWithAggregatesFilter<"Device"> | string
     expoPushToken?: StringWithAggregatesFilter<"Device"> | string
+    platform?: StringNullableWithAggregatesFilter<"Device"> | string | null
+    deviceId?: StringNullableWithAggregatesFilter<"Device"> | string | null
+    appVersion?: StringNullableWithAggregatesFilter<"Device"> | string | null
     revokedAt?: DateTimeNullableWithAggregatesFilter<"Device"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Device"> | Date | string
   }
@@ -25503,6 +25560,9 @@ export namespace Prisma {
   export type DeviceCreateInput = {
     id?: string
     expoPushToken: string
+    platform?: string | null
+    deviceId?: string | null
+    appVersion?: string | null
     revokedAt?: Date | string | null
     createdAt?: Date | string
     user: UserCreateNestedOneWithoutDevicesInput
@@ -25512,6 +25572,9 @@ export namespace Prisma {
     id?: string
     userId: string
     expoPushToken: string
+    platform?: string | null
+    deviceId?: string | null
+    appVersion?: string | null
     revokedAt?: Date | string | null
     createdAt?: Date | string
   }
@@ -25519,6 +25582,9 @@ export namespace Prisma {
   export type DeviceUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     expoPushToken?: StringFieldUpdateOperationsInput | string
+    platform?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutDevicesNestedInput
@@ -25528,6 +25594,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     expoPushToken?: StringFieldUpdateOperationsInput | string
+    platform?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25536,6 +25605,9 @@ export namespace Prisma {
     id?: string
     userId: string
     expoPushToken: string
+    platform?: string | null
+    deviceId?: string | null
+    appVersion?: string | null
     revokedAt?: Date | string | null
     createdAt?: Date | string
   }
@@ -25543,6 +25615,9 @@ export namespace Prisma {
   export type DeviceUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     expoPushToken?: StringFieldUpdateOperationsInput | string
+    platform?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25551,6 +25626,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     expoPushToken?: StringFieldUpdateOperationsInput | string
+    platform?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -26821,6 +26899,9 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     expoPushToken?: SortOrder
+    platform?: SortOrder
+    deviceId?: SortOrder
+    appVersion?: SortOrder
     revokedAt?: SortOrder
     createdAt?: SortOrder
   }
@@ -26829,6 +26910,9 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     expoPushToken?: SortOrder
+    platform?: SortOrder
+    deviceId?: SortOrder
+    appVersion?: SortOrder
     revokedAt?: SortOrder
     createdAt?: SortOrder
   }
@@ -26837,6 +26921,9 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     expoPushToken?: SortOrder
+    platform?: SortOrder
+    deviceId?: SortOrder
+    appVersion?: SortOrder
     revokedAt?: SortOrder
     createdAt?: SortOrder
   }
@@ -28422,6 +28509,9 @@ export namespace Prisma {
   export type DeviceCreateWithoutUserInput = {
     id?: string
     expoPushToken: string
+    platform?: string | null
+    deviceId?: string | null
+    appVersion?: string | null
     revokedAt?: Date | string | null
     createdAt?: Date | string
   }
@@ -28429,6 +28519,9 @@ export namespace Prisma {
   export type DeviceUncheckedCreateWithoutUserInput = {
     id?: string
     expoPushToken: string
+    platform?: string | null
+    deviceId?: string | null
+    appVersion?: string | null
     revokedAt?: Date | string | null
     createdAt?: Date | string
   }
@@ -28708,6 +28801,9 @@ export namespace Prisma {
     id?: StringFilter<"Device"> | string
     userId?: StringFilter<"Device"> | string
     expoPushToken?: StringFilter<"Device"> | string
+    platform?: StringNullableFilter<"Device"> | string | null
+    deviceId?: StringNullableFilter<"Device"> | string | null
+    appVersion?: StringNullableFilter<"Device"> | string | null
     revokedAt?: DateTimeNullableFilter<"Device"> | Date | string | null
     createdAt?: DateTimeFilter<"Device"> | Date | string
   }
@@ -30896,6 +30992,9 @@ export namespace Prisma {
   export type DeviceCreateManyUserInput = {
     id?: string
     expoPushToken: string
+    platform?: string | null
+    deviceId?: string | null
+    appVersion?: string | null
     revokedAt?: Date | string | null
     createdAt?: Date | string
   }
@@ -31072,6 +31171,9 @@ export namespace Prisma {
   export type DeviceUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     expoPushToken?: StringFieldUpdateOperationsInput | string
+    platform?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -31079,6 +31181,9 @@ export namespace Prisma {
   export type DeviceUncheckedUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     expoPushToken?: StringFieldUpdateOperationsInput | string
+    platform?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -31086,6 +31191,9 @@ export namespace Prisma {
   export type DeviceUncheckedUpdateManyWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     expoPushToken?: StringFieldUpdateOperationsInput | string
+    platform?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
