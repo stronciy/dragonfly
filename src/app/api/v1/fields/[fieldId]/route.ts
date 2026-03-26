@@ -8,14 +8,10 @@ const patchSchema = z
   .object({
     name: z.string().min(1).optional(),
     areaHa: z.number().positive().optional(),
-    regionName: z.string().min(1).optional(),
-    geometry: z.any().optional(),
-    centroid: z
-      .object({
-        lat: z.number().min(-90).max(90),
-        lng: z.number().min(-180).max(180),
-      })
-      .optional(),
+    addressLabel: z.string().min(1).optional(),
+    lat: z.number().min(-90).max(90).optional(),
+    lng: z.number().min(-180).max(180).optional(),
+    points: z.any().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "No fields to update" });
 
@@ -50,10 +46,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ fieldId: stri
       data: {
         name: body.name,
         areaHa: body.areaHa,
-        regionName: body.regionName,
-        geometry: body.geometry,
-        centroidLat: body.centroid?.lat,
-        centroidLng: body.centroid?.lng,
+        addressLabel: body.addressLabel,
+        lat: body.lat,
+        lng: body.lng,
+        points: body.points,
       },
     });
 

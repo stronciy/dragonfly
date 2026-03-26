@@ -8,14 +8,10 @@ import { makePage, parsePagination } from "@/lib/pagination";
 const postSchema = z.object({
   name: z.string().min(1),
   areaHa: z.number().positive(),
-  regionName: z.string().min(1).optional(),
-  geometry: z.any().optional(),
-  centroid: z
-    .object({
-      lat: z.number().min(-90).max(90),
-      lng: z.number().min(-180).max(180),
-    })
-    .optional(),
+  addressLabel: z.string().min(1).optional(),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
+  points: z.any().optional(),
 });
 
 export async function GET(req: Request) {
@@ -37,10 +33,10 @@ export async function GET(req: Request) {
           id: true,
           name: true,
           areaHa: true,
-          regionName: true,
-          centroidLat: true,
-          centroidLng: true,
-          status: true,
+          addressLabel: true,
+          lat: true,
+          lng: true,
+          points: true,
           createdAt: true,
         },
       }),
@@ -52,9 +48,9 @@ export async function GET(req: Request) {
         id: f.id,
         name: f.name,
         areaHa: Number(f.areaHa),
-        regionName: f.regionName,
-        centroid: f.centroidLat != null && f.centroidLng != null ? { lat: Number(f.centroidLat), lng: Number(f.centroidLng) } : null,
-        status: f.status,
+        addressLabel: f.addressLabel,
+        centroid: f.lat != null && f.lng != null ? { lat: Number(f.lat), lng: Number(f.lng) } : null,
+        points: f.points,
         createdAt: f.createdAt,
       })),
       page: makePage(limit, offset, totalCount),
