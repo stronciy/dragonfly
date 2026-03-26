@@ -250,7 +250,7 @@ exports.Prisma.ServiceCategoryScalarFieldEnum = {
   id: 'id',
   name: 'name',
   nameUa: 'nameUa',
-  icon: 'icon',
+  iconKey: 'iconKey',
   sort: 'sort',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -261,7 +261,7 @@ exports.Prisma.ServiceSubcategoryScalarFieldEnum = {
   categoryId: 'categoryId',
   name: 'name',
   nameUa: 'nameUa',
-  icon: 'icon',
+  iconKey: 'iconKey',
   sort: 'sort',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -281,7 +281,8 @@ exports.Prisma.CropScalarFieldEnum = {
   name: 'name',
   nameUa: 'nameUa',
   group: 'group',
-  icon: 'icon',
+  iconKey: 'iconKey',
+  sort: 'sort',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

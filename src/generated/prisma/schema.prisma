@@ -241,11 +241,11 @@ model Order {
 }
 
 model ServiceCategory {
-  id     String  @id @default(cuid())
-  name   String
-  nameUa String  @map("name_ua")
-  icon   String?
-  sort   Int     @default(0)
+  id      String  @id @default(cuid())
+  name    String
+  nameUa  String  @map("name_ua")
+  iconKey String? @map("icon_key")
+  sort    Int     @default(0)
 
   subcategories ServiceSubcategory[]
 
@@ -261,7 +261,7 @@ model ServiceSubcategory {
   categoryId String  @map("category_id")
   name       String
   nameUa     String  @map("name_ua")
-  icon       String?
+  iconKey    String? @map("icon_key")
   sort       Int     @default(0)
 
   category ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -291,11 +291,12 @@ model ServiceType {
 }
 
 model Crop {
-  id     String  @id @default(cuid())
-  name   String  @unique
-  nameUa String  @map("name_ua")
-  group  String? // grain, tech, etc
-  icon   String?
+  id      String  @id @default(cuid())
+  name    String  @unique
+  nameUa  String  @map("name_ua")
+  group   String? // grain, tech, etc
+  iconKey String? @map("icon_key")
+  sort    Int     @default(0)
 
   stats CustomerCropStat[]
 

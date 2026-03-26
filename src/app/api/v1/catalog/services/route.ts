@@ -19,9 +19,11 @@ export async function GET(req: Request) {
       categories: categories.map((c) => ({
         serviceCategoryId: c.id,
         serviceCategoryName: c.name,
+        iconKey: c.iconKey,
         subcategories: c.subcategories.map((s) => ({
           serviceSubCategoryId: s.id,
           serviceSubCategoryName: s.name,
+          iconKey: s.iconKey,
           types: s.types.map((t) => ({
             serviceTypeId: t.id,
             serviceTypeName: t.name,

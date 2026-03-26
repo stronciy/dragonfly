@@ -13541,7 +13541,7 @@ export namespace Prisma {
     id: string | null
     name: string | null
     nameUa: string | null
-    icon: string | null
+    iconKey: string | null
     sort: number | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -13551,7 +13551,7 @@ export namespace Prisma {
     id: string | null
     name: string | null
     nameUa: string | null
-    icon: string | null
+    iconKey: string | null
     sort: number | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -13561,7 +13561,7 @@ export namespace Prisma {
     id: number
     name: number
     nameUa: number
-    icon: number
+    iconKey: number
     sort: number
     createdAt: number
     updatedAt: number
@@ -13581,7 +13581,7 @@ export namespace Prisma {
     id?: true
     name?: true
     nameUa?: true
-    icon?: true
+    iconKey?: true
     sort?: true
     createdAt?: true
     updatedAt?: true
@@ -13591,7 +13591,7 @@ export namespace Prisma {
     id?: true
     name?: true
     nameUa?: true
-    icon?: true
+    iconKey?: true
     sort?: true
     createdAt?: true
     updatedAt?: true
@@ -13601,7 +13601,7 @@ export namespace Prisma {
     id?: true
     name?: true
     nameUa?: true
-    icon?: true
+    iconKey?: true
     sort?: true
     createdAt?: true
     updatedAt?: true
@@ -13698,7 +13698,7 @@ export namespace Prisma {
     id: string
     name: string
     nameUa: string
-    icon: string | null
+    iconKey: string | null
     sort: number
     createdAt: Date
     updatedAt: Date
@@ -13727,7 +13727,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     nameUa?: boolean
-    icon?: boolean
+    iconKey?: boolean
     sort?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -13739,7 +13739,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     nameUa?: boolean
-    icon?: boolean
+    iconKey?: boolean
     sort?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -13749,7 +13749,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     nameUa?: boolean
-    icon?: boolean
+    iconKey?: boolean
     sort?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -13759,13 +13759,13 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     nameUa?: boolean
-    icon?: boolean
+    iconKey?: boolean
     sort?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type ServiceCategoryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "nameUa" | "icon" | "sort" | "createdAt" | "updatedAt", ExtArgs["result"]["serviceCategory"]>
+  export type ServiceCategoryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "nameUa" | "iconKey" | "sort" | "createdAt" | "updatedAt", ExtArgs["result"]["serviceCategory"]>
   export type ServiceCategoryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     subcategories?: boolean | ServiceCategory$subcategoriesArgs<ExtArgs>
     _count?: boolean | ServiceCategoryCountOutputTypeDefaultArgs<ExtArgs>
@@ -13782,7 +13782,7 @@ export namespace Prisma {
       id: string
       name: string
       nameUa: string
-      icon: string | null
+      iconKey: string | null
       sort: number
       createdAt: Date
       updatedAt: Date
@@ -14213,7 +14213,7 @@ export namespace Prisma {
     readonly id: FieldRef<"ServiceCategory", 'String'>
     readonly name: FieldRef<"ServiceCategory", 'String'>
     readonly nameUa: FieldRef<"ServiceCategory", 'String'>
-    readonly icon: FieldRef<"ServiceCategory", 'String'>
+    readonly iconKey: FieldRef<"ServiceCategory", 'String'>
     readonly sort: FieldRef<"ServiceCategory", 'Int'>
     readonly createdAt: FieldRef<"ServiceCategory", 'DateTime'>
     readonly updatedAt: FieldRef<"ServiceCategory", 'DateTime'>
@@ -14677,7 +14677,7 @@ export namespace Prisma {
     categoryId: string | null
     name: string | null
     nameUa: string | null
-    icon: string | null
+    iconKey: string | null
     sort: number | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -14688,7 +14688,7 @@ export namespace Prisma {
     categoryId: string | null
     name: string | null
     nameUa: string | null
-    icon: string | null
+    iconKey: string | null
     sort: number | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -14699,7 +14699,7 @@ export namespace Prisma {
     categoryId: number
     name: number
     nameUa: number
-    icon: number
+    iconKey: number
     sort: number
     createdAt: number
     updatedAt: number
@@ -14720,7 +14720,7 @@ export namespace Prisma {
     categoryId?: true
     name?: true
     nameUa?: true
-    icon?: true
+    iconKey?: true
     sort?: true
     createdAt?: true
     updatedAt?: true
@@ -14731,7 +14731,7 @@ export namespace Prisma {
     categoryId?: true
     name?: true
     nameUa?: true
-    icon?: true
+    iconKey?: true
     sort?: true
     createdAt?: true
     updatedAt?: true
@@ -14742,7 +14742,7 @@ export namespace Prisma {
     categoryId?: true
     name?: true
     nameUa?: true
-    icon?: true
+    iconKey?: true
     sort?: true
     createdAt?: true
     updatedAt?: true
@@ -14840,7 +14840,7 @@ export namespace Prisma {
     categoryId: string
     name: string
     nameUa: string
-    icon: string | null
+    iconKey: string | null
     sort: number
     createdAt: Date
     updatedAt: Date
@@ -14870,7 +14870,7 @@ export namespace Prisma {
     categoryId?: boolean
     name?: boolean
     nameUa?: boolean
-    icon?: boolean
+    iconKey?: boolean
     sort?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -14884,7 +14884,7 @@ export namespace Prisma {
     categoryId?: boolean
     name?: boolean
     nameUa?: boolean
-    icon?: boolean
+    iconKey?: boolean
     sort?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -14896,7 +14896,7 @@ export namespace Prisma {
     categoryId?: boolean
     name?: boolean
     nameUa?: boolean
-    icon?: boolean
+    iconKey?: boolean
     sort?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -14908,13 +14908,13 @@ export namespace Prisma {
     categoryId?: boolean
     name?: boolean
     nameUa?: boolean
-    icon?: boolean
+    iconKey?: boolean
     sort?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type ServiceSubcategoryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "categoryId" | "name" | "nameUa" | "icon" | "sort" | "createdAt" | "updatedAt", ExtArgs["result"]["serviceSubcategory"]>
+  export type ServiceSubcategoryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "categoryId" | "name" | "nameUa" | "iconKey" | "sort" | "createdAt" | "updatedAt", ExtArgs["result"]["serviceSubcategory"]>
   export type ServiceSubcategoryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     category?: boolean | ServiceCategoryDefaultArgs<ExtArgs>
     types?: boolean | ServiceSubcategory$typesArgs<ExtArgs>
@@ -14938,7 +14938,7 @@ export namespace Prisma {
       categoryId: string
       name: string
       nameUa: string
-      icon: string | null
+      iconKey: string | null
       sort: number
       createdAt: Date
       updatedAt: Date
@@ -15371,7 +15371,7 @@ export namespace Prisma {
     readonly categoryId: FieldRef<"ServiceSubcategory", 'String'>
     readonly name: FieldRef<"ServiceSubcategory", 'String'>
     readonly nameUa: FieldRef<"ServiceSubcategory", 'String'>
-    readonly icon: FieldRef<"ServiceSubcategory", 'String'>
+    readonly iconKey: FieldRef<"ServiceSubcategory", 'String'>
     readonly sort: FieldRef<"ServiceSubcategory", 'Int'>
     readonly createdAt: FieldRef<"ServiceSubcategory", 'DateTime'>
     readonly updatedAt: FieldRef<"ServiceSubcategory", 'DateTime'>
@@ -16934,8 +16934,18 @@ export namespace Prisma {
 
   export type AggregateCrop = {
     _count: CropCountAggregateOutputType | null
+    _avg: CropAvgAggregateOutputType | null
+    _sum: CropSumAggregateOutputType | null
     _min: CropMinAggregateOutputType | null
     _max: CropMaxAggregateOutputType | null
+  }
+
+  export type CropAvgAggregateOutputType = {
+    sort: number | null
+  }
+
+  export type CropSumAggregateOutputType = {
+    sort: number | null
   }
 
   export type CropMinAggregateOutputType = {
@@ -16943,7 +16953,8 @@ export namespace Prisma {
     name: string | null
     nameUa: string | null
     group: string | null
-    icon: string | null
+    iconKey: string | null
+    sort: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -16953,7 +16964,8 @@ export namespace Prisma {
     name: string | null
     nameUa: string | null
     group: string | null
-    icon: string | null
+    iconKey: string | null
+    sort: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -16963,19 +16975,29 @@ export namespace Prisma {
     name: number
     nameUa: number
     group: number
-    icon: number
+    iconKey: number
+    sort: number
     createdAt: number
     updatedAt: number
     _all: number
   }
 
 
+  export type CropAvgAggregateInputType = {
+    sort?: true
+  }
+
+  export type CropSumAggregateInputType = {
+    sort?: true
+  }
+
   export type CropMinAggregateInputType = {
     id?: true
     name?: true
     nameUa?: true
     group?: true
-    icon?: true
+    iconKey?: true
+    sort?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -16985,7 +17007,8 @@ export namespace Prisma {
     name?: true
     nameUa?: true
     group?: true
-    icon?: true
+    iconKey?: true
+    sort?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -16995,7 +17018,8 @@ export namespace Prisma {
     name?: true
     nameUa?: true
     group?: true
-    icon?: true
+    iconKey?: true
+    sort?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -17039,6 +17063,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: CropAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CropSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: CropMinAggregateInputType
@@ -17069,6 +17105,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: CropCountAggregateInputType | true
+    _avg?: CropAvgAggregateInputType
+    _sum?: CropSumAggregateInputType
     _min?: CropMinAggregateInputType
     _max?: CropMaxAggregateInputType
   }
@@ -17078,10 +17116,13 @@ export namespace Prisma {
     name: string
     nameUa: string
     group: string | null
-    icon: string | null
+    iconKey: string | null
+    sort: number
     createdAt: Date
     updatedAt: Date
     _count: CropCountAggregateOutputType | null
+    _avg: CropAvgAggregateOutputType | null
+    _sum: CropSumAggregateOutputType | null
     _min: CropMinAggregateOutputType | null
     _max: CropMaxAggregateOutputType | null
   }
@@ -17105,7 +17146,8 @@ export namespace Prisma {
     name?: boolean
     nameUa?: boolean
     group?: boolean
-    icon?: boolean
+    iconKey?: boolean
+    sort?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     stats?: boolean | Crop$statsArgs<ExtArgs>
@@ -17117,7 +17159,8 @@ export namespace Prisma {
     name?: boolean
     nameUa?: boolean
     group?: boolean
-    icon?: boolean
+    iconKey?: boolean
+    sort?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["crop"]>
@@ -17127,7 +17170,8 @@ export namespace Prisma {
     name?: boolean
     nameUa?: boolean
     group?: boolean
-    icon?: boolean
+    iconKey?: boolean
+    sort?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["crop"]>
@@ -17137,12 +17181,13 @@ export namespace Prisma {
     name?: boolean
     nameUa?: boolean
     group?: boolean
-    icon?: boolean
+    iconKey?: boolean
+    sort?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type CropOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "nameUa" | "group" | "icon" | "createdAt" | "updatedAt", ExtArgs["result"]["crop"]>
+  export type CropOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "nameUa" | "group" | "iconKey" | "sort" | "createdAt" | "updatedAt", ExtArgs["result"]["crop"]>
   export type CropInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     stats?: boolean | Crop$statsArgs<ExtArgs>
     _count?: boolean | CropCountOutputTypeDefaultArgs<ExtArgs>
@@ -17160,7 +17205,8 @@ export namespace Prisma {
       name: string
       nameUa: string
       group: string | null
-      icon: string | null
+      iconKey: string | null
+      sort: number
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["crop"]>
@@ -17591,7 +17637,8 @@ export namespace Prisma {
     readonly name: FieldRef<"Crop", 'String'>
     readonly nameUa: FieldRef<"Crop", 'String'>
     readonly group: FieldRef<"Crop", 'String'>
-    readonly icon: FieldRef<"Crop", 'String'>
+    readonly iconKey: FieldRef<"Crop", 'String'>
+    readonly sort: FieldRef<"Crop", 'Int'>
     readonly createdAt: FieldRef<"Crop", 'DateTime'>
     readonly updatedAt: FieldRef<"Crop", 'DateTime'>
   }
@@ -22487,7 +22534,7 @@ export namespace Prisma {
     id: 'id',
     name: 'name',
     nameUa: 'nameUa',
-    icon: 'icon',
+    iconKey: 'iconKey',
     sort: 'sort',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -22501,7 +22548,7 @@ export namespace Prisma {
     categoryId: 'categoryId',
     name: 'name',
     nameUa: 'nameUa',
-    icon: 'icon',
+    iconKey: 'iconKey',
     sort: 'sort',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -22527,7 +22574,8 @@ export namespace Prisma {
     name: 'name',
     nameUa: 'nameUa',
     group: 'group',
-    icon: 'icon',
+    iconKey: 'iconKey',
+    sort: 'sort',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -23582,7 +23630,7 @@ export namespace Prisma {
     id?: StringFilter<"ServiceCategory"> | string
     name?: StringFilter<"ServiceCategory"> | string
     nameUa?: StringFilter<"ServiceCategory"> | string
-    icon?: StringNullableFilter<"ServiceCategory"> | string | null
+    iconKey?: StringNullableFilter<"ServiceCategory"> | string | null
     sort?: IntFilter<"ServiceCategory"> | number
     createdAt?: DateTimeFilter<"ServiceCategory"> | Date | string
     updatedAt?: DateTimeFilter<"ServiceCategory"> | Date | string
@@ -23593,7 +23641,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     nameUa?: SortOrder
-    icon?: SortOrderInput | SortOrder
+    iconKey?: SortOrderInput | SortOrder
     sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -23607,7 +23655,7 @@ export namespace Prisma {
     NOT?: ServiceCategoryWhereInput | ServiceCategoryWhereInput[]
     name?: StringFilter<"ServiceCategory"> | string
     nameUa?: StringFilter<"ServiceCategory"> | string
-    icon?: StringNullableFilter<"ServiceCategory"> | string | null
+    iconKey?: StringNullableFilter<"ServiceCategory"> | string | null
     sort?: IntFilter<"ServiceCategory"> | number
     createdAt?: DateTimeFilter<"ServiceCategory"> | Date | string
     updatedAt?: DateTimeFilter<"ServiceCategory"> | Date | string
@@ -23618,7 +23666,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     nameUa?: SortOrder
-    icon?: SortOrderInput | SortOrder
+    iconKey?: SortOrderInput | SortOrder
     sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -23636,7 +23684,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"ServiceCategory"> | string
     name?: StringWithAggregatesFilter<"ServiceCategory"> | string
     nameUa?: StringWithAggregatesFilter<"ServiceCategory"> | string
-    icon?: StringNullableWithAggregatesFilter<"ServiceCategory"> | string | null
+    iconKey?: StringNullableWithAggregatesFilter<"ServiceCategory"> | string | null
     sort?: IntWithAggregatesFilter<"ServiceCategory"> | number
     createdAt?: DateTimeWithAggregatesFilter<"ServiceCategory"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"ServiceCategory"> | Date | string
@@ -23650,7 +23698,7 @@ export namespace Prisma {
     categoryId?: StringFilter<"ServiceSubcategory"> | string
     name?: StringFilter<"ServiceSubcategory"> | string
     nameUa?: StringFilter<"ServiceSubcategory"> | string
-    icon?: StringNullableFilter<"ServiceSubcategory"> | string | null
+    iconKey?: StringNullableFilter<"ServiceSubcategory"> | string | null
     sort?: IntFilter<"ServiceSubcategory"> | number
     createdAt?: DateTimeFilter<"ServiceSubcategory"> | Date | string
     updatedAt?: DateTimeFilter<"ServiceSubcategory"> | Date | string
@@ -23663,7 +23711,7 @@ export namespace Prisma {
     categoryId?: SortOrder
     name?: SortOrder
     nameUa?: SortOrder
-    icon?: SortOrderInput | SortOrder
+    iconKey?: SortOrderInput | SortOrder
     sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -23679,7 +23727,7 @@ export namespace Prisma {
     categoryId?: StringFilter<"ServiceSubcategory"> | string
     name?: StringFilter<"ServiceSubcategory"> | string
     nameUa?: StringFilter<"ServiceSubcategory"> | string
-    icon?: StringNullableFilter<"ServiceSubcategory"> | string | null
+    iconKey?: StringNullableFilter<"ServiceSubcategory"> | string | null
     sort?: IntFilter<"ServiceSubcategory"> | number
     createdAt?: DateTimeFilter<"ServiceSubcategory"> | Date | string
     updatedAt?: DateTimeFilter<"ServiceSubcategory"> | Date | string
@@ -23692,7 +23740,7 @@ export namespace Prisma {
     categoryId?: SortOrder
     name?: SortOrder
     nameUa?: SortOrder
-    icon?: SortOrderInput | SortOrder
+    iconKey?: SortOrderInput | SortOrder
     sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -23711,7 +23759,7 @@ export namespace Prisma {
     categoryId?: StringWithAggregatesFilter<"ServiceSubcategory"> | string
     name?: StringWithAggregatesFilter<"ServiceSubcategory"> | string
     nameUa?: StringWithAggregatesFilter<"ServiceSubcategory"> | string
-    icon?: StringNullableWithAggregatesFilter<"ServiceSubcategory"> | string | null
+    iconKey?: StringNullableWithAggregatesFilter<"ServiceSubcategory"> | string | null
     sort?: IntWithAggregatesFilter<"ServiceSubcategory"> | number
     createdAt?: DateTimeWithAggregatesFilter<"ServiceSubcategory"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"ServiceSubcategory"> | Date | string
@@ -23788,7 +23836,8 @@ export namespace Prisma {
     name?: StringFilter<"Crop"> | string
     nameUa?: StringFilter<"Crop"> | string
     group?: StringNullableFilter<"Crop"> | string | null
-    icon?: StringNullableFilter<"Crop"> | string | null
+    iconKey?: StringNullableFilter<"Crop"> | string | null
+    sort?: IntFilter<"Crop"> | number
     createdAt?: DateTimeFilter<"Crop"> | Date | string
     updatedAt?: DateTimeFilter<"Crop"> | Date | string
     stats?: CustomerCropStatListRelationFilter
@@ -23799,7 +23848,8 @@ export namespace Prisma {
     name?: SortOrder
     nameUa?: SortOrder
     group?: SortOrderInput | SortOrder
-    icon?: SortOrderInput | SortOrder
+    iconKey?: SortOrderInput | SortOrder
+    sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     stats?: CustomerCropStatOrderByRelationAggregateInput
@@ -23813,7 +23863,8 @@ export namespace Prisma {
     NOT?: CropWhereInput | CropWhereInput[]
     nameUa?: StringFilter<"Crop"> | string
     group?: StringNullableFilter<"Crop"> | string | null
-    icon?: StringNullableFilter<"Crop"> | string | null
+    iconKey?: StringNullableFilter<"Crop"> | string | null
+    sort?: IntFilter<"Crop"> | number
     createdAt?: DateTimeFilter<"Crop"> | Date | string
     updatedAt?: DateTimeFilter<"Crop"> | Date | string
     stats?: CustomerCropStatListRelationFilter
@@ -23824,12 +23875,15 @@ export namespace Prisma {
     name?: SortOrder
     nameUa?: SortOrder
     group?: SortOrderInput | SortOrder
-    icon?: SortOrderInput | SortOrder
+    iconKey?: SortOrderInput | SortOrder
+    sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: CropCountOrderByAggregateInput
+    _avg?: CropAvgOrderByAggregateInput
     _max?: CropMaxOrderByAggregateInput
     _min?: CropMinOrderByAggregateInput
+    _sum?: CropSumOrderByAggregateInput
   }
 
   export type CropScalarWhereWithAggregatesInput = {
@@ -23840,7 +23894,8 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"Crop"> | string
     nameUa?: StringWithAggregatesFilter<"Crop"> | string
     group?: StringNullableWithAggregatesFilter<"Crop"> | string | null
-    icon?: StringNullableWithAggregatesFilter<"Crop"> | string | null
+    iconKey?: StringNullableWithAggregatesFilter<"Crop"> | string | null
+    sort?: IntWithAggregatesFilter<"Crop"> | number
     createdAt?: DateTimeWithAggregatesFilter<"Crop"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Crop"> | Date | string
   }
@@ -25012,7 +25067,7 @@ export namespace Prisma {
     id?: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -25023,7 +25078,7 @@ export namespace Prisma {
     id?: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -25034,7 +25089,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25045,7 +25100,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25056,7 +25111,7 @@ export namespace Prisma {
     id?: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -25066,7 +25121,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25076,7 +25131,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25086,7 +25141,7 @@ export namespace Prisma {
     id?: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -25099,7 +25154,7 @@ export namespace Prisma {
     categoryId: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -25110,7 +25165,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25123,7 +25178,7 @@ export namespace Prisma {
     categoryId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25135,7 +25190,7 @@ export namespace Prisma {
     categoryId: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -25145,7 +25200,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25156,7 +25211,7 @@ export namespace Prisma {
     categoryId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25229,7 +25284,8 @@ export namespace Prisma {
     name: string
     nameUa: string
     group?: string | null
-    icon?: string | null
+    iconKey?: string | null
+    sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     stats?: CustomerCropStatCreateNestedManyWithoutCropInput
@@ -25240,7 +25296,8 @@ export namespace Prisma {
     name: string
     nameUa: string
     group?: string | null
-    icon?: string | null
+    iconKey?: string | null
+    sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     stats?: CustomerCropStatUncheckedCreateNestedManyWithoutCropInput
@@ -25251,7 +25308,8 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
     group?: NullableStringFieldUpdateOperationsInput | string | null
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     stats?: CustomerCropStatUpdateManyWithoutCropNestedInput
@@ -25262,7 +25320,8 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
     group?: NullableStringFieldUpdateOperationsInput | string | null
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     stats?: CustomerCropStatUncheckedUpdateManyWithoutCropNestedInput
@@ -25273,7 +25332,8 @@ export namespace Prisma {
     name: string
     nameUa: string
     group?: string | null
-    icon?: string | null
+    iconKey?: string | null
+    sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -25283,7 +25343,8 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
     group?: NullableStringFieldUpdateOperationsInput | string | null
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25293,7 +25354,8 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
     group?: NullableStringFieldUpdateOperationsInput | string | null
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -26491,7 +26553,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     nameUa?: SortOrder
-    icon?: SortOrder
+    iconKey?: SortOrder
     sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -26505,7 +26567,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     nameUa?: SortOrder
-    icon?: SortOrder
+    iconKey?: SortOrder
     sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -26515,7 +26577,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     nameUa?: SortOrder
-    icon?: SortOrder
+    iconKey?: SortOrder
     sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -26545,7 +26607,7 @@ export namespace Prisma {
     categoryId?: SortOrder
     name?: SortOrder
     nameUa?: SortOrder
-    icon?: SortOrder
+    iconKey?: SortOrder
     sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -26560,7 +26622,7 @@ export namespace Prisma {
     categoryId?: SortOrder
     name?: SortOrder
     nameUa?: SortOrder
-    icon?: SortOrder
+    iconKey?: SortOrder
     sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -26571,7 +26633,7 @@ export namespace Prisma {
     categoryId?: SortOrder
     name?: SortOrder
     nameUa?: SortOrder
-    icon?: SortOrder
+    iconKey?: SortOrder
     sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -26631,9 +26693,14 @@ export namespace Prisma {
     name?: SortOrder
     nameUa?: SortOrder
     group?: SortOrder
-    icon?: SortOrder
+    iconKey?: SortOrder
+    sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type CropAvgOrderByAggregateInput = {
+    sort?: SortOrder
   }
 
   export type CropMaxOrderByAggregateInput = {
@@ -26641,7 +26708,8 @@ export namespace Prisma {
     name?: SortOrder
     nameUa?: SortOrder
     group?: SortOrder
-    icon?: SortOrder
+    iconKey?: SortOrder
+    sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -26651,9 +26719,14 @@ export namespace Prisma {
     name?: SortOrder
     nameUa?: SortOrder
     group?: SortOrder
-    icon?: SortOrder
+    iconKey?: SortOrder
+    sort?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type CropSumOrderByAggregateInput = {
+    sort?: SortOrder
   }
 
   export type OrderStatusEventCountOrderByAggregateInput = {
@@ -29325,7 +29398,8 @@ export namespace Prisma {
     name: string
     nameUa: string
     group?: string | null
-    icon?: string | null
+    iconKey?: string | null
+    sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -29335,7 +29409,8 @@ export namespace Prisma {
     name: string
     nameUa: string
     group?: string | null
-    icon?: string | null
+    iconKey?: string | null
+    sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -29402,7 +29477,8 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
     group?: NullableStringFieldUpdateOperationsInput | string | null
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -29412,7 +29488,8 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
     group?: NullableStringFieldUpdateOperationsInput | string | null
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -29997,7 +30074,7 @@ export namespace Prisma {
     id?: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -30008,7 +30085,7 @@ export namespace Prisma {
     id?: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -30049,7 +30126,7 @@ export namespace Prisma {
     categoryId?: StringFilter<"ServiceSubcategory"> | string
     name?: StringFilter<"ServiceSubcategory"> | string
     nameUa?: StringFilter<"ServiceSubcategory"> | string
-    icon?: StringNullableFilter<"ServiceSubcategory"> | string | null
+    iconKey?: StringNullableFilter<"ServiceSubcategory"> | string | null
     sort?: IntFilter<"ServiceSubcategory"> | number
     createdAt?: DateTimeFilter<"ServiceSubcategory"> | Date | string
     updatedAt?: DateTimeFilter<"ServiceSubcategory"> | Date | string
@@ -30059,7 +30136,7 @@ export namespace Prisma {
     id?: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -30069,7 +30146,7 @@ export namespace Prisma {
     id?: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -30121,7 +30198,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30131,7 +30208,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30169,7 +30246,7 @@ export namespace Prisma {
     id?: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -30181,7 +30258,7 @@ export namespace Prisma {
     categoryId: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -30207,7 +30284,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30219,7 +30296,7 @@ export namespace Prisma {
     categoryId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -31215,7 +31292,7 @@ export namespace Prisma {
     id?: string
     name: string
     nameUa: string
-    icon?: string | null
+    iconKey?: string | null
     sort?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -31225,7 +31302,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -31236,7 +31313,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -31247,7 +31324,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     nameUa?: StringFieldUpdateOperationsInput | string
-    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    iconKey?: NullableStringFieldUpdateOperationsInput | string | null
     sort?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
