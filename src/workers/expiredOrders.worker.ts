@@ -97,13 +97,6 @@ export function startExpiredOrdersWorker() {
       );
 
       // Знайти payment виконавця для повернення коштів
-      const performerPayment = order.performerUserId
-        ? await prisma.payment.findFirst({
-            where: { orderId, userId: order.performerUserId, provider: "liqpay" },
-            select: { id: true, status: true, amount: true },
-          })
-        : null;
-
       // Переводимо замовлення в cancelled
       await prisma.$transaction([
         // Змінюємо статус замовлення
@@ -116,16 +109,9 @@ export function startExpiredOrdersWorker() {
         prisma.orderStatusEvent.create({
           data: {
             orderId,
-            fromStatus: order.status,
-            toStatus: "cancelled",
+            status: "cancelled",
             note: "Час підтвердження заказчиком минув (12 годин) - автоматична відміна",
           },
-        }),
-
-        // Звільняємо escrow lock виконавця
-        prisma.escrowLock.updateMany({
-          where: { orderId, role: "performer", status: "locked" },
-          data: { status: "released", releasedAt: now },
         }),
 
         // Видаляємо order matches (будуть створені заново)
@@ -133,7 +119,7 @@ export function startExpiredOrdersWorker() {
       ]);
 
       // Відправляємо Push сповіщення виконавцю
-      if (order.performerUserId && performerPayment) {
+      if (order.performerUserId) {
         const performerDevices = await prisma.device.findMany({
           where: { userId: order.performerUserId, revokedAt: null },
           select: { expoPushToken: true },

@@ -265,7 +265,7 @@ export async function POST(req: Request) {
           currency: "UAH",
           status,
           statusEvents: {
-            create: { fromStatus: null, toStatus: status, note: null },
+            create: { status, note: null },
           },
         },
         select: { id: true, status: true, createdAt: true },

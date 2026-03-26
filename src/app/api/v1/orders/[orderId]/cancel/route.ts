@@ -49,13 +49,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         } 
       });
       await tx.orderStatusEvent.create({
-        data: { orderId, fromStatus: order.status, toStatus: "cancelled", note: body.reason ?? null },
+        data: { orderId, status: "cancelled", note: body.reason ?? null },
       });
       await tx.orderMatch.deleteMany({ where: { orderId } });
-      await tx.escrowLock.updateMany({
-        where: { orderId, status: "locked" },
-        data: { status: "released", releasedAt: new Date() },
-      });
     });
 
     // Якщо був виконавець - відправляємо йому Push

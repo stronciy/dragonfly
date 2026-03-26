@@ -45,6 +45,8 @@ model User {
   authoredReviews Review[] @relation("AuthoredReviews")
   performerReviews Review[] @relation("PerformerReviews")
   orders         Order[]
+  devices        Device[]
+  notifications  Notification[]
 
   @@map("users")
 }
@@ -216,9 +218,11 @@ model Order {
   budget               Decimal  @db.Decimal(12, 2)
   currency             String   @default("UAH")
   
-  status               String   @default("draft") // draft, published, accepted, pending_deposit, requires_confirmation, confirmed, started, completed, arbitration, cancelled
-
+  status               String   @default("published") // published, accepted, requires_confirmation, active, completed, cancelled, arbitration, closed
+  
+  radiusKm             Int?     @map("radius_km")
   acceptedAt           DateTime? @map("accepted_at")
+  completedAt          DateTime? @map("completed_at")
   depositDeadline      DateTime? @map("deposit_deadline")
 
   createdAt            DateTime @default(now()) @map("created_at")
@@ -302,16 +306,15 @@ model Crop {
 }
 
 model OrderStatusEvent {
-  id         String   @id @default(cuid())
-  orderId    String   @map("order_id")
-  fromStatus String?  @map("from_status")
-  toStatus   String   @map("to_status")
-  note       String?  @db.Text
-  at         DateTime @default(now())
+  id        String   @id @default(cuid())
+  orderId   String   @map("order_id")
+  status    String   @map("status")
+  note      String?  @map("note")
+  createdAt DateTime @default(now()) @map("created_at")
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  @@index([orderId, at])
+  @@index([orderId])
   @@map("order_status_events")
 }
 
@@ -330,4 +333,33 @@ model OrderMatch {
   @@index([performerUserId, createdAt])
   @@index([orderId])
   @@map("order_matches")
+}
+
+model Device {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  expoPushToken  String    @unique @map("expo_push_token")
+  revokedAt      DateTime? @map("revoked_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("devices")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  type      String
+  title     String
+  message   String
+  data      Json?
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notifications")
 }

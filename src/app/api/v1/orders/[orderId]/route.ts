@@ -57,8 +57,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
 
     const timeline = await prisma.orderStatusEvent.findMany({
       where: { orderId },
-      orderBy: { at: "asc" },
-      select: { toStatus: true, at: true, note: true },
+      orderBy: { createdAt: "asc" },
+      select: { status: true, createdAt: true, note: true },
     });
 
     return ok(req, {
@@ -82,7 +82,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
         acceptedAt: order.acceptedAt,
         depositDeadline: order.depositDeadline,
         comment: order.comment,
-        timeline: timeline.map((t) => ({ status: t.toStatus, at: t.at, note: t.note })),
+        timeline: timeline.map((t) => ({ status: t.status, at: t.createdAt, note: t.note })),
       },
     });
   } catch (err) {
@@ -127,7 +127,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
 
       if (order.status !== nextStatus) {
         await tx.orderStatusEvent.create({
-          data: { orderId, fromStatus: order.status, toStatus: nextStatus, note: null },
+          data: { orderId, status: nextStatus, note: null },
         });
       }
 

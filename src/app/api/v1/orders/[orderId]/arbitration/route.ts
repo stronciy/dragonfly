@@ -25,23 +25,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (order.status === "cancelled") throw new ApiError(403, "FORBIDDEN", "Order cancelled");
 
     const result = await prisma.$transaction(async (tx) => {
-      const existing = await tx.arbitrationCase.findUnique({ where: { orderId } });
-      if (existing) return existing;
-
       await tx.order.update({ where: { id: orderId }, data: { status: "arbitration" } });
       await tx.orderMatch.deleteMany({ where: { orderId } });
       await tx.orderStatusEvent.create({
-        data: { orderId, fromStatus: order.status, toStatus: "arbitration", note: body.reason },
+        data: { orderId, status: "arbitration", note: body.reason },
       });
 
-      const created = await tx.arbitrationCase.create({
-        data: { orderId, openedByUserId: user.id, reason: body.reason, status: "opened" },
-      });
-
-      return created;
+      return { id: orderId, status: "arbitration", createdAt: new Date() };
     });
 
-    return ok(req, { order: { id: orderId, status: "arbitration" }, case: { id: result.id, status: result.status, createdAt: result.createdAt } });
+    return ok(req, { order: { id: orderId, status: "arbitration" }, case: result });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));

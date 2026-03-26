@@ -238,7 +238,9 @@ exports.Prisma.OrderScalarFieldEnum = {
   budget: 'budget',
   currency: 'currency',
   status: 'status',
+  radiusKm: 'radiusKm',
   acceptedAt: 'acceptedAt',
+  completedAt: 'completedAt',
   depositDeadline: 'depositDeadline',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -287,10 +289,9 @@ exports.Prisma.CropScalarFieldEnum = {
 exports.Prisma.OrderStatusEventScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
-  fromStatus: 'fromStatus',
-  toStatus: 'toStatus',
+  status: 'status',
   note: 'note',
-  at: 'at'
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.OrderMatchScalarFieldEnum = {
@@ -298,6 +299,25 @@ exports.Prisma.OrderMatchScalarFieldEnum = {
   orderId: 'orderId',
   performerUserId: 'performerUserId',
   status: 'status',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.DeviceScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  expoPushToken: 'expoPushToken',
+  revokedAt: 'revokedAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.NotificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  title: 'title',
+  message: 'message',
+  data: 'data',
+  readAt: 'readAt',
   createdAt: 'createdAt'
 };
 
@@ -354,7 +374,9 @@ exports.Prisma.ModelName = {
   ServiceType: 'ServiceType',
   Crop: 'Crop',
   OrderStatusEvent: 'OrderStatusEvent',
-  OrderMatch: 'OrderMatch'
+  OrderMatch: 'OrderMatch',
+  Device: 'Device',
+  Notification: 'Notification'
 };
 
 /**
