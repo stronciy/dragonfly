@@ -1,0 +1,3 @@
+-- Unify legal profile structure
+-- This migration was created on the server and already applied
+-- Added to sync local migrations with database state
