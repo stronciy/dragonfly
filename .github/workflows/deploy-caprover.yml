@@ -84,6 +84,7 @@ jobs:
               "COPY --from=build /app/server.js ./server.js",
               "COPY prisma ./prisma",
               "COPY prisma.config.ts ./prisma.config.ts",
+              "COPY --from=build /app/generated ./generated",
               "COPY --from=build /app/public ./public",
               "COPY --from=build /app/.next ./.next",
               "CMD [\"sh\",\"-lc\",\"attempt=0; while true; do attempt=$((attempt+1)); echo \\\"[main] prisma migrate deploy (attempt ${attempt})\\\"; ./node_modules/.bin/prisma migrate deploy --config prisma.config.ts && break; code=$?; echo \\\"[main] prisma migrate deploy failed (exit ${code}). Fix DB state then wait for retry. Next retry in 30s.\\\"; sleep 30; done; node server.js\"]",
@@ -101,7 +102,7 @@ jobs:
           if [ -f middleware.ts ]; then EXTRA_FILES+=(middleware.ts); fi
           tar --exclude='./.git' --exclude='./deploy.tar' -cf deploy.tar \
             captain-definition package.json package-lock.json prisma.config.ts next.config.ts server.js \
-            src prisma public tsconfig.json tsconfig.worker.json tsconfig.test.json \
+            src prisma public tsconfig.json tsconfig.worker.json tsconfig.test.json generated \
             "${EXTRA_FILES[@]}"
 
       - name: Deploy dragonfly
@@ -140,6 +141,7 @@ jobs:
               "COPY --from=build /app/package.json ./package.json",
               "COPY prisma ./prisma",
               "COPY prisma.config.ts ./prisma.config.ts",
+              "COPY --from=build /app/generated ./generated",
               "COPY --from=build /app/dist ./dist",
               "CMD [\"sh\",\"-lc\",\"attempt=0; while true; do attempt=$((attempt+1)); echo \\\"[worker] prisma migrate deploy (attempt ${attempt})\\\"; out=$(./node_modules/.bin/prisma migrate deploy --config prisma.config.ts 2>&1); code=$?; echo \\\"$out\\\"; if [ $code -eq 0 ]; then break; fi; if [ \\\"${DB_MIGRATE_RESET_ON_FAILURE:-}\\\" = \\\"1\\\" ] || [ \\\"${DB_MIGRATE_RESET_ON_FAILURE:-}\\\" = \\\"true\\\" ]; then if echo \\\"$out\\\" | grep -q \\\"P3009\\\" && echo \\\"$out\\\" | grep -q \\\"20260317191146_init\\\"; then echo \\\"[worker] detected failed init migration (P3009). Running prisma migrate reset --force (DATA LOSS).\\\"; ./node_modules/.bin/prisma migrate reset --force --config prisma.config.ts && continue; fi; fi; echo \\\"[worker] prisma migrate deploy failed (exit ${code}). Fix DB state then wait for retry. Next retry in 30s.\\\"; sleep 30; done; npm run worker\"]",
               ""
@@ -154,7 +156,7 @@ jobs:
           EXTRA_FILES=()
           if [ -f next-env.d.ts ]; then EXTRA_FILES+=(next-env.d.ts); fi
           tar --exclude='./.git' --exclude='./deploy.tar' -cf deploy.tar \
-            captain-definition package.json package-lock.json prisma.config.ts prisma src tsconfig.json tsconfig.worker.json \
+            captain-definition package.json package-lock.json prisma.config.ts prisma src tsconfig.json tsconfig.worker.json generated \
             "${EXTRA_FILES[@]}"
 
       - name: Deploy workerdragonfly

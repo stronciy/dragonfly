@@ -14,26 +14,34 @@ function startMatchNewExecutorWorker() {
         const performerUser = await prisma_1.prisma.user.findUnique({ where: { id: performerUserId }, select: { role: true } });
         if (!performerUser || performerUser.role !== "performer")
             return;
-        const settings = await prisma_1.prisma.performerSettings.findUnique({
-            where: { performerUserId },
-            select: { coverageMode: true, radiusKm: true },
+        const settings = await prisma_1.prisma.performerProfile.findUnique({
+            where: { userId: performerUserId },
+            select: { coverageMode: true, coverageRadiusKm: true },
         });
         if (!settings)
             return;
-        if (settings.coverageMode === "radius" && !settings.radiusKm)
+        if (settings.coverageMode === "radius" && !settings.coverageRadiusKm)
             return;
         const matches = (await prisma_1.prisma.$queryRaw `
         SELECT
           o.id AS order_id,
-          (ST_Distance(ps.base_geo, o.location_geo) / 1000.0) AS distance_km
+          (
+            6371.0 * acos(
+              least(1.0, greatest(-1.0,
+                cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                cos(radians(o.lng) - radians(pp.base_longitude)) +
+                sin(radians(pp.base_latitude)) * sin(radians(o.lat))
+              ))
+            )
+          ) AS distance_km
         FROM orders o
-        JOIN performer_settings ps
-          ON ps.performer_user_id = ${performerUserId}
+        JOIN performer_profiles pp
+          ON pp.user_id = ${performerUserId}
         JOIN performer_services psvc
-          ON psvc.performer_user_id = ps.performer_user_id
+          ON psvc.performer_user_id = pp.user_id
         WHERE
           o.status = 'published'
-          AND o.customer_user_id <> ps.performer_user_id
+          AND o.customer_user_id <> pp.user_id
           AND psvc.service_category_id = o.service_category_id
           AND psvc.service_subcategory_id = o.service_subcategory_id
           AND (
@@ -42,11 +50,19 @@ function startMatchNewExecutorWorker() {
             OR psvc.service_type_id = o.service_type_id
           )
           AND (
-            ps.coverage_mode = 'country'
+            pp.coverage_mode = 'country'
             OR (
-              ps.coverage_mode = 'radius'
-              AND ps.radius_km IS NOT NULL
-              AND ST_DWithin(ps.base_geo, o.location_geo, (ps.radius_km * 1000)::double precision)
+              pp.coverage_mode = 'radius'
+              AND pp.coverage_radius_km IS NOT NULL
+              AND (
+                6371.0 * acos(
+                  least(1.0, greatest(-1.0,
+                    cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                    cos(radians(o.lng) - radians(pp.base_longitude)) +
+                    sin(radians(pp.base_latitude)) * sin(radians(o.lat))
+                  ))
+                )
+              ) <= pp.coverage_radius_km
             )
           )
         ORDER BY distance_km ASC
@@ -73,9 +89,8 @@ function startMatchNewExecutorWorker() {
                 create: {
                     performerUserId,
                     orderId: m.order_id,
-                    distanceKm: m.distance_km,
                 },
-                update: { distanceKm: m.distance_km },
+                update: {},
             })),
             ...(removedOrderIds.length
                 ? [

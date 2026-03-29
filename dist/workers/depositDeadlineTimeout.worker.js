@@ -1,0 +1,309 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.startDepositDeadlineTimeoutWorker = startDepositDeadlineTimeoutWorker;
+exports.scheduleDepositDeadlineTimeoutChecks = scheduleDepositDeadlineTimeoutChecks;
+const bullmq_1 = require("bullmq");
+const prisma_1 = require("../lib/prisma");
+const connection_1 = require("../queues/connection");
+const expoPush_service_1 = require("../services/expoPush.service");
+const publishDomainEvent_1 = require("../realtime/publishDomainEvent");
+/**
+ * Worker для обробки тайм-ауту депозиту (12 годин)
+ *
+ * Запускається періодично (кожні 5 хвилин) через cron job
+ * Перевіряє замовлення зі статусом `requires_confirmation` у яких `depositDeadline < now`
+ *
+ * При тайм-ауті:
+ * 1. Переводить замовлення в `published` (або `cancelled` за бізнес-правилом)
+ * 2. Звільняє escrow lock виконавця (released)
+ * 3. Видаляє order matches
+ * 4. Відправляє Push сповіщення виконавцю і заказчику
+ * 5. Створює запис в order_status_events
+ */
+function startDepositDeadlineTimeoutWorker() {
+    const expo = new expoPush_service_1.ExpoPushService(prisma_1.prisma);
+    return new bullmq_1.Worker("deposit-deadline-timeout", async (job) => {
+        const { orderId } = job.data;
+        const order = await prisma_1.prisma.order.findUnique({
+            where: { id: orderId },
+            select: {
+                id: true,
+                status: true,
+                customerUserId: true,
+                performerUserId: true,
+                depositDeadline: true,
+                budget: true,
+                currency: true,
+                locationLabel: true,
+            },
+        });
+        if (!order) {
+            process.stdout.write(JSON.stringify({ level: "info", msg: "deposit_timeout_skipped", reason: "order_not_found", orderId }) + "\n");
+            return;
+        }
+        if (order.status !== "requires_confirmation") {
+            process.stdout.write(JSON.stringify({
+                level: "info",
+                msg: "deposit_timeout_skipped",
+                reason: "order_not_requires_confirmation",
+                orderId,
+                status: order.status,
+            }) + "\n");
+            return;
+        }
+        if (!order.depositDeadline) {
+            process.stdout.write(JSON.stringify({ level: "info", msg: "deposit_timeout_skipped", reason: "no_deadline", orderId }) + "\n");
+            return;
+        }
+        const now = new Date();
+        const deadline = new Date(order.depositDeadline);
+        if (now < deadline) {
+            process.stdout.write(JSON.stringify({
+                level: "info",
+                msg: "deposit_timeout_skipped",
+                reason: "deadline_not_reached",
+                orderId,
+                deadline: deadline.toISOString(),
+                now: now.toISOString(),
+            }) + "\n");
+            return;
+        }
+        process.stdout.write(JSON.stringify({
+            level: "info",
+            msg: "deposit_timeout_processing",
+            orderId,
+            deadline: deadline.toISOString(),
+            now: now.toISOString(),
+        }) + "\n");
+        // Переводимо замовлення в published (повертаємо в біржу)
+        // Або можна в cancelled за бізнес-правилом
+        const newStatus = "published";
+        await prisma_1.prisma.$transaction([
+            // Змінюємо статус замовлення
+            prisma_1.prisma.order.update({
+                where: { id: orderId },
+                data: { status: newStatus, performerUserId: null, acceptedAt: null, depositDeadline: null },
+            }),
+            // Створюємо подію зміни статусу
+            prisma_1.prisma.orderStatusEvent.create({
+                data: {
+                    orderId,
+                    status: newStatus,
+                    note: "Час підтвердження заказчиком минув (12 годин)",
+                },
+            }),
+            // Видаляємо order matches (щоб з'явився в біржі знову)
+            prisma_1.prisma.orderMatch.deleteMany({ where: { orderId } }),
+        ]);
+        // Відправляємо Push сповіщення виконавцю
+        if (order.performerUserId) {
+            const performerDevices = await prisma_1.prisma.device.findMany({
+                where: { userId: order.performerUserId, revokedAt: null },
+                select: { expoPushToken: true },
+            });
+            const depositAmount = Number(order.budget) * 0.1;
+            // Створюємо запис в notifications
+            await prisma_1.prisma.notification.create({
+                data: {
+                    userId: order.performerUserId,
+                    type: "deposit",
+                    title: "Час підтвердження минув",
+                    message: `Замовлення #${orderId.slice(-6)}. Заказчик не підтвердив вчасно. Гарантійна сума ${depositAmount} ${order.currency} повернута.`,
+                    data: {
+                        orderId,
+                        type: "deposit_timeout",
+                        role: "performer",
+                        depositAmount,
+                        currency: order.currency,
+                        refunded: true,
+                    },
+                },
+            });
+            for (const device of performerDevices) {
+                await expo.sendPush({
+                    toUserId: order.performerUserId,
+                    toExpoToken: device.expoPushToken,
+                    title: "Час підтвердження минув",
+                    body: `Замовлення #${orderId.slice(-6)}. Гарантійна сума повернута.`,
+                    data: {
+                        orderId,
+                        type: "deposit_timeout",
+                        role: "performer",
+                        depositAmount,
+                        currency: order.currency,
+                        refunded: true,
+                    },
+                });
+            }
+            // WebSocket сигнал виконавцю
+            await (0, publishDomainEvent_1.publishDomainEvent)({
+                type: "deposit.timeout",
+                targets: { userIds: [order.performerUserId] },
+                data: { orderId, refunded: true, depositAmount },
+            });
+        }
+        // Відправляємо Push сповіщення заказчику (нагадування)
+        const customerDevices = await prisma_1.prisma.device.findMany({
+            where: { userId: order.customerUserId, revokedAt: null },
+            select: { expoPushToken: true },
+        });
+        for (const device of customerDevices) {
+            await expo.sendPush({
+                toUserId: order.customerUserId,
+                toExpoToken: device.expoPushToken,
+                title: "Замовлення не підтверджено",
+                body: `Замовлення #${orderId.slice(-6)} повернуте в біржу. Виконавець звільнений.`,
+                data: {
+                    orderId,
+                    type: "deposit_timeout_customer",
+                    role: "customer",
+                },
+            });
+        }
+        // Створюємо notification заказчику
+        await prisma_1.prisma.notification.create({
+            data: {
+                userId: order.customerUserId,
+                type: "order",
+                title: "Замовлення не підтверджено",
+                message: `Замовлення #${orderId.slice(-6)} повернуте в біржу. Виконавець звільнений через спливання часу підтвердження.`,
+                data: {
+                    orderId,
+                    type: "order_timeout",
+                    role: "customer",
+                },
+            },
+        });
+        // Якщо замовлення повертається в біржу - створюємо нові matches
+        if (newStatus === "published") {
+            const candidates = (await prisma_1.prisma.$queryRaw `
+          SELECT
+            pp.user_id AS performer_user_id,
+            (
+              6371.0 * acos(
+                least(1.0, greatest(-1.0,
+                  cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                  cos(radians(o.lng) - radians(pp.base_longitude)) +
+                  sin(radians(pp.base_latitude)) * sin(radians(o.lat))
+                ))
+              )
+            ) AS distance_km
+          FROM performer_profiles pp
+          JOIN users u ON u.id = pp.user_id
+          JOIN performer_services psvc ON psvc.performer_user_id = pp.user_id
+          JOIN orders o ON o.id = ${orderId}
+          WHERE
+            o.status = 'published'
+            AND u.role = 'performer'
+            AND pp.user_id <> o.customer_user_id
+            AND psvc.service_category_id = o.service_category_id
+            AND psvc.service_subcategory_id = o.service_subcategory_id
+            AND (
+              psvc.service_type_id IS NULL
+              OR o.service_type_id IS NULL
+              OR psvc.service_type_id = o.service_type_id
+            )
+            AND (
+              pp.coverage_mode = 'country'
+              OR (
+                pp.coverage_mode = 'radius'
+                AND pp.coverage_radius_km IS NOT NULL
+                AND (
+                  6371.0 * acos(
+                    least(1.0, greatest(-1.0,
+                      cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                      cos(radians(o.lng) - radians(pp.base_longitude)) +
+                      sin(radians(pp.base_latitude)) * sin(radians(o.lat))
+                    ))
+                  )
+                ) <= pp.coverage_radius_km
+              )
+            )
+          ORDER BY distance_km ASC
+          LIMIT 500
+        `);
+            if (candidates.length > 0) {
+                await prisma_1.prisma.$transaction(candidates.map((c) => prisma_1.prisma.orderMatch.upsert({
+                    where: {
+                        uniq_performer_order_match: {
+                            performerUserId: c.performer_user_id,
+                            orderId,
+                        },
+                    },
+                    create: {
+                        performerUserId: c.performer_user_id,
+                        orderId,
+                    },
+                    update: {},
+                })));
+                // WebSocket сигнал про новий match
+                await (0, publishDomainEvent_1.publishDomainEvent)({
+                    type: "marketplace.match_added",
+                    targets: { userIds: candidates.map((c) => c.performer_user_id) },
+                    data: { orderId },
+                });
+            }
+        }
+        process.stdout.write(JSON.stringify({
+            level: "info",
+            msg: "deposit_timeout_completed",
+            orderId,
+            newStatus,
+        }) + "\n");
+    }, { connection: (0, connection_1.getRedisConnectionOptions)(), concurrency: 5 });
+}
+/**
+ * Планувальник: перевіряє замовлення кожні 5 хвилин
+ * Використовується cron job або окремий scheduler
+ */
+async function scheduleDepositDeadlineTimeoutChecks() {
+    const overdueOrders = await prisma_1.prisma.order.findMany({
+        where: {
+            status: "requires_confirmation",
+            depositDeadline: {
+                lt: new Date(),
+            },
+        },
+        select: { id: true },
+    });
+    for (const order of overdueOrders) {
+        const queue = await Promise.resolve().then(() => __importStar(require("../queues/queues")));
+        const q = queue.getDepositDeadlineTimeoutQueue();
+        if (q) {
+            await q.add("timeout", { orderId: order.id }, { jobId: `timeout-${order.id}` });
+        }
+    }
+}

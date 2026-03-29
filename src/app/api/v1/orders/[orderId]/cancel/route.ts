@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/lib/prisma";
 import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 import { ExpoPushService } from "@/services/expoPush.service";
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@prisma/client";
 
 const schema = z.object({ reason: z.string().max(2000).optional() });
 

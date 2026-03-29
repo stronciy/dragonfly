@@ -1,6 +1,6 @@
 import { Expo, type ExpoPushMessage } from "expo-server-sdk";
-import type { PrismaClient } from "../generated/prisma/client";
-import { Prisma } from "../generated/prisma";
+import type { PrismaClient } from "../../generated/prisma/client";
+import { Prisma } from "../../generated/prisma";
 
 type ExpoTicket =
   | { status: "ok"; id: string }

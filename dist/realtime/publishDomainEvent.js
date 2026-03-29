@@ -12,5 +12,7 @@ async function publishDomainEvent(event) {
         targets: event.targets,
         data: event.data,
     };
+    // Логування для відладки WebSocket повідомлень (завжди)
+    console.log("\n📡 [WebSocket] ВІДПРАВКА ПОДІЇ:", `\n   🆔 Type: ${payload.type}`, `\n   🔑 EventId: ${payload.eventId}`, `\n   ⏰ Timestamp: ${payload.timestamp}`, `\n   👥 Targets: ${JSON.stringify(payload.targets)}`, `\n   📦 Data: ${JSON.stringify(payload.data)}`, `\n   🏷️ RequestId: ${payload.requestId || "N/A"}\n`);
     await (0, redisBus_1.publishRaw)(JSON.stringify(payload));
 }
