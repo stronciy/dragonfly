@@ -245,7 +245,7 @@ model Order {
 model ServiceCategory {
   id    String @id @default(cuid())
   name  String
-  nameUa String @map("name_ua")
+  nameUa String? @map("name_ua")
   iconKey String? @map("icon_key")
   sort  Int    @default(0)
 
@@ -262,7 +262,7 @@ model ServiceSubcategory {
   id         String @id @default(cuid())
   categoryId String @map("category_id")
   name       String
-  nameUa     String @map("name_ua")
+  nameUa     String? @map("name_ua")
   iconKey String? @map("icon_key")
   sort       Int    @default(0)
 
@@ -280,7 +280,7 @@ model ServiceType {
   subcategoryId String @map("subcategory_id")
   id            String
   name          String
-  nameUa        String @map("name_ua")
+  nameUa        String? @map("name_ua")
   sort          Int    @default(0)
 
   subcategory ServiceSubcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
@@ -295,7 +295,7 @@ model ServiceType {
 model Crop {
   id      String @id @default(cuid())
   name    String @unique
-  nameUa  String @map("name_ua")
+  nameUa  String? @map("name_ua")
   group   String? // grain, tech, etc
   iconKey String? @map("icon_key")
   sort    Int     @default(0)
@@ -311,7 +311,7 @@ model Crop {
 model OrderStatusEvent {
   id        String   @id @default(cuid())
   orderId   String   @map("order_id")
-  status    String   @map("status")
+  status    String?  @map("status")
   note      String?  @map("note")
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -357,7 +357,7 @@ model Device {
 model Notification {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  type      String
+  type      String?
   title     String
   message   String
   data      Json?
