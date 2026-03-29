@@ -30,14 +30,7 @@ export async function PATCH(req: Request) {
         await tx.performerProfile.upsert({
           where: { userId: user.id },
           update: {},
-          create: {
-            userId: user.id,
-            coverageMode: "radius",
-            coverageRadiusKm: 50,
-            vatPayer: false,
-            avgRating: 0,
-            reviewCount: 0,
-          },
+          create: { userId: user.id },
         });
       }
 
@@ -49,6 +42,10 @@ export async function PATCH(req: Request) {
     if (err instanceof z.ZodError) {
       return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
     }
-    return fail(req, err);
+    if (err instanceof ApiError) {
+      return fail(req, err);
+    }
+    console.error("[PATCH /api/v1/users/me/role] Unexpected error:", err);
+    return fail(req, new ApiError(500, "INTERNAL_ERROR", "Failed to update role"));
   }
 }

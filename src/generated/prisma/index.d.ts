@@ -98,6 +98,11 @@ export type Device = $Result.DefaultSelection<Prisma.$DevicePayload>
  * 
  */
 export type Notification = $Result.DefaultSelection<Prisma.$NotificationPayload>
+/**
+ * Model LegalProfile
+ * 
+ */
+export type LegalProfile = $Result.DefaultSelection<Prisma.$LegalProfilePayload>
 
 /**
  * Enums
@@ -421,6 +426,16 @@ export class PrismaClient<
     * ```
     */
   get notification(): Prisma.NotificationDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.legalProfile`: Exposes CRUD operations for the **LegalProfile** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more LegalProfiles
+    * const legalProfiles = await prisma.legalProfile.findMany()
+    * ```
+    */
+  get legalProfile(): Prisma.LegalProfileDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -871,7 +886,8 @@ export namespace Prisma {
     OrderStatusEvent: 'OrderStatusEvent',
     OrderMatch: 'OrderMatch',
     Device: 'Device',
-    Notification: 'Notification'
+    Notification: 'Notification',
+    LegalProfile: 'LegalProfile'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -887,7 +903,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "refreshToken" | "customerProfile" | "review" | "customerCropStat" | "performerProfile" | "performerService" | "field" | "order" | "serviceCategory" | "serviceSubcategory" | "serviceType" | "crop" | "orderStatusEvent" | "orderMatch" | "device" | "notification"
+      modelProps: "user" | "refreshToken" | "customerProfile" | "review" | "customerCropStat" | "performerProfile" | "performerService" | "field" | "order" | "serviceCategory" | "serviceSubcategory" | "serviceType" | "crop" | "orderStatusEvent" | "orderMatch" | "device" | "notification" | "legalProfile"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2149,6 +2165,80 @@ export namespace Prisma {
           }
         }
       }
+      LegalProfile: {
+        payload: Prisma.$LegalProfilePayload<ExtArgs>
+        fields: Prisma.LegalProfileFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.LegalProfileFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LegalProfilePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.LegalProfileFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LegalProfilePayload>
+          }
+          findFirst: {
+            args: Prisma.LegalProfileFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LegalProfilePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.LegalProfileFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LegalProfilePayload>
+          }
+          findMany: {
+            args: Prisma.LegalProfileFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LegalProfilePayload>[]
+          }
+          create: {
+            args: Prisma.LegalProfileCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LegalProfilePayload>
+          }
+          createMany: {
+            args: Prisma.LegalProfileCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.LegalProfileCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LegalProfilePayload>[]
+          }
+          delete: {
+            args: Prisma.LegalProfileDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LegalProfilePayload>
+          }
+          update: {
+            args: Prisma.LegalProfileUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LegalProfilePayload>
+          }
+          deleteMany: {
+            args: Prisma.LegalProfileDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.LegalProfileUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.LegalProfileUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LegalProfilePayload>[]
+          }
+          upsert: {
+            args: Prisma.LegalProfileUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LegalProfilePayload>
+          }
+          aggregate: {
+            args: Prisma.LegalProfileAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateLegalProfile>
+          }
+          groupBy: {
+            args: Prisma.LegalProfileGroupByArgs<ExtArgs>
+            result: $Utils.Optional<LegalProfileGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.LegalProfileCountArgs<ExtArgs>
+            result: $Utils.Optional<LegalProfileCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -2274,6 +2364,7 @@ export namespace Prisma {
     orderMatch?: OrderMatchOmit
     device?: DeviceOmit
     notification?: NotificationOmit
+    legalProfile?: LegalProfileOmit
   }
 
   /* Types for Logging */
@@ -2856,6 +2947,7 @@ export namespace Prisma {
     updatedAt?: boolean
     customerProfile?: boolean | User$customerProfileArgs<ExtArgs>
     performerProfile?: boolean | User$performerProfileArgs<ExtArgs>
+    legalProfile?: boolean | User$legalProfileArgs<ExtArgs>
     refreshTokens?: boolean | User$refreshTokensArgs<ExtArgs>
     authoredReviews?: boolean | User$authoredReviewsArgs<ExtArgs>
     performerReviews?: boolean | User$performerReviewsArgs<ExtArgs>
@@ -2911,6 +3003,7 @@ export namespace Prisma {
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     customerProfile?: boolean | User$customerProfileArgs<ExtArgs>
     performerProfile?: boolean | User$performerProfileArgs<ExtArgs>
+    legalProfile?: boolean | User$legalProfileArgs<ExtArgs>
     refreshTokens?: boolean | User$refreshTokensArgs<ExtArgs>
     authoredReviews?: boolean | User$authoredReviewsArgs<ExtArgs>
     performerReviews?: boolean | User$performerReviewsArgs<ExtArgs>
@@ -2927,6 +3020,7 @@ export namespace Prisma {
     objects: {
       customerProfile: Prisma.$CustomerProfilePayload<ExtArgs> | null
       performerProfile: Prisma.$PerformerProfilePayload<ExtArgs> | null
+      legalProfile: Prisma.$LegalProfilePayload<ExtArgs> | null
       refreshTokens: Prisma.$RefreshTokenPayload<ExtArgs>[]
       authoredReviews: Prisma.$ReviewPayload<ExtArgs>[]
       performerReviews: Prisma.$ReviewPayload<ExtArgs>[]
@@ -3342,6 +3436,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     customerProfile<T extends User$customerProfileArgs<ExtArgs> = {}>(args?: Subset<T, User$customerProfileArgs<ExtArgs>>): Prisma__CustomerProfileClient<$Result.GetResult<Prisma.$CustomerProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     performerProfile<T extends User$performerProfileArgs<ExtArgs> = {}>(args?: Subset<T, User$performerProfileArgs<ExtArgs>>): Prisma__PerformerProfileClient<$Result.GetResult<Prisma.$PerformerProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    legalProfile<T extends User$legalProfileArgs<ExtArgs> = {}>(args?: Subset<T, User$legalProfileArgs<ExtArgs>>): Prisma__LegalProfileClient<$Result.GetResult<Prisma.$LegalProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     refreshTokens<T extends User$refreshTokensArgs<ExtArgs> = {}>(args?: Subset<T, User$refreshTokensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     authoredReviews<T extends User$authoredReviewsArgs<ExtArgs> = {}>(args?: Subset<T, User$authoredReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     performerReviews<T extends User$performerReviewsArgs<ExtArgs> = {}>(args?: Subset<T, User$performerReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -3816,6 +3911,25 @@ export namespace Prisma {
      */
     include?: PerformerProfileInclude<ExtArgs> | null
     where?: PerformerProfileWhereInput
+  }
+
+  /**
+   * User.legalProfile
+   */
+  export type User$legalProfileArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileInclude<ExtArgs> | null
+    where?: LegalProfileWhereInput
   }
 
   /**
@@ -22420,6 +22534,1121 @@ export namespace Prisma {
 
 
   /**
+   * Model LegalProfile
+   */
+
+  export type AggregateLegalProfile = {
+    _count: LegalProfileCountAggregateOutputType | null
+    _min: LegalProfileMinAggregateOutputType | null
+    _max: LegalProfileMaxAggregateOutputType | null
+  }
+
+  export type LegalProfileMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    companyName: string | null
+    edrpou: string | null
+    iban: string | null
+    legalAddress: string | null
+    vatPayer: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type LegalProfileMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    companyName: string | null
+    edrpou: string | null
+    iban: string | null
+    legalAddress: string | null
+    vatPayer: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type LegalProfileCountAggregateOutputType = {
+    id: number
+    userId: number
+    companyName: number
+    edrpou: number
+    iban: number
+    legalAddress: number
+    vatPayer: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type LegalProfileMinAggregateInputType = {
+    id?: true
+    userId?: true
+    companyName?: true
+    edrpou?: true
+    iban?: true
+    legalAddress?: true
+    vatPayer?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type LegalProfileMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    companyName?: true
+    edrpou?: true
+    iban?: true
+    legalAddress?: true
+    vatPayer?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type LegalProfileCountAggregateInputType = {
+    id?: true
+    userId?: true
+    companyName?: true
+    edrpou?: true
+    iban?: true
+    legalAddress?: true
+    vatPayer?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type LegalProfileAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which LegalProfile to aggregate.
+     */
+    where?: LegalProfileWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of LegalProfiles to fetch.
+     */
+    orderBy?: LegalProfileOrderByWithRelationInput | LegalProfileOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: LegalProfileWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` LegalProfiles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` LegalProfiles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned LegalProfiles
+    **/
+    _count?: true | LegalProfileCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: LegalProfileMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: LegalProfileMaxAggregateInputType
+  }
+
+  export type GetLegalProfileAggregateType<T extends LegalProfileAggregateArgs> = {
+        [P in keyof T & keyof AggregateLegalProfile]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateLegalProfile[P]>
+      : GetScalarType<T[P], AggregateLegalProfile[P]>
+  }
+
+
+
+
+  export type LegalProfileGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: LegalProfileWhereInput
+    orderBy?: LegalProfileOrderByWithAggregationInput | LegalProfileOrderByWithAggregationInput[]
+    by: LegalProfileScalarFieldEnum[] | LegalProfileScalarFieldEnum
+    having?: LegalProfileScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: LegalProfileCountAggregateInputType | true
+    _min?: LegalProfileMinAggregateInputType
+    _max?: LegalProfileMaxAggregateInputType
+  }
+
+  export type LegalProfileGroupByOutputType = {
+    id: string
+    userId: string
+    companyName: string | null
+    edrpou: string | null
+    iban: string | null
+    legalAddress: string | null
+    vatPayer: boolean
+    createdAt: Date
+    updatedAt: Date
+    _count: LegalProfileCountAggregateOutputType | null
+    _min: LegalProfileMinAggregateOutputType | null
+    _max: LegalProfileMaxAggregateOutputType | null
+  }
+
+  type GetLegalProfileGroupByPayload<T extends LegalProfileGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<LegalProfileGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof LegalProfileGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], LegalProfileGroupByOutputType[P]>
+            : GetScalarType<T[P], LegalProfileGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type LegalProfileSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    companyName?: boolean
+    edrpou?: boolean
+    iban?: boolean
+    legalAddress?: boolean
+    vatPayer?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["legalProfile"]>
+
+  export type LegalProfileSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    companyName?: boolean
+    edrpou?: boolean
+    iban?: boolean
+    legalAddress?: boolean
+    vatPayer?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["legalProfile"]>
+
+  export type LegalProfileSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    companyName?: boolean
+    edrpou?: boolean
+    iban?: boolean
+    legalAddress?: boolean
+    vatPayer?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["legalProfile"]>
+
+  export type LegalProfileSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    companyName?: boolean
+    edrpou?: boolean
+    iban?: boolean
+    legalAddress?: boolean
+    vatPayer?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type LegalProfileOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "companyName" | "edrpou" | "iban" | "legalAddress" | "vatPayer" | "createdAt" | "updatedAt", ExtArgs["result"]["legalProfile"]>
+  export type LegalProfileInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type LegalProfileIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type LegalProfileIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $LegalProfilePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "LegalProfile"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      companyName: string | null
+      edrpou: string | null
+      iban: string | null
+      legalAddress: string | null
+      vatPayer: boolean
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["legalProfile"]>
+    composites: {}
+  }
+
+  type LegalProfileGetPayload<S extends boolean | null | undefined | LegalProfileDefaultArgs> = $Result.GetResult<Prisma.$LegalProfilePayload, S>
+
+  type LegalProfileCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<LegalProfileFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: LegalProfileCountAggregateInputType | true
+    }
+
+  export interface LegalProfileDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['LegalProfile'], meta: { name: 'LegalProfile' } }
+    /**
+     * Find zero or one LegalProfile that matches the filter.
+     * @param {LegalProfileFindUniqueArgs} args - Arguments to find a LegalProfile
+     * @example
+     * // Get one LegalProfile
+     * const legalProfile = await prisma.legalProfile.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends LegalProfileFindUniqueArgs>(args: SelectSubset<T, LegalProfileFindUniqueArgs<ExtArgs>>): Prisma__LegalProfileClient<$Result.GetResult<Prisma.$LegalProfilePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one LegalProfile that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {LegalProfileFindUniqueOrThrowArgs} args - Arguments to find a LegalProfile
+     * @example
+     * // Get one LegalProfile
+     * const legalProfile = await prisma.legalProfile.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends LegalProfileFindUniqueOrThrowArgs>(args: SelectSubset<T, LegalProfileFindUniqueOrThrowArgs<ExtArgs>>): Prisma__LegalProfileClient<$Result.GetResult<Prisma.$LegalProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first LegalProfile that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LegalProfileFindFirstArgs} args - Arguments to find a LegalProfile
+     * @example
+     * // Get one LegalProfile
+     * const legalProfile = await prisma.legalProfile.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends LegalProfileFindFirstArgs>(args?: SelectSubset<T, LegalProfileFindFirstArgs<ExtArgs>>): Prisma__LegalProfileClient<$Result.GetResult<Prisma.$LegalProfilePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first LegalProfile that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LegalProfileFindFirstOrThrowArgs} args - Arguments to find a LegalProfile
+     * @example
+     * // Get one LegalProfile
+     * const legalProfile = await prisma.legalProfile.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends LegalProfileFindFirstOrThrowArgs>(args?: SelectSubset<T, LegalProfileFindFirstOrThrowArgs<ExtArgs>>): Prisma__LegalProfileClient<$Result.GetResult<Prisma.$LegalProfilePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more LegalProfiles that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LegalProfileFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all LegalProfiles
+     * const legalProfiles = await prisma.legalProfile.findMany()
+     * 
+     * // Get first 10 LegalProfiles
+     * const legalProfiles = await prisma.legalProfile.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const legalProfileWithIdOnly = await prisma.legalProfile.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends LegalProfileFindManyArgs>(args?: SelectSubset<T, LegalProfileFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LegalProfilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a LegalProfile.
+     * @param {LegalProfileCreateArgs} args - Arguments to create a LegalProfile.
+     * @example
+     * // Create one LegalProfile
+     * const LegalProfile = await prisma.legalProfile.create({
+     *   data: {
+     *     // ... data to create a LegalProfile
+     *   }
+     * })
+     * 
+     */
+    create<T extends LegalProfileCreateArgs>(args: SelectSubset<T, LegalProfileCreateArgs<ExtArgs>>): Prisma__LegalProfileClient<$Result.GetResult<Prisma.$LegalProfilePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many LegalProfiles.
+     * @param {LegalProfileCreateManyArgs} args - Arguments to create many LegalProfiles.
+     * @example
+     * // Create many LegalProfiles
+     * const legalProfile = await prisma.legalProfile.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends LegalProfileCreateManyArgs>(args?: SelectSubset<T, LegalProfileCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many LegalProfiles and returns the data saved in the database.
+     * @param {LegalProfileCreateManyAndReturnArgs} args - Arguments to create many LegalProfiles.
+     * @example
+     * // Create many LegalProfiles
+     * const legalProfile = await prisma.legalProfile.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many LegalProfiles and only return the `id`
+     * const legalProfileWithIdOnly = await prisma.legalProfile.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends LegalProfileCreateManyAndReturnArgs>(args?: SelectSubset<T, LegalProfileCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LegalProfilePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a LegalProfile.
+     * @param {LegalProfileDeleteArgs} args - Arguments to delete one LegalProfile.
+     * @example
+     * // Delete one LegalProfile
+     * const LegalProfile = await prisma.legalProfile.delete({
+     *   where: {
+     *     // ... filter to delete one LegalProfile
+     *   }
+     * })
+     * 
+     */
+    delete<T extends LegalProfileDeleteArgs>(args: SelectSubset<T, LegalProfileDeleteArgs<ExtArgs>>): Prisma__LegalProfileClient<$Result.GetResult<Prisma.$LegalProfilePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one LegalProfile.
+     * @param {LegalProfileUpdateArgs} args - Arguments to update one LegalProfile.
+     * @example
+     * // Update one LegalProfile
+     * const legalProfile = await prisma.legalProfile.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends LegalProfileUpdateArgs>(args: SelectSubset<T, LegalProfileUpdateArgs<ExtArgs>>): Prisma__LegalProfileClient<$Result.GetResult<Prisma.$LegalProfilePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more LegalProfiles.
+     * @param {LegalProfileDeleteManyArgs} args - Arguments to filter LegalProfiles to delete.
+     * @example
+     * // Delete a few LegalProfiles
+     * const { count } = await prisma.legalProfile.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends LegalProfileDeleteManyArgs>(args?: SelectSubset<T, LegalProfileDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more LegalProfiles.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LegalProfileUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many LegalProfiles
+     * const legalProfile = await prisma.legalProfile.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends LegalProfileUpdateManyArgs>(args: SelectSubset<T, LegalProfileUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more LegalProfiles and returns the data updated in the database.
+     * @param {LegalProfileUpdateManyAndReturnArgs} args - Arguments to update many LegalProfiles.
+     * @example
+     * // Update many LegalProfiles
+     * const legalProfile = await prisma.legalProfile.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more LegalProfiles and only return the `id`
+     * const legalProfileWithIdOnly = await prisma.legalProfile.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends LegalProfileUpdateManyAndReturnArgs>(args: SelectSubset<T, LegalProfileUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LegalProfilePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one LegalProfile.
+     * @param {LegalProfileUpsertArgs} args - Arguments to update or create a LegalProfile.
+     * @example
+     * // Update or create a LegalProfile
+     * const legalProfile = await prisma.legalProfile.upsert({
+     *   create: {
+     *     // ... data to create a LegalProfile
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the LegalProfile we want to update
+     *   }
+     * })
+     */
+    upsert<T extends LegalProfileUpsertArgs>(args: SelectSubset<T, LegalProfileUpsertArgs<ExtArgs>>): Prisma__LegalProfileClient<$Result.GetResult<Prisma.$LegalProfilePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of LegalProfiles.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LegalProfileCountArgs} args - Arguments to filter LegalProfiles to count.
+     * @example
+     * // Count the number of LegalProfiles
+     * const count = await prisma.legalProfile.count({
+     *   where: {
+     *     // ... the filter for the LegalProfiles we want to count
+     *   }
+     * })
+    **/
+    count<T extends LegalProfileCountArgs>(
+      args?: Subset<T, LegalProfileCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], LegalProfileCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a LegalProfile.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LegalProfileAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends LegalProfileAggregateArgs>(args: Subset<T, LegalProfileAggregateArgs>): Prisma.PrismaPromise<GetLegalProfileAggregateType<T>>
+
+    /**
+     * Group by LegalProfile.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LegalProfileGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends LegalProfileGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: LegalProfileGroupByArgs['orderBy'] }
+        : { orderBy?: LegalProfileGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, LegalProfileGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetLegalProfileGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the LegalProfile model
+   */
+  readonly fields: LegalProfileFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for LegalProfile.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__LegalProfileClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the LegalProfile model
+   */
+  interface LegalProfileFieldRefs {
+    readonly id: FieldRef<"LegalProfile", 'String'>
+    readonly userId: FieldRef<"LegalProfile", 'String'>
+    readonly companyName: FieldRef<"LegalProfile", 'String'>
+    readonly edrpou: FieldRef<"LegalProfile", 'String'>
+    readonly iban: FieldRef<"LegalProfile", 'String'>
+    readonly legalAddress: FieldRef<"LegalProfile", 'String'>
+    readonly vatPayer: FieldRef<"LegalProfile", 'Boolean'>
+    readonly createdAt: FieldRef<"LegalProfile", 'DateTime'>
+    readonly updatedAt: FieldRef<"LegalProfile", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * LegalProfile findUnique
+   */
+  export type LegalProfileFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileInclude<ExtArgs> | null
+    /**
+     * Filter, which LegalProfile to fetch.
+     */
+    where: LegalProfileWhereUniqueInput
+  }
+
+  /**
+   * LegalProfile findUniqueOrThrow
+   */
+  export type LegalProfileFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileInclude<ExtArgs> | null
+    /**
+     * Filter, which LegalProfile to fetch.
+     */
+    where: LegalProfileWhereUniqueInput
+  }
+
+  /**
+   * LegalProfile findFirst
+   */
+  export type LegalProfileFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileInclude<ExtArgs> | null
+    /**
+     * Filter, which LegalProfile to fetch.
+     */
+    where?: LegalProfileWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of LegalProfiles to fetch.
+     */
+    orderBy?: LegalProfileOrderByWithRelationInput | LegalProfileOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for LegalProfiles.
+     */
+    cursor?: LegalProfileWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` LegalProfiles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` LegalProfiles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of LegalProfiles.
+     */
+    distinct?: LegalProfileScalarFieldEnum | LegalProfileScalarFieldEnum[]
+  }
+
+  /**
+   * LegalProfile findFirstOrThrow
+   */
+  export type LegalProfileFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileInclude<ExtArgs> | null
+    /**
+     * Filter, which LegalProfile to fetch.
+     */
+    where?: LegalProfileWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of LegalProfiles to fetch.
+     */
+    orderBy?: LegalProfileOrderByWithRelationInput | LegalProfileOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for LegalProfiles.
+     */
+    cursor?: LegalProfileWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` LegalProfiles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` LegalProfiles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of LegalProfiles.
+     */
+    distinct?: LegalProfileScalarFieldEnum | LegalProfileScalarFieldEnum[]
+  }
+
+  /**
+   * LegalProfile findMany
+   */
+  export type LegalProfileFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileInclude<ExtArgs> | null
+    /**
+     * Filter, which LegalProfiles to fetch.
+     */
+    where?: LegalProfileWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of LegalProfiles to fetch.
+     */
+    orderBy?: LegalProfileOrderByWithRelationInput | LegalProfileOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing LegalProfiles.
+     */
+    cursor?: LegalProfileWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` LegalProfiles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` LegalProfiles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of LegalProfiles.
+     */
+    distinct?: LegalProfileScalarFieldEnum | LegalProfileScalarFieldEnum[]
+  }
+
+  /**
+   * LegalProfile create
+   */
+  export type LegalProfileCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileInclude<ExtArgs> | null
+    /**
+     * The data needed to create a LegalProfile.
+     */
+    data: XOR<LegalProfileCreateInput, LegalProfileUncheckedCreateInput>
+  }
+
+  /**
+   * LegalProfile createMany
+   */
+  export type LegalProfileCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many LegalProfiles.
+     */
+    data: LegalProfileCreateManyInput | LegalProfileCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * LegalProfile createManyAndReturn
+   */
+  export type LegalProfileCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * The data used to create many LegalProfiles.
+     */
+    data: LegalProfileCreateManyInput | LegalProfileCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * LegalProfile update
+   */
+  export type LegalProfileUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileInclude<ExtArgs> | null
+    /**
+     * The data needed to update a LegalProfile.
+     */
+    data: XOR<LegalProfileUpdateInput, LegalProfileUncheckedUpdateInput>
+    /**
+     * Choose, which LegalProfile to update.
+     */
+    where: LegalProfileWhereUniqueInput
+  }
+
+  /**
+   * LegalProfile updateMany
+   */
+  export type LegalProfileUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update LegalProfiles.
+     */
+    data: XOR<LegalProfileUpdateManyMutationInput, LegalProfileUncheckedUpdateManyInput>
+    /**
+     * Filter which LegalProfiles to update
+     */
+    where?: LegalProfileWhereInput
+    /**
+     * Limit how many LegalProfiles to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * LegalProfile updateManyAndReturn
+   */
+  export type LegalProfileUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * The data used to update LegalProfiles.
+     */
+    data: XOR<LegalProfileUpdateManyMutationInput, LegalProfileUncheckedUpdateManyInput>
+    /**
+     * Filter which LegalProfiles to update
+     */
+    where?: LegalProfileWhereInput
+    /**
+     * Limit how many LegalProfiles to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * LegalProfile upsert
+   */
+  export type LegalProfileUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileInclude<ExtArgs> | null
+    /**
+     * The filter to search for the LegalProfile to update in case it exists.
+     */
+    where: LegalProfileWhereUniqueInput
+    /**
+     * In case the LegalProfile found by the `where` argument doesn't exist, create a new LegalProfile with this data.
+     */
+    create: XOR<LegalProfileCreateInput, LegalProfileUncheckedCreateInput>
+    /**
+     * In case the LegalProfile was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<LegalProfileUpdateInput, LegalProfileUncheckedUpdateInput>
+  }
+
+  /**
+   * LegalProfile delete
+   */
+  export type LegalProfileDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileInclude<ExtArgs> | null
+    /**
+     * Filter which LegalProfile to delete.
+     */
+    where: LegalProfileWhereUniqueInput
+  }
+
+  /**
+   * LegalProfile deleteMany
+   */
+  export type LegalProfileDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which LegalProfiles to delete
+     */
+    where?: LegalProfileWhereInput
+    /**
+     * Limit how many LegalProfiles to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * LegalProfile without action
+   */
+  export type LegalProfileDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LegalProfile
+     */
+    select?: LegalProfileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the LegalProfile
+     */
+    omit?: LegalProfileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LegalProfileInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -22690,6 +23919,21 @@ export namespace Prisma {
   export type NotificationScalarFieldEnum = (typeof NotificationScalarFieldEnum)[keyof typeof NotificationScalarFieldEnum]
 
 
+  export const LegalProfileScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    companyName: 'companyName',
+    edrpou: 'edrpou',
+    iban: 'iban',
+    legalAddress: 'legalAddress',
+    vatPayer: 'vatPayer',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type LegalProfileScalarFieldEnum = (typeof LegalProfileScalarFieldEnum)[keyof typeof LegalProfileScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -22875,6 +24119,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"User"> | Date | string
     customerProfile?: XOR<CustomerProfileNullableScalarRelationFilter, CustomerProfileWhereInput> | null
     performerProfile?: XOR<PerformerProfileNullableScalarRelationFilter, PerformerProfileWhereInput> | null
+    legalProfile?: XOR<LegalProfileNullableScalarRelationFilter, LegalProfileWhereInput> | null
     refreshTokens?: RefreshTokenListRelationFilter
     authoredReviews?: ReviewListRelationFilter
     performerReviews?: ReviewListRelationFilter
@@ -22897,6 +24142,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
     customerProfile?: CustomerProfileOrderByWithRelationInput
     performerProfile?: PerformerProfileOrderByWithRelationInput
+    legalProfile?: LegalProfileOrderByWithRelationInput
     refreshTokens?: RefreshTokenOrderByRelationAggregateInput
     authoredReviews?: ReviewOrderByRelationAggregateInput
     performerReviews?: ReviewOrderByRelationAggregateInput
@@ -22922,6 +24168,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"User"> | Date | string
     customerProfile?: XOR<CustomerProfileNullableScalarRelationFilter, CustomerProfileWhereInput> | null
     performerProfile?: XOR<PerformerProfileNullableScalarRelationFilter, PerformerProfileWhereInput> | null
+    legalProfile?: XOR<LegalProfileNullableScalarRelationFilter, LegalProfileWhereInput> | null
     refreshTokens?: RefreshTokenListRelationFilter
     authoredReviews?: ReviewListRelationFilter
     performerReviews?: ReviewListRelationFilter
@@ -24216,6 +25463,81 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"Notification"> | Date | string
   }
 
+  export type LegalProfileWhereInput = {
+    AND?: LegalProfileWhereInput | LegalProfileWhereInput[]
+    OR?: LegalProfileWhereInput[]
+    NOT?: LegalProfileWhereInput | LegalProfileWhereInput[]
+    id?: StringFilter<"LegalProfile"> | string
+    userId?: StringFilter<"LegalProfile"> | string
+    companyName?: StringNullableFilter<"LegalProfile"> | string | null
+    edrpou?: StringNullableFilter<"LegalProfile"> | string | null
+    iban?: StringNullableFilter<"LegalProfile"> | string | null
+    legalAddress?: StringNullableFilter<"LegalProfile"> | string | null
+    vatPayer?: BoolFilter<"LegalProfile"> | boolean
+    createdAt?: DateTimeFilter<"LegalProfile"> | Date | string
+    updatedAt?: DateTimeFilter<"LegalProfile"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type LegalProfileOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    companyName?: SortOrderInput | SortOrder
+    edrpou?: SortOrderInput | SortOrder
+    iban?: SortOrderInput | SortOrder
+    legalAddress?: SortOrderInput | SortOrder
+    vatPayer?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type LegalProfileWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    userId?: string
+    AND?: LegalProfileWhereInput | LegalProfileWhereInput[]
+    OR?: LegalProfileWhereInput[]
+    NOT?: LegalProfileWhereInput | LegalProfileWhereInput[]
+    companyName?: StringNullableFilter<"LegalProfile"> | string | null
+    edrpou?: StringNullableFilter<"LegalProfile"> | string | null
+    iban?: StringNullableFilter<"LegalProfile"> | string | null
+    legalAddress?: StringNullableFilter<"LegalProfile"> | string | null
+    vatPayer?: BoolFilter<"LegalProfile"> | boolean
+    createdAt?: DateTimeFilter<"LegalProfile"> | Date | string
+    updatedAt?: DateTimeFilter<"LegalProfile"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id" | "userId">
+
+  export type LegalProfileOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    companyName?: SortOrderInput | SortOrder
+    edrpou?: SortOrderInput | SortOrder
+    iban?: SortOrderInput | SortOrder
+    legalAddress?: SortOrderInput | SortOrder
+    vatPayer?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: LegalProfileCountOrderByAggregateInput
+    _max?: LegalProfileMaxOrderByAggregateInput
+    _min?: LegalProfileMinOrderByAggregateInput
+  }
+
+  export type LegalProfileScalarWhereWithAggregatesInput = {
+    AND?: LegalProfileScalarWhereWithAggregatesInput | LegalProfileScalarWhereWithAggregatesInput[]
+    OR?: LegalProfileScalarWhereWithAggregatesInput[]
+    NOT?: LegalProfileScalarWhereWithAggregatesInput | LegalProfileScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"LegalProfile"> | string
+    userId?: StringWithAggregatesFilter<"LegalProfile"> | string
+    companyName?: StringNullableWithAggregatesFilter<"LegalProfile"> | string | null
+    edrpou?: StringNullableWithAggregatesFilter<"LegalProfile"> | string | null
+    iban?: StringNullableWithAggregatesFilter<"LegalProfile"> | string | null
+    legalAddress?: StringNullableWithAggregatesFilter<"LegalProfile"> | string | null
+    vatPayer?: BoolWithAggregatesFilter<"LegalProfile"> | boolean
+    createdAt?: DateTimeWithAggregatesFilter<"LegalProfile"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"LegalProfile"> | Date | string
+  }
+
   export type UserCreateInput = {
     id?: string
     role?: $Enums.UserRole
@@ -24230,6 +25552,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewCreateNestedManyWithoutPerformerInput
@@ -24252,6 +25575,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileUncheckedCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileUncheckedCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewUncheckedCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewUncheckedCreateNestedManyWithoutPerformerInput
@@ -24274,6 +25598,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUpdateManyWithoutPerformerNestedInput
@@ -24296,6 +25621,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUncheckedUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUncheckedUpdateManyWithoutPerformerNestedInput
@@ -25709,6 +27035,89 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type LegalProfileCreateInput = {
+    id?: string
+    companyName?: string | null
+    edrpou?: string | null
+    iban?: string | null
+    legalAddress?: string | null
+    vatPayer?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutLegalProfileInput
+  }
+
+  export type LegalProfileUncheckedCreateInput = {
+    id?: string
+    userId: string
+    companyName?: string | null
+    edrpou?: string | null
+    iban?: string | null
+    legalAddress?: string | null
+    vatPayer?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LegalProfileUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    edrpou?: NullableStringFieldUpdateOperationsInput | string | null
+    iban?: NullableStringFieldUpdateOperationsInput | string | null
+    legalAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    vatPayer?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutLegalProfileNestedInput
+  }
+
+  export type LegalProfileUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    edrpou?: NullableStringFieldUpdateOperationsInput | string | null
+    iban?: NullableStringFieldUpdateOperationsInput | string | null
+    legalAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    vatPayer?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LegalProfileCreateManyInput = {
+    id?: string
+    userId: string
+    companyName?: string | null
+    edrpou?: string | null
+    iban?: string | null
+    legalAddress?: string | null
+    vatPayer?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LegalProfileUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    edrpou?: NullableStringFieldUpdateOperationsInput | string | null
+    iban?: NullableStringFieldUpdateOperationsInput | string | null
+    legalAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    vatPayer?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LegalProfileUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    edrpou?: NullableStringFieldUpdateOperationsInput | string | null
+    iban?: NullableStringFieldUpdateOperationsInput | string | null
+    legalAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    vatPayer?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -25781,6 +27190,11 @@ export namespace Prisma {
   export type PerformerProfileNullableScalarRelationFilter = {
     is?: PerformerProfileWhereInput | null
     isNot?: PerformerProfileWhereInput | null
+  }
+
+  export type LegalProfileNullableScalarRelationFilter = {
+    is?: LegalProfileWhereInput | null
+    isNot?: LegalProfileWhereInput | null
   }
 
   export type RefreshTokenListRelationFilter = {
@@ -26959,6 +28373,42 @@ export namespace Prisma {
     createdAt?: SortOrder
   }
 
+  export type LegalProfileCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    companyName?: SortOrder
+    edrpou?: SortOrder
+    iban?: SortOrder
+    legalAddress?: SortOrder
+    vatPayer?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type LegalProfileMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    companyName?: SortOrder
+    edrpou?: SortOrder
+    iban?: SortOrder
+    legalAddress?: SortOrder
+    vatPayer?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type LegalProfileMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    companyName?: SortOrder
+    edrpou?: SortOrder
+    iban?: SortOrder
+    legalAddress?: SortOrder
+    vatPayer?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
   export type CustomerProfileCreateNestedOneWithoutUserInput = {
     create?: XOR<CustomerProfileCreateWithoutUserInput, CustomerProfileUncheckedCreateWithoutUserInput>
     connectOrCreate?: CustomerProfileCreateOrConnectWithoutUserInput
@@ -26969,6 +28419,12 @@ export namespace Prisma {
     create?: XOR<PerformerProfileCreateWithoutUserInput, PerformerProfileUncheckedCreateWithoutUserInput>
     connectOrCreate?: PerformerProfileCreateOrConnectWithoutUserInput
     connect?: PerformerProfileWhereUniqueInput
+  }
+
+  export type LegalProfileCreateNestedOneWithoutUserInput = {
+    create?: XOR<LegalProfileCreateWithoutUserInput, LegalProfileUncheckedCreateWithoutUserInput>
+    connectOrCreate?: LegalProfileCreateOrConnectWithoutUserInput
+    connect?: LegalProfileWhereUniqueInput
   }
 
   export type RefreshTokenCreateNestedManyWithoutUserInput = {
@@ -27023,6 +28479,12 @@ export namespace Prisma {
     create?: XOR<PerformerProfileCreateWithoutUserInput, PerformerProfileUncheckedCreateWithoutUserInput>
     connectOrCreate?: PerformerProfileCreateOrConnectWithoutUserInput
     connect?: PerformerProfileWhereUniqueInput
+  }
+
+  export type LegalProfileUncheckedCreateNestedOneWithoutUserInput = {
+    create?: XOR<LegalProfileCreateWithoutUserInput, LegalProfileUncheckedCreateWithoutUserInput>
+    connectOrCreate?: LegalProfileCreateOrConnectWithoutUserInput
+    connect?: LegalProfileWhereUniqueInput
   }
 
   export type RefreshTokenUncheckedCreateNestedManyWithoutUserInput = {
@@ -27109,6 +28571,16 @@ export namespace Prisma {
     delete?: PerformerProfileWhereInput | boolean
     connect?: PerformerProfileWhereUniqueInput
     update?: XOR<XOR<PerformerProfileUpdateToOneWithWhereWithoutUserInput, PerformerProfileUpdateWithoutUserInput>, PerformerProfileUncheckedUpdateWithoutUserInput>
+  }
+
+  export type LegalProfileUpdateOneWithoutUserNestedInput = {
+    create?: XOR<LegalProfileCreateWithoutUserInput, LegalProfileUncheckedCreateWithoutUserInput>
+    connectOrCreate?: LegalProfileCreateOrConnectWithoutUserInput
+    upsert?: LegalProfileUpsertWithoutUserInput
+    disconnect?: LegalProfileWhereInput | boolean
+    delete?: LegalProfileWhereInput | boolean
+    connect?: LegalProfileWhereUniqueInput
+    update?: XOR<XOR<LegalProfileUpdateToOneWithWhereWithoutUserInput, LegalProfileUpdateWithoutUserInput>, LegalProfileUncheckedUpdateWithoutUserInput>
   }
 
   export type RefreshTokenUpdateManyWithoutUserNestedInput = {
@@ -27213,6 +28685,16 @@ export namespace Prisma {
     delete?: PerformerProfileWhereInput | boolean
     connect?: PerformerProfileWhereUniqueInput
     update?: XOR<XOR<PerformerProfileUpdateToOneWithWhereWithoutUserInput, PerformerProfileUpdateWithoutUserInput>, PerformerProfileUncheckedUpdateWithoutUserInput>
+  }
+
+  export type LegalProfileUncheckedUpdateOneWithoutUserNestedInput = {
+    create?: XOR<LegalProfileCreateWithoutUserInput, LegalProfileUncheckedCreateWithoutUserInput>
+    connectOrCreate?: LegalProfileCreateOrConnectWithoutUserInput
+    upsert?: LegalProfileUpsertWithoutUserInput
+    disconnect?: LegalProfileWhereInput | boolean
+    delete?: LegalProfileWhereInput | boolean
+    connect?: LegalProfileWhereUniqueInput
+    update?: XOR<XOR<LegalProfileUpdateToOneWithWhereWithoutUserInput, LegalProfileUpdateWithoutUserInput>, LegalProfileUncheckedUpdateWithoutUserInput>
   }
 
   export type RefreshTokenUncheckedUpdateManyWithoutUserNestedInput = {
@@ -27959,6 +29441,20 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutNotificationsInput, UserUpdateWithoutNotificationsInput>, UserUncheckedUpdateWithoutNotificationsInput>
   }
 
+  export type UserCreateNestedOneWithoutLegalProfileInput = {
+    create?: XOR<UserCreateWithoutLegalProfileInput, UserUncheckedCreateWithoutLegalProfileInput>
+    connectOrCreate?: UserCreateOrConnectWithoutLegalProfileInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutLegalProfileNestedInput = {
+    create?: XOR<UserCreateWithoutLegalProfileInput, UserUncheckedCreateWithoutLegalProfileInput>
+    connectOrCreate?: UserCreateOrConnectWithoutLegalProfileInput
+    upsert?: UserUpsertWithoutLegalProfileInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutLegalProfileInput, UserUpdateWithoutLegalProfileInput>, UserUncheckedUpdateWithoutLegalProfileInput>
+  }
+
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -28358,6 +29854,33 @@ export namespace Prisma {
     create: XOR<PerformerProfileCreateWithoutUserInput, PerformerProfileUncheckedCreateWithoutUserInput>
   }
 
+  export type LegalProfileCreateWithoutUserInput = {
+    id?: string
+    companyName?: string | null
+    edrpou?: string | null
+    iban?: string | null
+    legalAddress?: string | null
+    vatPayer?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LegalProfileUncheckedCreateWithoutUserInput = {
+    id?: string
+    companyName?: string | null
+    edrpou?: string | null
+    iban?: string | null
+    legalAddress?: string | null
+    vatPayer?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LegalProfileCreateOrConnectWithoutUserInput = {
+    where: LegalProfileWhereUniqueInput
+    create: XOR<LegalProfileCreateWithoutUserInput, LegalProfileUncheckedCreateWithoutUserInput>
+  }
+
   export type RefreshTokenCreateWithoutUserInput = {
     id?: string
     tokenHash: string
@@ -28660,6 +30183,39 @@ export namespace Prisma {
     services?: PerformerServiceUncheckedUpdateManyWithoutPerformerNestedInput
   }
 
+  export type LegalProfileUpsertWithoutUserInput = {
+    update: XOR<LegalProfileUpdateWithoutUserInput, LegalProfileUncheckedUpdateWithoutUserInput>
+    create: XOR<LegalProfileCreateWithoutUserInput, LegalProfileUncheckedCreateWithoutUserInput>
+    where?: LegalProfileWhereInput
+  }
+
+  export type LegalProfileUpdateToOneWithWhereWithoutUserInput = {
+    where?: LegalProfileWhereInput
+    data: XOR<LegalProfileUpdateWithoutUserInput, LegalProfileUncheckedUpdateWithoutUserInput>
+  }
+
+  export type LegalProfileUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    edrpou?: NullableStringFieldUpdateOperationsInput | string | null
+    iban?: NullableStringFieldUpdateOperationsInput | string | null
+    legalAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    vatPayer?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LegalProfileUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    edrpou?: NullableStringFieldUpdateOperationsInput | string | null
+    iban?: NullableStringFieldUpdateOperationsInput | string | null
+    legalAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    vatPayer?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type RefreshTokenUpsertWithWhereUniqueWithoutUserInput = {
     where: RefreshTokenWhereUniqueInput
     update: XOR<RefreshTokenUpdateWithoutUserInput, RefreshTokenUncheckedUpdateWithoutUserInput>
@@ -28852,6 +30408,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileCreateNestedOneWithoutUserInput
     authoredReviews?: ReviewCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewCreateNestedManyWithoutPerformerInput
     orders?: OrderCreateNestedManyWithoutCustomerInput
@@ -28873,6 +30430,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileUncheckedCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileUncheckedCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileUncheckedCreateNestedOneWithoutUserInput
     authoredReviews?: ReviewUncheckedCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewUncheckedCreateNestedManyWithoutPerformerInput
     orders?: OrderUncheckedCreateNestedManyWithoutCustomerInput
@@ -28910,6 +30468,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUpdateOneWithoutUserNestedInput
     authoredReviews?: ReviewUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUpdateManyWithoutPerformerNestedInput
     orders?: OrderUpdateManyWithoutCustomerNestedInput
@@ -28931,6 +30490,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUncheckedUpdateOneWithoutUserNestedInput
     authoredReviews?: ReviewUncheckedUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUncheckedUpdateManyWithoutPerformerNestedInput
     orders?: OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -28951,6 +30511,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     performerProfile?: PerformerProfileCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewCreateNestedManyWithoutPerformerInput
@@ -28972,6 +30533,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     performerProfile?: PerformerProfileUncheckedCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewUncheckedCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewUncheckedCreateNestedManyWithoutPerformerInput
@@ -29073,6 +30635,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     performerProfile?: PerformerProfileUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUpdateManyWithoutPerformerNestedInput
@@ -29094,6 +30657,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     performerProfile?: PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUncheckedUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUncheckedUpdateManyWithoutPerformerNestedInput
@@ -29239,6 +30803,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewCreateNestedManyWithoutAuthorInput
     orders?: OrderCreateNestedManyWithoutCustomerInput
@@ -29260,6 +30825,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileUncheckedCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileUncheckedCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewUncheckedCreateNestedManyWithoutAuthorInput
     orders?: OrderUncheckedCreateNestedManyWithoutCustomerInput
@@ -29286,6 +30852,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
     performerReviews?: ReviewCreateNestedManyWithoutPerformerInput
     orders?: OrderCreateNestedManyWithoutCustomerInput
@@ -29307,6 +30874,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileUncheckedCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileUncheckedCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
     performerReviews?: ReviewUncheckedCreateNestedManyWithoutPerformerInput
     orders?: OrderUncheckedCreateNestedManyWithoutCustomerInput
@@ -29411,6 +30979,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUpdateManyWithoutAuthorNestedInput
     orders?: OrderUpdateManyWithoutCustomerNestedInput
@@ -29432,6 +31001,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUncheckedUpdateManyWithoutAuthorNestedInput
     orders?: OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -29464,6 +31034,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
     performerReviews?: ReviewUpdateManyWithoutPerformerNestedInput
     orders?: OrderUpdateManyWithoutCustomerNestedInput
@@ -29485,6 +31056,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
     performerReviews?: ReviewUncheckedUpdateManyWithoutPerformerNestedInput
     orders?: OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -29667,6 +31239,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     customerProfile?: CustomerProfileCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewCreateNestedManyWithoutPerformerInput
@@ -29688,6 +31261,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     customerProfile?: CustomerProfileUncheckedCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewUncheckedCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewUncheckedCreateNestedManyWithoutPerformerInput
@@ -29753,6 +31327,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUpdateManyWithoutPerformerNestedInput
@@ -29774,6 +31349,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUncheckedUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUncheckedUpdateManyWithoutPerformerNestedInput
@@ -29972,6 +31548,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewCreateNestedManyWithoutPerformerInput
@@ -29993,6 +31570,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileUncheckedCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileUncheckedCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewUncheckedCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewUncheckedCreateNestedManyWithoutPerformerInput
@@ -30106,6 +31684,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUpdateManyWithoutPerformerNestedInput
@@ -30127,6 +31706,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUncheckedUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUncheckedUpdateManyWithoutPerformerNestedInput
@@ -30752,6 +32332,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewCreateNestedManyWithoutPerformerInput
@@ -30773,6 +32354,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileUncheckedCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileUncheckedCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewUncheckedCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewUncheckedCreateNestedManyWithoutPerformerInput
@@ -30810,6 +32392,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUpdateManyWithoutPerformerNestedInput
@@ -30831,6 +32414,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUncheckedUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUncheckedUpdateManyWithoutPerformerNestedInput
@@ -30852,6 +32436,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewCreateNestedManyWithoutPerformerInput
@@ -30873,6 +32458,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     customerProfile?: CustomerProfileUncheckedCreateNestedOneWithoutUserInput
     performerProfile?: PerformerProfileUncheckedCreateNestedOneWithoutUserInput
+    legalProfile?: LegalProfileUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
     authoredReviews?: ReviewUncheckedCreateNestedManyWithoutAuthorInput
     performerReviews?: ReviewUncheckedCreateNestedManyWithoutPerformerInput
@@ -30910,6 +32496,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUpdateManyWithoutPerformerNestedInput
@@ -30931,11 +32518,116 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerProfile?: CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
     performerProfile?: PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
+    legalProfile?: LegalProfileUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
     authoredReviews?: ReviewUncheckedUpdateManyWithoutAuthorNestedInput
     performerReviews?: ReviewUncheckedUpdateManyWithoutPerformerNestedInput
     orders?: OrderUncheckedUpdateManyWithoutCustomerNestedInput
     devices?: DeviceUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserCreateWithoutLegalProfileInput = {
+    id?: string
+    role?: $Enums.UserRole
+    name: string
+    email: string
+    phone?: string | null
+    passwordHash: string
+    biometricsEnabled?: boolean
+    twoFactorSecret?: string | null
+    twoFactorEnabledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    customerProfile?: CustomerProfileCreateNestedOneWithoutUserInput
+    performerProfile?: PerformerProfileCreateNestedOneWithoutUserInput
+    refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
+    authoredReviews?: ReviewCreateNestedManyWithoutAuthorInput
+    performerReviews?: ReviewCreateNestedManyWithoutPerformerInput
+    orders?: OrderCreateNestedManyWithoutCustomerInput
+    devices?: DeviceCreateNestedManyWithoutUserInput
+    notifications?: NotificationCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutLegalProfileInput = {
+    id?: string
+    role?: $Enums.UserRole
+    name: string
+    email: string
+    phone?: string | null
+    passwordHash: string
+    biometricsEnabled?: boolean
+    twoFactorSecret?: string | null
+    twoFactorEnabledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    customerProfile?: CustomerProfileUncheckedCreateNestedOneWithoutUserInput
+    performerProfile?: PerformerProfileUncheckedCreateNestedOneWithoutUserInput
+    refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
+    authoredReviews?: ReviewUncheckedCreateNestedManyWithoutAuthorInput
+    performerReviews?: ReviewUncheckedCreateNestedManyWithoutPerformerInput
+    orders?: OrderUncheckedCreateNestedManyWithoutCustomerInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutUserInput
+    notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutLegalProfileInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutLegalProfileInput, UserUncheckedCreateWithoutLegalProfileInput>
+  }
+
+  export type UserUpsertWithoutLegalProfileInput = {
+    update: XOR<UserUpdateWithoutLegalProfileInput, UserUncheckedUpdateWithoutLegalProfileInput>
+    create: XOR<UserCreateWithoutLegalProfileInput, UserUncheckedCreateWithoutLegalProfileInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutLegalProfileInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutLegalProfileInput, UserUncheckedUpdateWithoutLegalProfileInput>
+  }
+
+  export type UserUpdateWithoutLegalProfileInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordHash?: StringFieldUpdateOperationsInput | string
+    biometricsEnabled?: BoolFieldUpdateOperationsInput | boolean
+    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
+    twoFactorEnabledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customerProfile?: CustomerProfileUpdateOneWithoutUserNestedInput
+    performerProfile?: PerformerProfileUpdateOneWithoutUserNestedInput
+    refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
+    authoredReviews?: ReviewUpdateManyWithoutAuthorNestedInput
+    performerReviews?: ReviewUpdateManyWithoutPerformerNestedInput
+    orders?: OrderUpdateManyWithoutCustomerNestedInput
+    devices?: DeviceUpdateManyWithoutUserNestedInput
+    notifications?: NotificationUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutLegalProfileInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordHash?: StringFieldUpdateOperationsInput | string
+    biometricsEnabled?: BoolFieldUpdateOperationsInput | boolean
+    twoFactorSecret?: NullableStringFieldUpdateOperationsInput | string | null
+    twoFactorEnabledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customerProfile?: CustomerProfileUncheckedUpdateOneWithoutUserNestedInput
+    performerProfile?: PerformerProfileUncheckedUpdateOneWithoutUserNestedInput
+    refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
+    authoredReviews?: ReviewUncheckedUpdateManyWithoutAuthorNestedInput
+    performerReviews?: ReviewUncheckedUpdateManyWithoutPerformerNestedInput
+    orders?: OrderUncheckedUpdateManyWithoutCustomerNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutUserNestedInput
+    notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type RefreshTokenCreateManyUserInput = {

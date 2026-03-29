@@ -326,6 +326,18 @@ exports.Prisma.NotificationScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.LegalProfileScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  companyName: 'companyName',
+  edrpou: 'edrpou',
+  iban: 'iban',
+  legalAddress: 'legalAddress',
+  vatPayer: 'vatPayer',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -381,7 +393,8 @@ exports.Prisma.ModelName = {
   OrderStatusEvent: 'OrderStatusEvent',
   OrderMatch: 'OrderMatch',
   Device: 'Device',
-  Notification: 'Notification'
+  Notification: 'Notification',
+  LegalProfile: 'LegalProfile'
 };
 
 /**

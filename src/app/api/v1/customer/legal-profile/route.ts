@@ -11,26 +11,31 @@ const companyNameSchema = z.preprocess(
 );
 
 const legalAddressSchema = z.preprocess(
-  (v) => (typeof v === "string" ? v.trim() : v),
-  z.string().min(5).max(255)
+  (v) => (typeof v === "string" ? (v.trim() === "" ? null : v.trim()) : v),
+  z.string().min(5).max(255).nullable()
 );
 
 const edrpouSchema = z.preprocess(
-  (v) => (typeof v === "string" ? v.trim() : v),
-  z.string().refine(validateEdrpou, "EDRPOU must be 8-10 digits")
+  (v) => (typeof v === "string" ? (v.trim() === "" ? null : v.trim()) : v),
+  z.string().refine(validateEdrpou, "EDRPOU must be 8-10 digits").nullable()
 );
 
 const ibanSchema = z.preprocess(
-  (v) => (typeof v === "string" ? normalizeUAIban(v) : v),
-  z.string().refine(validateUAIban, "Invalid UA IBAN")
+  (v) => {
+    if (typeof v !== "string") return v;
+    const trimmed = v.trim();
+    if (trimmed === "") return null;
+    return normalizeUAIban(trimmed);
+  },
+  z.string().refine(validateUAIban, "Invalid UA IBAN").nullable()
 );
 
 const patchSchema = z.object({
-  companyName: companyNameSchema.nullable(),
-  edrpou: edrpouSchema.nullable(),
-  iban: ibanSchema.nullable(),
-  legalAddress: legalAddressSchema.nullable(),
-  vatPayer: z.boolean(),
+  companyName: companyNameSchema.nullable().optional(),
+  edrpou: edrpouSchema.nullable().optional(),
+  iban: ibanSchema.nullable().optional(),
+  legalAddress: legalAddressSchema.nullable().optional(),
+  vatPayer: z.boolean().optional(),
 });
 
 export async function GET(req: Request) {
@@ -38,11 +43,11 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
 
-    const profile = await prisma.customerProfile.findUnique({
+    const legalProfile = await prisma.legalProfile.findUnique({
       where: { userId: user.id },
       select: {
         companyName: true,
-        companyEdrpou: true,
+        edrpou: true,
         iban: true,
         vatPayer: true,
         legalAddress: true,
@@ -52,12 +57,12 @@ export async function GET(req: Request) {
 
     return ok(req, {
       legalProfile: {
-        companyName: profile?.companyName ?? null,
-        edrpou: profile?.companyEdrpou ?? null,
-        iban: profile?.iban ?? null,
-        vatPayer: profile?.vatPayer ?? false,
-        legalAddress: profile?.legalAddress ?? null,
-        updatedAt: profile?.updatedAt?.toISOString() ?? new Date().toISOString(),
+        companyName: legalProfile?.companyName ?? null,
+        edrpou: legalProfile?.edrpou ?? null,
+        iban: legalProfile?.iban ?? null,
+        vatPayer: legalProfile?.vatPayer ?? false,
+        legalAddress: legalProfile?.legalAddress ?? null,
+        updatedAt: legalProfile?.updatedAt?.toISOString() ?? new Date().toISOString(),
       },
     });
   } catch (err) {
@@ -72,26 +77,38 @@ export async function PATCH(req: Request) {
 
     const body = patchSchema.parse(await req.json());
 
-    const profile = await prisma.customerProfile.upsert({
+    // Получаем текущий профиль для частичного обновления
+    const current = await prisma.legalProfile.findUnique({
+      where: { userId: user.id },
+      select: {
+        companyName: true,
+        edrpou: true,
+        iban: true,
+        vatPayer: true,
+        legalAddress: true,
+      },
+    });
+
+    const profile = await prisma.legalProfile.upsert({
       where: { userId: user.id },
       create: {
         userId: user.id,
-        companyName: body.companyName,
-        companyEdrpou: body.edrpou,
-        iban: body.iban,
-        vatPayer: body.vatPayer,
-        legalAddress: body.legalAddress,
+        companyName: body.companyName ?? null,
+        edrpou: body.edrpou ?? null,
+        iban: body.iban ?? null,
+        vatPayer: body.vatPayer ?? false,
+        legalAddress: body.legalAddress ?? null,
       },
       update: {
-        companyName: body.companyName,
-        companyEdrpou: body.edrpou,
-        iban: body.iban,
-        vatPayer: body.vatPayer,
-        legalAddress: body.legalAddress,
+        companyName: body.companyName !== undefined ? body.companyName : current?.companyName,
+        edrpou: body.edrpou !== undefined ? body.edrpou : current?.edrpou,
+        iban: body.iban !== undefined ? body.iban : current?.iban,
+        vatPayer: body.vatPayer !== undefined ? body.vatPayer : current?.vatPayer,
+        legalAddress: body.legalAddress !== undefined ? body.legalAddress : current?.legalAddress,
       },
       select: {
         companyName: true,
-        companyEdrpou: true,
+        edrpou: true,
         iban: true,
         vatPayer: true,
         legalAddress: true,
@@ -102,7 +119,7 @@ export async function PATCH(req: Request) {
     return ok(req, {
       legalProfile: {
         companyName: profile.companyName,
-        edrpou: profile.companyEdrpou,
+        edrpou: profile.edrpou,
         iban: profile.iban,
         vatPayer: profile.vatPayer,
         legalAddress: profile.legalAddress,

@@ -19,12 +19,12 @@ const putSchema = z.object({
   baseCoordinate: z.object({
     lat: z.coerce.number().min(-90).max(90),
     lng: z.coerce.number().min(-180).max(180),
-  }).optional(),
+  }).nullable().optional(),
   coverage: z.object({
     mode: z.enum(["radius", "country"]),
     radiusKm: z.coerce.number().int().min(0).max(500).nullable().optional(),
-  }).optional(),
-  services: z.array(serviceSchema).min(1).optional(),
+  }).nullable().optional(),
+  services: z.array(serviceSchema).min(1).nullable().optional(),
 });
 
 export async function GET(req: Request) {
@@ -81,12 +81,10 @@ export async function PUT(req: Request) {
         fieldErrors: { "coverage.radiusKm": ["Required for radius mode"] },
       });
     }
-    
-    // Перевірка: хоча б одне поле має бути заповнено
     const hasBaseLocation = body.baseLocationLabel !== undefined && body.baseLocationLabel !== null;
-    const hasBaseCoordinate = body.baseCoordinate !== undefined;
-    const hasCoverage = body.coverage !== undefined;
-    const hasServices = body.services !== undefined;
+    const hasBaseCoordinate = body.baseCoordinate !== undefined && body.baseCoordinate !== null;
+    const hasCoverage = body.coverage !== undefined && body.coverage !== null;
+    const hasServices = body.services !== undefined && body.services !== null;
     
     if (!hasBaseLocation && !hasBaseCoordinate && !hasCoverage && !hasServices) {
       throw new ApiError(400, "VALIDATION_ERROR", "At least one field must be provided", {
@@ -160,7 +158,7 @@ export async function PUT(req: Request) {
       }
     });
 
-    if (body.services !== undefined || body.coverage !== undefined || body.baseCoordinate !== undefined) {
+    if (hasServices || hasCoverage || hasBaseCoordinate) {
       await enqueueMatchNewExecutor(user.id);
     }
 
