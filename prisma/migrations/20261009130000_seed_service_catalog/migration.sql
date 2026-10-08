@@ -7,8 +7,11 @@
 -- the DB (catalog/services, quote, orders), hence the 404.
 -- Data matches 20260329_update_service_structure + services-tree.ts.
 -- Pure UPSERT, no DELETEs (the original migration wiped orders — never again).
--- service_types is handled without ON CONFLICT because its PK shape changed
--- over time (single id -> composite); guarded INSERTs work under both shapes.
+-- No ON CONFLICT anywhere: arbiters require matching unique constraints, and
+-- prod table shapes are unknown (baselined history). INSERT...WHERE NOT EXISTS
+-- plus plain UPDATEs need no constraints at all.
+-- service_types additionally branches on the local column shape (updated_at
+-- was dropped at some point), detected via information_schema.
 
 -- ---------------------------------------------------------------------------
 -- 0) Ensure tables + i18n columns exist (no-op when already there)
@@ -53,45 +56,53 @@ ALTER TABLE "service_subcategories" ADD COLUMN IF NOT EXISTS "icon_key" TEXT;
 ALTER TABLE "service_types" ADD COLUMN IF NOT EXISTS "name_ua" TEXT;
 
 -- ---------------------------------------------------------------------------
--- 1) Categories (PK has always been id, so ON CONFLICT is safe)
+-- 1) Categories (constraint-free upsert loop)
 -- ---------------------------------------------------------------------------
-INSERT INTO service_categories (id, name, name_ua, icon_key, sort, created_at, updated_at) VALUES
-  ('1', 'Підготовка ґрунту', 'Підготовка ґрунту', NULL, 10, NOW(), NOW()),
-  ('2', 'Посів', 'Посів', 'Сівалки', 20, NOW(), NOW()),
-  ('3', 'Внесення ЗЗР, добрив', 'Внесення ЗЗР, добрив', 'Оприскувачі', 30, NOW(), NOW()),
-  ('4', 'Збір врожаю', 'Збір врожаю', 'Комбайни', 40, NOW(), NOW())
-ON CONFLICT (id) DO UPDATE SET
-  name = EXCLUDED.name,
-  name_ua = EXCLUDED.name_ua,
-  icon_key = EXCLUDED.icon_key,
-  sort = EXCLUDED.sort,
-  updated_at = NOW();
+DO $$ DECLARE r RECORD; BEGIN
+  FOR r IN SELECT * FROM (VALUES
+    ('1', 'Підготовка ґрунту', 'Підготовка ґрунту', NULL, 10),
+    ('2', 'Посів', 'Посів', 'Сівалки', 20),
+    ('3', 'Внесення ЗЗР, добрив', 'Внесення ЗЗР, добрив', 'Оприскувачі', 30),
+    ('4', 'Збір врожаю', 'Збір врожаю', 'Комбайни', 40)
+  ) AS v(id, name, name_ua, icon_key, sort) LOOP
+    INSERT INTO service_categories (id, name, name_ua, icon_key, sort, created_at, updated_at)
+    SELECT r.id, r.name, r.name_ua, r.icon_key, r.sort, NOW(), NOW()
+    WHERE NOT EXISTS (SELECT 1 FROM service_categories WHERE id = r.id);
+    UPDATE service_categories
+    SET name = r.name, name_ua = r.name_ua, icon_key = r.icon_key, sort = r.sort, updated_at = NOW()
+    WHERE id = r.id;
+  END LOOP;
+END $$;
 
 -- ---------------------------------------------------------------------------
--- 2) Subcategories (PK has always been id, so ON CONFLICT is safe)
+-- 2) Subcategories (constraint-free upsert loop)
 -- ---------------------------------------------------------------------------
-INSERT INTO service_subcategories (id, category_id, name, name_ua, icon_key, sort, created_at, updated_at) VALUES
-  ('1.1', '1', 'Дискування', 'Дискування', NULL, 10, NOW(), NOW()),
-  ('1.2', '1', 'Рихлення', 'Рихлення', NULL, 20, NOW(), NOW()),
-  ('1.3', '1', 'Оранка', 'Оранка', NULL, 30, NOW(), NOW()),
-  ('1.4', '1', 'Подрібнення', 'Подрібнення', NULL, 40, NOW(), NOW()),
-  ('1.5', '1', 'Лущення', 'Лущення', NULL, 50, NOW(), NOW()),
-  ('1.6', '1', 'Культивація', 'Культивація', NULL, 60, NOW(), NOW()),
-  ('2.1', '2', 'Суцільного висіву', 'Суцільного висіву', NULL, 10, NOW(), NOW()),
-  ('2.2', '2', 'Широкорядні', 'Широкорядні', NULL, 20, NOW(), NOW()),
-  ('3.1', '3', 'Дрони', 'Дрони', NULL, 10, NOW(), NOW()),
-  ('3.2', '3', 'Причепні', 'Причепні', NULL, 20, NOW(), NOW()),
-  ('3.3', '3', 'Самохідні', 'Самохідні', NULL, 30, NOW(), NOW()),
-  ('4.1', '4', 'Зернозбиральні', 'Зернозбиральні', NULL, 10, NOW(), NOW()),
-  ('4.2', '4', 'Бурякозбиральні', 'Бурякозбиральні', NULL, 20, NOW(), NOW()),
-  ('4.3', '4', 'Кормозбиральні', 'Кормозбиральні', NULL, 30, NOW(), NOW()),
-  ('4.4', '4', 'Овочезбиральні', 'Овочезбиральні', NULL, 40, NOW(), NOW())
-ON CONFLICT (id) DO UPDATE SET
-  category_id = EXCLUDED.category_id,
-  name = EXCLUDED.name,
-  name_ua = EXCLUDED.name_ua,
-  sort = EXCLUDED.sort,
-  updated_at = NOW();
+DO $$ DECLARE r RECORD; BEGIN
+  FOR r IN SELECT * FROM (VALUES
+    ('1.1', '1', 'Дискування', 'Дискування', NULL, 10),
+    ('1.2', '1', 'Рихлення', 'Рихлення', NULL, 20),
+    ('1.3', '1', 'Оранка', 'Оранка', NULL, 30),
+    ('1.4', '1', 'Подрібнення', 'Подрібнення', NULL, 40),
+    ('1.5', '1', 'Лущення', 'Лущення', NULL, 50),
+    ('1.6', '1', 'Культивація', 'Культивація', NULL, 60),
+    ('2.1', '2', 'Суцільного висіву', 'Суцільного висіву', NULL, 10),
+    ('2.2', '2', 'Широкорядні', 'Широкорядні', NULL, 20),
+    ('3.1', '3', 'Дрони', 'Дрони', NULL, 10),
+    ('3.2', '3', 'Причепні', 'Причепні', NULL, 20),
+    ('3.3', '3', 'Самохідні', 'Самохідні', NULL, 30),
+    ('4.1', '4', 'Зернозбиральні', 'Зернозбиральні', NULL, 10),
+    ('4.2', '4', 'Бурякозбиральні', 'Бурякозбиральні', NULL, 20),
+    ('4.3', '4', 'Кормозбиральні', 'Кормозбиральні', NULL, 30),
+    ('4.4', '4', 'Овочезбиральні', 'Овочезбиральні', NULL, 40)
+  ) AS v(id, category_id, name, name_ua, icon_key, sort) LOOP
+    INSERT INTO service_subcategories (id, category_id, name, name_ua, icon_key, sort, created_at, updated_at)
+    SELECT r.id, r.category_id, r.name, r.name_ua, r.icon_key, r.sort, NOW(), NOW()
+    WHERE NOT EXISTS (SELECT 1 FROM service_subcategories WHERE id = r.id);
+    UPDATE service_subcategories
+    SET category_id = r.category_id, name = r.name, name_ua = r.name_ua, sort = r.sort, updated_at = NOW()
+    WHERE id = r.id;
+  END LOOP;
+END $$;
 
 -- ---------------------------------------------------------------------------
 -- 3) Service types (PK shape differs across envs: single id vs composite).
