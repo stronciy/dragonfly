@@ -105,51 +105,55 @@ DO $$ DECLARE r RECORD; BEGIN
 END $$;
 
 -- ---------------------------------------------------------------------------
--- 3) Service types (PK shape differs across envs: single id vs composite).
---    Guarded INSERTs pick the column list matching the local table shape;
---    refresh UPDATEs touch only columns guaranteed present.
+-- 3) Service types (column shapes differ across envs: `updated_at` was
+--    dropped at some point). The two INSERT variants MUST be dynamic SQL
+--    (EXECUTE): Postgres resolves INSERT target columns at parse time, so a
+--    static INSERT listing `updated_at` fails on tables lacking the column
+--    even behind a WHERE guard. EXECUTE parses only the branch taken.
 -- ---------------------------------------------------------------------------
--- Shape A: current (no updated_at, composite PK)
-INSERT INTO service_types (subcategory_id, id, name, name_ua, sort, created_at)
-SELECT v.subcategory_id, v.id, v.name, v.name_ua, v.sort, NOW()
-FROM (VALUES
-  ('2.1', '2.1.1', 'Анкерні', 'Анкерні', 10),
-  ('2.1', '2.1.2', 'Дискові', 'Дискові', 20),
-  ('2.2', '2.2.1', 'Анкерні', 'Анкерні', 10),
-  ('2.2', '2.2.2', 'Дискові', 'Дискові', 20),
-  ('4.1', '4.1.1', 'Роторні', 'Роторні', 10),
-  ('4.1', '4.1.2', 'Барабанні', 'Барабанні', 20),
-  ('4.1', '4.1.3', 'Гібридні', 'Гібридні', 30)
-) AS v(subcategory_id, id, name, name_ua, sort)
-WHERE NOT EXISTS (
-  SELECT 1 FROM information_schema.columns
-  WHERE table_name = 'service_types' AND column_name = 'updated_at'
-)
-AND NOT EXISTS (
-  SELECT 1 FROM service_types t
-  WHERE t.subcategory_id = v.subcategory_id AND t.id = v.id
-);
-
--- Shape B: legacy (has updated_at, any PK shape)
-INSERT INTO service_types (subcategory_id, id, name, name_ua, sort, created_at, updated_at)
-SELECT v.subcategory_id, v.id, v.name, v.name_ua, v.sort, NOW(), NOW()
-FROM (VALUES
-  ('2.1', '2.1.1', 'Анкерні', 'Анкерні', 10),
-  ('2.1', '2.1.2', 'Дискові', 'Дискові', 20),
-  ('2.2', '2.2.1', 'Анкерні', 'Анкерні', 10),
-  ('2.2', '2.2.2', 'Дискові', 'Дискові', 20),
-  ('4.1', '4.1.1', 'Роторні', 'Роторні', 10),
-  ('4.1', '4.1.2', 'Барабанні', 'Барабанні', 20),
-  ('4.1', '4.1.3', 'Гібридні', 'Гібридні', 30)
-) AS v(subcategory_id, id, name, name_ua, sort)
-WHERE EXISTS (
-  SELECT 1 FROM information_schema.columns
-  WHERE table_name = 'service_types' AND column_name = 'updated_at'
-)
-AND NOT EXISTS (
-  SELECT 1 FROM service_types t
-  WHERE t.subcategory_id = v.subcategory_id AND t.id = v.id
-);
+DO $$ DECLARE has_updated_at boolean; BEGIN
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'service_types' AND column_name = 'updated_at'
+  ) INTO has_updated_at;
+  IF has_updated_at THEN
+    EXECUTE $seed$
+      INSERT INTO service_types (subcategory_id, id, name, name_ua, sort, created_at, updated_at)
+      SELECT v.subcategory_id, v.id, v.name, v.name_ua, v.sort, NOW(), NOW()
+      FROM (VALUES
+        ('2.1', '2.1.1', 'Анкерні', 'Анкерні', 10),
+        ('2.1', '2.1.2', 'Дискові', 'Дискові', 20),
+        ('2.2', '2.2.1', 'Анкерні', 'Анкерні', 10),
+        ('2.2', '2.2.2', 'Дискові', 'Дискові', 20),
+        ('4.1', '4.1.1', 'Роторні', 'Роторні', 10),
+        ('4.1', '4.1.2', 'Барабанні', 'Барабанні', 20),
+        ('4.1', '4.1.3', 'Гібридні', 'Гібридні', 30)
+      ) AS v(subcategory_id, id, name, name_ua, sort)
+      WHERE NOT EXISTS (
+        SELECT 1 FROM service_types t
+        WHERE t.subcategory_id = v.subcategory_id AND t.id = v.id
+      )
+    $seed$;
+  ELSE
+    EXECUTE $seed$
+      INSERT INTO service_types (subcategory_id, id, name, name_ua, sort, created_at)
+      SELECT v.subcategory_id, v.id, v.name, v.name_ua, v.sort, NOW()
+      FROM (VALUES
+        ('2.1', '2.1.1', 'Анкерні', 'Анкерні', 10),
+        ('2.1', '2.1.2', 'Дискові', 'Дискові', 20),
+        ('2.2', '2.2.1', 'Анкерні', 'Анкерні', 10),
+        ('2.2', '2.2.2', 'Дискові', 'Дискові', 20),
+        ('4.1', '4.1.1', 'Роторні', 'Роторні', 10),
+        ('4.1', '4.1.2', 'Барабанні', 'Барабанні', 20),
+        ('4.1', '4.1.3', 'Гібридні', 'Гібридні', 30)
+      ) AS v(subcategory_id, id, name, name_ua, sort)
+      WHERE NOT EXISTS (
+        SELECT 1 FROM service_types t
+        WHERE t.subcategory_id = v.subcategory_id AND t.id = v.id
+      )
+    $seed$;
+  END IF;
+END $$;
 
 -- Refresh names/sort on rows that already exist (both shapes)
 UPDATE service_types AS t SET
