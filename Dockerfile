@@ -29,4 +29,8 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/server.js ./server.js
 COPY --from=build /app/next.config.ts ./next.config.ts
 EXPOSE 3000
-CMD ["sh", "-c", "for i in $(seq 1 30); do ./node_modules/.bin/prisma migrate deploy --config prisma.config.ts && break || { [ \"$i\" = 30 ] && exit 1; sleep 2; }; done; exec node server.js"]
+# One-time P3009 unblock: 20261009000000 failed on first attempt (unique indexes +
+# ALTER TYPE inside tx); its SQL is now minimal specs-only. Mark the failed
+# attempt as rolled back so deploy re-runs it. `|| true` keeps this a no-op
+# once the migration is applied. Remove after a green deploy if desired.
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate resolve --rolled-back \"20261009000000_repair_missing_specs_column\" --config prisma.config.ts || true; for i in $(seq 1 30); do ./node_modules/.bin/prisma migrate deploy --config prisma.config.ts && break || { [ \"$i\" = 30 ] && exit 1; sleep 2; }; done; exec node server.js"]
