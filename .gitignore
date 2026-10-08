@@ -1,0 +1,100 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma generated client (schema output = ../generated/prisma)
+/generated/
+
+# compiled tests (if any)
+/dist-tests/
+
+# AI development tools
+## Cursor
+.cursor/
+.cursorrules
+.cursorignore
+
+## Trae / ByteDance AI
+.trae/
+.traeignore
+
+## GitHub Copilot
+.github/copilot-instructions.md
+
+## Windsurf (Codeium)
+.windsurf/
+.windsurfrules
+
+## Cline / Roo Code
+.cline/
+.clinerules
+.roo/
+.roomodes
+
+## Continue.dev
+.continue/
+
+## Aider
+.aider*
+.aider.chat.history.md
+.aider.input.history
+.aider.tags.cache.v*/
+
+## Antigravity / Gemini
+.gemini/
+.agents/
+
+## JetBrains AI
+.junie/
+
+## Supermaven
+.supermaven/
+
+## Zed AI
+.zed/
+
+## Claude / Anthropic
+CLAUDE.md
+.claude/
+
+## General AI
+.ai/
+.copilot/

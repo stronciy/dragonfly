@@ -1,0 +1,346 @@
+import { Prisma, type PaymentIntent } from "@prisma/client";
+import { ApiError } from "../lib/errors";
+import { depositAmountFor, nextDepositDeadline } from "../lib/deposit";
+import { canTransition, type OrderStatus } from "../lib/orderStatus";
+import { createLiqPayCheckout, getLiqPayCheckoutUrl, liqpayDecodeData, liqpayVerifySignature, captureHold, refundCaptured, reverseHold } from "./liqpay.service";
+
+type Tx = Prisma.TransactionClient;
+
+type IntentRole = "performer" | "customer";
+
+function assertIntentRole(role: string): asserts role is IntentRole {
+  if (role !== "performer" && role !== "customer") {
+    throw new ApiError(400, "VALIDATION_ERROR", "Invalid intent role");
+  }
+}
+
+export function transitionForConfirm(
+  role: IntentRole,
+  status: string
+): OrderStatus | null {
+  if (role === "performer" && status === "accepted")
+    return "requires_confirmation";
+  if (role === "customer" && status === "requires_confirmation")
+    return "confirmed";
+  return null;
+}
+
+export function buildDepositCallbackUrl(intentId: string): string | undefined {
+  const base = (process.env.BACKEND_PUBLIC_URL || "").replace(/\/+$/, "");
+  if (!base) return undefined;
+  return `${base}/api/v1/payments/${intentId}/liqpay/callback`;
+}
+
+export async function createDepositIntent(
+  tx: Tx,
+  args: {
+    orderId: string;
+    role: IntentRole;
+    method?: "card" | "apple-pay" | "google-pay" | "bank-transfer";
+    wallet?: string;
+    resultUrl?: string;
+    serverUrl?: string;
+    intentId?: string;
+  }
+) {
+  const order = await tx.order.findUnique({ where: { id: args.orderId } });
+  if (!order) throw new ApiError(404, "NOT_FOUND", "Order not found");
+  const amount = depositAmountFor(order.budget);
+  const checkout = createLiqPayCheckout({
+    orderId: `${order.id}:${args.role}:${Date.now()}`,
+    amount: amount.toNumber(),
+    currency: order.currency,
+    description: `Гарантійна сума за замовлення #${order.id.slice(-6)}`,
+    method: args.method,
+    serverUrl: args.serverUrl,
+    resultUrl: args.resultUrl,
+  });
+  const intent = await tx.paymentIntent.create({
+    data: {
+      id: args.intentId ?? undefined,
+      orderId: order.id,
+      role: args.role,
+      amount,
+      currency: order.currency,
+      provider: "liqpay",
+      status: "pending",
+      data: checkout.data,
+      signature: checkout.signature,
+      serverUrl: args.serverUrl,
+      resultUrl: args.resultUrl,
+    },
+  });
+  return { intent, checkout, amount };
+}
+
+export async function findPendingIntent(
+  tx: Tx,
+  args: { orderId: string; role: IntentRole }
+) {
+  return tx.paymentIntent.findFirst({
+    where: { orderId: args.orderId, role: args.role, status: "pending" },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+// Старі pending-інтенти могли створитись без serverUrl (BACKEND_PUBLIC_URL
+// з'явився пізніше) — LiqPay-колбек за ними ніколи не прийде. В такому разі
+// перестворюємо інтент з тим самим id, щоб новий checkout містив server_url.
+export async function ensureIntentServerUrl(tx: Tx, intent: PaymentIntent) {
+  if (intent.serverUrl) return intent;
+  assertIntentRole(intent.role);
+  const fresh = buildDepositCallbackUrl(intent.id);
+  if (!fresh) return intent;
+  await tx.paymentIntent.delete({ where: { id: intent.id } });
+  const created = await createDepositIntent(tx, {
+    orderId: intent.orderId,
+    role: intent.role,
+    resultUrl: intent.resultUrl ?? undefined,
+    serverUrl: fresh,
+    intentId: intent.id,
+  });
+  return created.intent;
+}
+
+export async function claimOrderForPerformer(
+  tx: Tx,
+  args: { orderId: string; performerUserId: string }
+) {
+  const now = new Date();
+  const claimed = await tx.order.updateMany({
+    where: { id: args.orderId, status: "published" },
+    data: {
+      status: "accepted",
+      performerUserId: args.performerUserId,
+      acceptedAt: now,
+      depositDeadline: nextDepositDeadline(now),
+    },
+  });
+  if (claimed.count === 1) {
+    const order = await tx.order.findUnique({ where: { id: args.orderId } });
+    await tx.orderStatusEvent.create({
+      data: { orderId: args.orderId, status: "accepted", note: null },
+    });
+    return { order: order!, freshClaim: true as const };
+  }
+  const existing = await tx.order.findUnique({ where: { id: args.orderId } });
+  if (!existing) throw new ApiError(404, "NOT_FOUND", "Order not found");
+  if (
+    existing.status === "accepted" &&
+    existing.performerUserId === args.performerUserId
+  ) {
+    return { order: existing, freshClaim: false as const };
+  }
+  throw new ApiError(409, "CONFLICT", "Order is no longer available");
+}
+
+export async function confirmDeposit(
+  tx: Tx,
+  args: { paymentIntentId: string; data: string; signature: string }
+) {
+  const intent = await tx.paymentIntent.findUnique({
+    where: { id: args.paymentIntentId },
+  });
+  if (!intent) throw new ApiError(404, "NOT_FOUND", "Payment intent not found");
+  assertIntentRole(intent.role);
+  if (intent.status === "paid") {
+    const order = await tx.order.findUnique({ where: { id: intent.orderId } });
+    return { order: order!, intent, duplicate: true as const };
+  }
+  if (intent.status !== "pending") {
+    throw new ApiError(409, "CONFLICT", "Payment intent is not payable");
+  }
+  if (!liqpayVerifySignature(args.data, args.signature)) {
+    throw new ApiError(400, "VALIDATION_ERROR", "Invalid payment signature");
+  }
+  const decoded = liqpayDecodeData(args.data) as {
+    status?: unknown;
+    order_id?: unknown;
+    payment_id?: unknown;
+    amount?: unknown;
+    action?: unknown;
+  };
+  const providerStatus = typeof decoded.status === "string" ? decoded.status : null;
+  const isCheckoutReplay = !providerStatus && args.data === intent.data;
+  if (!isCheckoutReplay && providerStatus !== "success" && providerStatus !== "hold_wait" && providerStatus !== "sandbox") {
+    throw new ApiError(400, "VALIDATION_ERROR", `Payment not completed (status: ${providerStatus ?? "unknown"})`);
+  }
+  if (typeof decoded.amount !== "undefined") {
+    const paidAmount = Number(decoded.amount);
+    if (!Number.isFinite(paidAmount) || paidAmount < Number(intent.amount)) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Payment amount is less than required deposit");
+    }
+  }
+  const order = await tx.order.findUnique({ where: { id: intent.orderId } });
+  if (!order) throw new ApiError(404, "NOT_FOUND", "Order not found");
+  const toStatus = transitionForConfirm(intent.role, order.status);
+  if (!toStatus || !canTransition(order.status as OrderStatus, toStatus)) {
+    throw new ApiError(409, "CONFLICT", "Order status does not allow deposit");
+  }
+  const now = new Date();
+  const deadlineReset =
+    intent.role === "performer" ? nextDepositDeadline(now) : null;
+  const moved = await tx.order.updateMany({
+    where: { id: order.id, status: order.status },
+    data: {
+      status: toStatus,
+      depositDeadline: deadlineReset,
+    },
+  });
+  if (moved.count !== 1) {
+    throw new ApiError(409, "CONFLICT", "Order status changed concurrently");
+  }
+  const paidIntent = await tx.paymentIntent.update({
+    where: { id: intent.id },
+    data: {
+      status: "paid",
+      paidAt: now,
+      data: args.data,
+      signature: args.signature,
+      providerOrderId:
+        typeof decoded.order_id === "string" || typeof decoded.order_id === "number"
+          ? String(decoded.order_id)
+          : intent.providerOrderId,
+      providerRaw: {
+        action: decoded.action ?? null,
+        status: providerStatus,
+        payment_id: decoded.payment_id ?? null,
+        amount: decoded.amount ?? null,
+      } as unknown as Prisma.InputJsonValue,
+    },
+  });
+  const lockUserId =
+    intent.role === "performer" ? order.performerUserId! : order.customerUserId;
+  await tx.escrowLock.upsert({
+    where: {
+      uniq_order_role_lock: { orderId: order.id, role: intent.role },
+    },
+    create: {
+      orderId: order.id,
+      userId: lockUserId,
+      role: intent.role,
+      amount: paidIntent.amount,
+      status: "held",
+    },
+    update: { status: "held", releasedAt: null, amount: paidIntent.amount },
+  });
+  await tx.orderStatusEvent.create({
+    data: { orderId: order.id, status: toStatus, note: null },
+  });
+  const updated = await tx.order.findUnique({ where: { id: order.id } });
+  return { order: updated!, intent: paidIntent, duplicate: false as const };
+}
+
+export async function releaseEscrowForOrder(
+  tx: Tx,
+  args: { orderId: string; role?: IntentRole; to: "released" | "refunded" | "forfeited" }
+) {
+  await tx.escrowLock.updateMany({
+    where: {
+      orderId: args.orderId,
+      status: "held",
+      ...(args.role ? { role: args.role } : {}),
+    },
+    data: { status: args.to, releasedAt: new Date() },
+  });
+}
+export async function heldEscrowTotal(tx: Tx, orderId: string) {
+  const locks = await tx.escrowLock.findMany({
+    where: { orderId, status: "held" },
+    select: { amount: true },
+  });
+  return locks.reduce((sum, l) => sum + Number(l.amount), 0);
+}
+
+// Рух реальних грошей в LiqPay після зміни escrow-статусу.
+// Викликається ПІСЛЯ коміту транзакції: помилки провайдера логуються
+// і НЕ ламають стан замовлення (повтор — вручну через кабінет LiqPay).
+// Пропускає симульовані оплати (e2e/тести без payment_id) та legacy pay-інтенти
+// без providerRaw — їхнє повернення тільки вручну.
+export async function settleProviderHolds(args: {
+  orderId: string;
+  role?: IntentRole;
+  to: "released" | "refunded" | "forfeited";
+}) {
+  // prisma імпортується динамічно: статичний імпорт тягне generated client
+  // у тестовий бандл dist-tests, де його немає (unit-тести викликають лише чисті функції цього модуля).
+  const { prisma } = await import("../lib/prisma");
+  const intents = await prisma.paymentIntent.findMany({
+    where: {
+      orderId: args.orderId,
+      status: "paid",
+      ...(args.role ? { role: args.role } : {}),
+    },
+    select: { id: true, role: true, providerOrderId: true, providerRaw: true },
+  });
+  for (const intent of intents) {
+    const raw =
+      intent.providerRaw && typeof intent.providerRaw === "object"
+        ? (intent.providerRaw as Record<string, unknown>)
+        : null;
+    const isHold = raw?.action === "hold";
+    const liqpayOrderId = intent.providerOrderId;
+    const liqpayPaymentId = raw?.payment_id;
+    const logCtx = { orderId: args.orderId, intentId: intent.id, to: args.to };
+    if (!liqpayOrderId || liqpayPaymentId == null) {
+      process.stdout.write(JSON.stringify({ level: "info", msg: "settle_skipped_no_provider_payment", ...logCtx }) + "\n");
+      continue;
+    }
+    try {
+      if (args.to === "forfeited") {
+        if (!isHold) {
+          process.stdout.write(JSON.stringify({ level: "info", msg: "settle_skipped_already_captured", ...logCtx }) + "\n");
+          continue;
+        }
+        await captureHold(liqpayOrderId);
+      } else if (isHold) {
+        await reverseHold(liqpayOrderId);
+      } else {
+        await refundCaptured(liqpayOrderId);
+      }
+      process.stdout.write(JSON.stringify({ level: "info", msg: "settle_ok", ...logCtx, liqpayOrderId }) + "\n");
+    } catch (e) {
+      process.stdout.write(
+        JSON.stringify({
+          level: "error",
+          msg: "settle_failed",
+          ...logCtx,
+          liqpayOrderId,
+          error: e instanceof Error ? e.message : String(e),
+        }) + "\n"
+      );
+    }
+  }
+}
+
+type SerializableIntent = {
+  id: string;
+  orderId: string;
+  role: string;
+  amount: unknown;
+  currency: string;
+  status: string;
+  data: string | null;
+  signature: string | null;
+};
+
+export function serializePaymentIntent(intent: SerializableIntent) {
+  const checkoutUrl = getLiqPayCheckoutUrl();
+  return {
+    id: intent.id,
+    orderId: intent.orderId,
+    role: intent.role,
+    amount: Number(intent.amount),
+    currency: intent.currency,
+    status: intent.status,
+    data: intent.data,
+    signature: intent.signature,
+    checkoutUrl,
+    liqpay: {
+      data: intent.data,
+      signature: intent.signature,
+      checkoutUrl,
+      checkout: { data: intent.data, signature: intent.signature },
+    },
+  };
+}

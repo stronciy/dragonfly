@@ -1,0 +1,1 @@
+-- Drop spatial indexes removed (as they were never created)

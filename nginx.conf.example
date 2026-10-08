@@ -1,0 +1,132 @@
+# Dragonfly API — Nginx reverse proxy (TLS-термінація для HTTPS + WSS)
+# ============================================================================
+# Навіщо: trae-backend/server.js слухає чистий HTTP на 127.0.0.1:3000
+# (Next.js + WebSocket /ws та /api/v1/ws на тому ж порту, PORT=3000).
+# WSS для iOS (ATS вимагає TLS) термінується ТУТ, далі — звичайний HTTP+WS.
+#
+# Де покласти: /etc/nginx/sites-available/api.dragonfly.ua -> symlink в sites-enabled
+# Сертифікат: sudo certbot --nginx -d api.dragonfly.ua   (або dns-плагін за потреби)
+# Перевірка:   sudo nginx -t && sudo systemctl reload nginx
+# Перевірка WS: npx wscat -c 'wss://api.dragonfly.ua/ws' -H "Authorization: Bearer <JWT>"
+#               має повернутись 401 без токена, і конект з валідним токеном.
+# Масштабування: кожен інстанс server.js підписаний на Redis-канал
+#   domain-events-v1 і роздає події своїм локальним конектам, тому 2+ інстанси
+#   за цим же upstream працюють без sticky sessions.
+# ============================================================================
+
+upstream dragonfly_api {
+    server 127.0.0.1:3000 max_fails=3 fail_timeout=30s;
+    keepalive 64;
+}
+
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=10r/s;
+
+# --- HTTP: редирект на HTTPS + certbot challenge ---
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.dragonfly.ua;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# --- HTTPS + WSS ---
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name api.dragonfly.ua;
+
+    # ЗАМІНИТИ шляхи після certbot (або своїм CA):
+    ssl_certificate     /etc/letsencrypt/live/api.dragonfly.ua/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.dragonfly.ua/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+
+    client_max_body_size 10m;
+
+    access_log /var/log/nginx/api.dragonfly.ua.access.log combined;
+    error_log  /var/log/nginx/api.dragonfly.ua.error.log warn;
+
+    # --- WebSocket: /ws та /api/v1/ws (реальні шляхи з server.js) ---
+    location = /ws {
+        proxy_pass http://dragonfly_api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Критично: Bearer-авторизація апгрейда йде цим хедером
+        proxy_set_header Authorization $http_authorization;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+        proxy_connect_timeout 10s;
+        proxy_buffering off;
+    }
+
+    location = /api/v1/ws {
+        proxy_pass http://dragonfly_api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization $http_authorization;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+        proxy_connect_timeout 10s;
+        proxy_buffering off;
+    }
+
+    # --- Auth: легкий rate-limit проти брутфорсу ---
+    location /api/v1/auth/ {
+        limit_req zone=auth_limit burst=20 nodelay;
+        proxy_pass http://dragonfly_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization $http_authorization;
+        proxy_read_timeout 30s;
+        proxy_send_timeout 30s;
+    }
+
+    # --- Решта API + Next.js ---
+    location /api/ {
+        proxy_pass http://dragonfly_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization $http_authorization;
+        proxy_read_timeout 30s;
+        proxy_send_timeout 30s;
+    }
+
+    location / {
+        proxy_pass http://dragonfly_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+        proxy_send_timeout 30s;
+    }
+}

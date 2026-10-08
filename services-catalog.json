@@ -1,0 +1,98 @@
+{
+  "categories": [
+    {
+      "serviceCategoryId": "1",
+      "serviceCategoryName": "Підготовка ґрунту",
+      "icon": "🚜",
+      "subcategories": [
+        { "serviceSubCategoryId": "1.1", "serviceSubCategoryName": "Дискування", "types": [] },
+        { "serviceSubCategoryId": "1.2", "serviceSubCategoryName": "Рихлення", "types": [] },
+        { "serviceSubCategoryId": "1.3", "serviceSubCategoryName": "Оранка", "types": [] },
+        { "serviceSubCategoryId": "1.4", "serviceSubCategoryName": "Подрібнення", "types": [] },
+        { "serviceSubCategoryId": "1.5", "serviceSubCategoryName": "Лущення", "types": [] },
+        { "serviceSubCategoryId": "1.6", "serviceSubCategoryName": "Культивація", "types": [] }
+      ]
+    },
+    {
+      "serviceCategoryId": "2",
+      "serviceCategoryName": "Посів",
+      "icon": "🌱",
+      "subcategories": [
+        {
+          "serviceSubCategoryId": "2.1",
+          "serviceSubCategoryName": "Суцільного висіву",
+          "types": [
+            { "serviceTypeId": "2.1.1", "serviceTypeName": "Анкерні" },
+            { "serviceTypeId": "2.1.2", "serviceTypeName": "Дискові" }
+          ]
+        },
+        {
+          "serviceSubCategoryId": "2.2",
+          "serviceSubCategoryName": "Широкорядні",
+          "types": [
+            { "serviceTypeId": "2.2.1", "serviceTypeName": "Анкерні" },
+            { "serviceTypeId": "2.2.2", "serviceTypeName": "Дискові" }
+          ]
+        }
+      ]
+    },
+    {
+      "serviceCategoryId": "3",
+      "serviceCategoryName": "Внесення ЗЗР, добрив",
+      "icon": "🚁",
+      "subcategories": [
+        {
+          "serviceSubCategoryId": "3.1",
+          "serviceSubCategoryName": "Дрони",
+          "types": [],
+          "requiredSpecs": [
+            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [4, 6, 8, 10] }
+          ]
+        },
+        {
+          "serviceSubCategoryId": "3.2",
+          "serviceSubCategoryName": "Причепні",
+          "types": [],
+          "requiredSpecs": [
+            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [18, 30] },
+            { "name": "Кліренс (см)", "type": "select", "required": true, "options": [105, 125, 135, 155, 175, 180, 190, 210] }
+          ]
+        },
+        {
+          "serviceSubCategoryId": "3.3",
+          "serviceSubCategoryName": "Самохідні",
+          "types": [],
+          "requiredSpecs": [
+            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [24, 28, 32, 36] },
+            { "name": "Кліренс (см)", "type": "select", "required": true, "options": [105, 125, 135, 155, 175, 180, 190, 210] }
+          ]
+        }
+      ]
+    },
+    {
+      "serviceCategoryId": "4",
+      "serviceCategoryName": "Збір врожаю",
+      "icon": "🌾",
+      "subcategories": [
+        {
+          "serviceSubCategoryId": "4.1",
+          "serviceSubCategoryName": "Зернозбиральні",
+          "types": [
+            { "serviceTypeId": "4.1.1", "serviceTypeName": "Роторні" },
+            { "serviceTypeId": "4.1.2", "serviceTypeName": "Барабанні" },
+            { "serviceTypeId": "4.1.3", "serviceTypeName": "Гібридні" }
+          ]
+        },
+        { "serviceSubCategoryId": "4.2", "serviceSubCategoryName": "Бурякозбиральні", "types": [] },
+        { "serviceSubCategoryId": "4.3", "serviceSubCategoryName": "Кормозбиральні", "types": [] },
+        { "serviceSubCategoryId": "4.4", "serviceSubCategoryName": "Овочезбиральні", "types": [] }
+      ]
+    }
+  ],
+  "metadata": {
+    "totalCategories": 4,
+    "totalSubcategories": 14,
+    "totalTypes": 9,
+    "lastUpdated": "2026-03-29"
+  }
+}

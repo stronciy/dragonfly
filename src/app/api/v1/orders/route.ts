@@ -1,0 +1,459 @@
+import { z } from "zod";
+import { ok, fail, getRequestId } from "@/lib/apiResponse";
+import { ApiError } from "@/shared";
+import { prisma } from "@/shared";
+import { requireUser } from "@/lib/auth/requireAuth";
+import { enqueueMatchNewOrder } from "@/shared";
+import { makePage, parsePagination } from "@/lib/pagination";
+import { publishDomainEvent } from "@/shared";
+import { notifyUser } from "@/shared";
+import { validateSpecs, isValidServiceId } from "@/../services-tree";
+import { Prisma } from "@prisma/client";
+import { safeDepositAmount } from "@/shared";
+
+const postSchema = z.object({
+  serviceCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
+  serviceSubCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
+  serviceTypeId: z.preprocess(
+    (v) => (typeof v === "string" ? (v.trim() === "" ? null : v.trim()) : v),
+    z.string().min(1).nullable().optional()
+  ),
+  specs: z.record(z.string(), z.unknown()).optional().default({}),
+  areaHa: z.coerce.number().positive(),
+  dateFrom: z.string().datetime().nullable().optional(),
+  dateTo: z.string().datetime().nullable().optional(),
+  location: z.preprocess(
+    (v) => {
+      if (!v || typeof v !== "object") return v;
+      const obj = v as Record<string, unknown>;
+      const addressLabel = typeof obj.addressLabel === "string" ? obj.addressLabel : undefined;
+      const locationLabel = typeof obj.locationLabel === "string" ? obj.locationLabel : undefined;
+      if (!addressLabel && locationLabel) return { ...obj, addressLabel: locationLabel };
+      return obj;
+    },
+    z.object({
+      lat: z.coerce.number().min(-90).max(90),
+      lng: z.coerce.number().min(-180).max(180),
+      addressLabel: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
+      regionName: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)).optional(),
+    })
+  ),
+  comment: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().max(5000)).optional(),
+  budget: z.coerce.number().positive(),
+  status: z.enum(["draft", "published"]).optional(),
+});
+
+const listQuerySchema = z.object({
+  status: z
+    .enum([
+      "draft",
+      "published",
+      "accepted",
+      "requires_confirmation",
+      "confirmed",
+      "started",
+      "completed",
+      "arbitration",
+      "cancelled",
+    ])
+    .optional(),
+  group: z.enum(["all", "active", "closed", "expired"]).optional(),
+  excludeExpired: z.coerce.boolean().optional(),
+});
+
+export async function GET(req: Request) {
+  try {
+    const user = await requireUser(req);
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+
+    const url = new URL(req.url);
+    const { limit, offset } = parsePagination(url);
+    const { status, group, excludeExpired } = listQuerySchema.parse({
+      status: url.searchParams.get("status") ?? undefined,
+      group: url.searchParams.get("group") ?? undefined,
+      excludeExpired: url.searchParams.get("excludeExpired") ?? undefined,
+    });
+
+    const activeStatuses = ["draft", "published", "accepted", "requires_confirmation", "confirmed", "started", "arbitration"] as const;
+    const closedStatuses = ["completed", "cancelled"] as const;
+    const expiredStatuses = ["requires_confirmation", "accepted"] as const;
+    const now = new Date();
+
+    const whereBase = { customerUserId: user.id };
+    let where;
+
+    if (status) {
+      where = { ...whereBase, status };
+    } else if (group === "active") {
+      where = { ...whereBase, status: { in: [...activeStatuses] } };
+    } else if (group === "closed") {
+      where = { ...whereBase, status: { in: [...closedStatuses] } };
+    } else if (group === "expired") {
+      // Просрочені замовлення: requires_confirmation або accepted з depositDeadline < now
+      where = {
+        ...whereBase,
+        status: { in: [...expiredStatuses] },
+        depositDeadline: { lt: now },
+      };
+    } else {
+      where = whereBase;
+    }
+    
+    // Фільтр excludeExpired: виключає просрочені замовлення
+    if (excludeExpired) {
+      const expiredFilter = {
+        NOT: {
+          AND: [
+            { status: { in: [...expiredStatuses] } },
+            { depositDeadline: { lt: now } },
+          ],
+        },
+      };
+      where = {
+        ...where,
+        ...expiredFilter,
+      };
+    }
+
+    const [items, totalCount] = await prisma.$transaction([
+      prisma.order.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        skip: offset,
+        select: {
+          id: true,
+          status: true,
+          serviceCategoryId: true,
+          serviceSubCategoryId: true,
+          serviceTypeId: true,
+          areaHa: true,
+          locationLabel: true,
+          regionName: true,
+          lat: true,
+          lng: true,
+          dateFrom: true,
+          dateTo: true,
+          budget: true,
+          currency: true,
+          acceptedAt: true,
+          depositDeadline: true,
+          createdAt: true,
+          specs: true,
+          escrowLocks: {
+            where: { status: "held" },
+            select: { amount: true },
+          },
+        },
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    return ok(req, {
+      items: items.map((o) => ({
+        id: o.id,
+        title: o.locationLabel,
+        status: o.status,
+        serviceCategoryId: o.serviceCategoryId,
+        serviceSubCategoryId: o.serviceSubCategoryId,
+        serviceTypeId: o.serviceTypeId,
+        areaHa: Number(o.areaHa),
+        locationLabel: o.locationLabel,
+        addressLabel: o.locationLabel,
+        regionName: o.regionName ?? null,
+        location: {
+          lat: Number(o.lat),
+          lng: Number(o.lng),
+          locationLabel: o.locationLabel,
+          addressLabel: o.locationLabel,
+          regionName: o.regionName ?? null,
+        },
+        dateFrom: o.dateFrom,
+        dateTo: o.dateTo,
+        budget: Number(o.budget),
+        acceptedAt: o.acceptedAt,
+        depositDeadline: o.depositDeadline,
+        depositAmount: Number(safeDepositAmount(o.budget)),
+        escrowAmount: o.escrowLocks.reduce((sum, l) => sum + Number(l.amount), 0),
+        specs: o.specs,
+        createdAt: o.createdAt,
+      })),
+      page: makePage(limit, offset, totalCount),
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+    }
+    return fail(req, err);
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const user = await requireUser(req);
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+
+    const requestId = getRequestId(req);
+    const rawBody = await req.json().catch(() => ({}));
+    const body = postSchema.parse(rawBody);
+    const status = body.status ?? "published";
+
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[api] POST /api/v1/orders requestId=${requestId} userId=${user.id} payload`, {
+        serviceCategoryId: body.serviceCategoryId,
+        serviceSubCategoryId: body.serviceSubCategoryId,
+        serviceTypeId: body.serviceTypeId ?? null,
+        specs: body.specs,
+        areaHa: body.areaHa,
+        dateFrom: body.dateFrom ?? null,
+        dateTo: body.dateTo ?? null,
+        location: { lat: body.location.lat, lng: body.location.lng, addressLabel: body.location.addressLabel, regionName: body.location.regionName ?? null },
+        budget: body.budget,
+        status,
+      });
+    }
+
+    // Validate service IDs exist (hierarchical format)
+    if (!isValidServiceId(body.serviceCategoryId, body.serviceSubCategoryId, body.serviceTypeId)) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Invalid service hierarchy", {
+        fieldErrors: {
+          serviceCategoryId: ["Invalid category ID"],
+          serviceSubCategoryId: ["Invalid subcategory ID"],
+          serviceTypeId: body.serviceTypeId ? ["Invalid type ID"] : [],
+        },
+      });
+    }
+
+    // Validate specs against service requirements
+    const specErrors = validateSpecs(body.serviceTypeId ?? null, body.serviceSubCategoryId, body.specs ?? {});
+    if (specErrors.length > 0) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Invalid technical specifications", {
+        fieldErrors: { specs: specErrors },
+      });
+    }
+
+    const { categoryOk, subcategoryOk, subcategoryHasTypes, serviceTypeOk } = await prisma.$transaction(async (tx) => {
+      const [category, subcategory] = await Promise.all([
+        tx.serviceCategory.findUnique({ where: { id: body.serviceCategoryId }, select: { id: true } }),
+        tx.serviceSubcategory.findUnique({
+          where: { id: body.serviceSubCategoryId },
+          select: { id: true, categoryId: true, _count: { select: { types: true } } },
+        }),
+      ]);
+
+      const categoryOk = Boolean(category);
+      const subcategoryOk = Boolean(subcategory) && subcategory?.categoryId === body.serviceCategoryId;
+      const subcategoryHasTypes = Boolean(subcategory) && (subcategory?._count.types ?? 0) > 0;
+
+      if (!categoryOk || !subcategoryOk) {
+        return { categoryOk, subcategoryOk, subcategoryHasTypes, serviceTypeOk: false };
+      }
+
+      if (body.serviceTypeId == null) {
+        return { categoryOk, subcategoryOk, subcategoryHasTypes, serviceTypeOk: !subcategoryHasTypes };
+      }
+
+      const type = await tx.serviceType.findUnique({
+        where: { subcategoryId_id: { subcategoryId: body.serviceSubCategoryId, id: body.serviceTypeId } },
+        select: { id: true },
+      });
+
+      return { categoryOk, subcategoryOk, subcategoryHasTypes, serviceTypeOk: Boolean(type) };
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[api] POST /api/v1/orders catalog_check requestId=${requestId}`, {
+        categoryOk,
+        subcategoryOk,
+        subcategoryHasTypes,
+        serviceTypeOk,
+      });
+    }
+
+    if (!categoryOk) throw new ApiError(404, "NOT_FOUND", "Service category not found");
+    if (!subcategoryOk) throw new ApiError(404, "NOT_FOUND", "Service subcategory not found");
+
+    if (body.serviceTypeId == null && subcategoryHasTypes) {
+      throw new ApiError(400, "VALIDATION_ERROR", "serviceTypeId is required for this subcategory", {
+        fieldErrors: { serviceTypeId: ["Required for this subcategory"] },
+      });
+    }
+    if (body.serviceTypeId != null && !serviceTypeOk) {
+      throw new ApiError(404, "NOT_FOUND", "Service type not found");
+    }
+
+    const order = await prisma.$transaction(async (tx) => {
+      const created = await tx.order.create({
+        data: {
+          customerUserId: user.id,
+          serviceCategoryId: body.serviceCategoryId,
+          serviceSubCategoryId: body.serviceSubCategoryId,
+          serviceTypeId: body.serviceTypeId ?? null,
+          specs: body.specs as Prisma.InputJsonValue,
+          areaHa: body.areaHa,
+          dateFrom: body.dateFrom ? new Date(body.dateFrom) : null,
+          dateTo: body.dateTo ? new Date(body.dateTo) : null,
+          locationLabel: body.location.addressLabel,
+          regionName: body.location.regionName ?? null,
+          lat: body.location.lat,
+          lng: body.location.lng,
+          comment: body.comment ?? null,
+          budget: body.budget,
+          currency: "UAH",
+          status,
+          statusEvents: {
+            create: { status, note: null },
+          },
+        },
+        select: { id: true, status: true, createdAt: true },
+      });
+
+      return created;
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[api] POST /api/v1/orders created requestId=${requestId} userId=${user.id}`, order);
+    }
+
+    if (order.status === "published") {
+      if (process.env.NODE_ENV !== "production") {
+        const eligibleCountRows = await prisma.$queryRaw<Array<{ count: bigint }>>`
+          SELECT COUNT(DISTINCT pp.user_id)::bigint AS count
+          FROM performer_services srv
+          JOIN performer_profiles pp ON pp.user_id = srv.performer_user_id
+          JOIN users u ON u.id = pp.user_id
+          JOIN orders o ON o.id = ${order.id}
+          WHERE
+            o.status = 'published'
+            AND u.role = 'performer'
+            AND pp.user_id <> o.customer_user_id
+            AND (
+              -- Match by full service ID (type level)
+              srv.service_id = o.service_type_id
+              -- Or match by subcategory ID if order has no type
+              OR (o.service_type_id IS NULL AND srv.service_id = o.service_subcategory_id)
+              -- Or match by category ID if order has no subcategory
+              OR (o.service_subcategory_id IS NULL AND srv.service_id = o.service_category_id)
+              -- Or match if performer has parent category/subcategory of order's type
+              OR (
+                o.service_type_id IS NOT NULL AND
+                (
+                  srv.service_id = split_part(o.service_type_id, '.', 1) || '.' || split_part(o.service_type_id, '.', 2)
+                  OR srv.service_id = split_part(o.service_type_id, '.', 1)
+                )
+              )
+            )
+            AND (
+              pp.coverage_mode = 'country'
+              OR (
+                pp.coverage_mode = 'radius'
+                AND pp.coverage_radius_km IS NOT NULL
+                AND (
+                  6371.0 * acos(
+                    least(1.0, greatest(-1.0,
+                      cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                      cos(radians(o.lng) - radians(pp.base_longitude)) +
+                      sin(radians(pp.base_latitude)) * sin(radians(o.lat))
+                    ))
+                  )
+                ) <= pp.coverage_radius_km
+              )
+            )
+        `;
+
+        const topRows = await prisma.$queryRaw<
+          Array<{ performerUserId: string; coverageMode: string; coverageRadiusKm: number | null; distanceKm: number | null }>
+        >`
+          SELECT
+            pp.user_id AS "performerUserId",
+            pp.coverage_mode AS "coverageMode",
+            pp.coverage_radius_km AS "coverageRadiusKm",
+            (
+              6371.0 * acos(
+                least(1.0, greatest(-1.0,
+                  cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                  cos(radians(o.lng) - radians(pp.base_longitude)) +
+                  sin(radians(pp.base_latitude)) * sin(radians(o.lat))
+                ))
+              )
+            ) AS "distanceKm"
+          FROM performer_services srv
+          JOIN performer_profiles pp ON pp.user_id = srv.performer_user_id
+          JOIN users u ON u.id = pp.user_id
+          JOIN orders o ON o.id = ${order.id}
+          WHERE
+            o.status = 'published'
+            AND u.role = 'performer'
+            AND pp.user_id <> o.customer_user_id
+            AND (
+              -- Match by full service ID (type level)
+              srv.service_id = o.service_type_id
+              -- Or match by subcategory ID if order has no type
+              OR (o.service_type_id IS NULL AND srv.service_id = o.service_subcategory_id)
+              -- Or match by category ID if order has no subcategory
+              OR (o.service_subcategory_id IS NULL AND srv.service_id = o.service_category_id)
+              -- Or match if performer has parent category/subcategory of order's type
+              OR (
+                o.service_type_id IS NOT NULL AND
+                (
+                  srv.service_id = split_part(o.service_type_id, '.', 1) || '.' || split_part(o.service_type_id, '.', 2)
+                  OR srv.service_id = split_part(o.service_type_id, '.', 1)
+                )
+              )
+            )
+            AND (
+              pp.coverage_mode = 'country'
+              OR (
+                pp.coverage_mode = 'radius'
+                AND pp.coverage_radius_km IS NOT NULL
+                AND (
+                  6371.0 * acos(
+                    least(1.0, greatest(-1.0,
+                      cos(radians(pp.base_latitude)) * cos(radians(o.lat)) *
+                      cos(radians(o.lng) - radians(pp.base_longitude)) +
+                      sin(radians(pp.base_latitude)) * sin(radians(o.lat))
+                    ))
+                  )
+                ) <= pp.coverage_radius_km
+              )
+            )
+          ORDER BY "distanceKm" ASC NULLS LAST
+          LIMIT 5
+        `;
+
+        const eligibleCount = eligibleCountRows[0]?.count != null ? Number(eligibleCountRows[0].count) : 0;
+        console.info(`[api] POST /api/v1/orders match_preview requestId=${requestId} orderId=${order.id}`, {
+          eligibleCount,
+          top: topRows,
+        });
+      }
+
+      await enqueueMatchNewOrder(order.id);
+      if (process.env.NODE_ENV !== "production") {
+        console.info(`[api] POST /api/v1/orders match_enqueued requestId=${requestId} orderId=${order.id}`);
+      }
+    }
+
+    await publishDomainEvent({
+      type: "order.created",
+      requestId,
+      targets: { userIds: [user.id] },
+      data: { orderId: order.id, status: order.status },
+    });
+
+    await notifyUser({
+      userId: user.id,
+      type: "order",
+      title: "Замовлення створено",
+      message: `Замовлення #${order.id.slice(-6)} опубліковано. Підбираємо виконавців за вашими параметрами.`,
+      data: { orderId: order.id, type: "order_created", role: "customer", status: order.status },
+    });
+
+    return ok(req, { order }, { status: 201, message: "Created" });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+    }
+    return fail(req, err);
+  }
+}

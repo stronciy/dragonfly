@@ -1,0 +1,1 @@
+-- GIST indexes on geography columns removed
