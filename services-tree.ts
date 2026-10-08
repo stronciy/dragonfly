@@ -350,6 +350,37 @@ export function isValidSpecs(
   return validateSpecs(serviceTypeId, serviceSubCategoryId, specs).length === 0;
 }
 
+/**
+ * Validate performer-declared equipment specs for one service id.
+ * Unknown id -> error. Category (no specs in tree) with non-empty specs ->
+ * error. Missing service in tree is the only failure besides spec errors;
+ * an ABSENT specs entry (not sent at all) means wildcard and is handled by
+ * callers (no error here).
+ */
+export function validatePerformerServiceSpecs(
+  serviceId: string,
+  specs: Record<string, unknown>
+): string[] {
+  const value = specs ?? {};
+  const type = getTypeById(serviceId);
+  if (type) {
+    const subcategory = getSubcategoryById(type.subcategoryId);
+    if (!subcategory) return [`Unknown service ID: ${serviceId}`];
+    return validateSpecs(type.id, subcategory.id, value);
+  }
+  const subcategory = getSubcategoryById(serviceId);
+  if (subcategory) {
+    return validateSpecs(null, subcategory.id, value);
+  }
+  const category = getCategoryById(serviceId);
+  if (category) {
+    return Object.keys(value).length > 0
+      ? [`Service ${serviceId} takes no specs`]
+      : [];
+  }
+  return [`Unknown service ID: ${serviceId}`];
+}
+
 export function getAllServiceIds(): {
   categories: string[];
   subcategories: string[];

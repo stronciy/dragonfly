@@ -176,6 +176,7 @@ model PerformerService {
   performerUserId  String  @map("performer_user_id")
   serviceId        String  @map("service_id")
   serviceLevel     Int     @default(3) @map("service_level")
+  specs            Json    @default("{}")
 
   createdAt DateTime @default(now()) @map("created_at")
 

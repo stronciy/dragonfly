@@ -4,7 +4,8 @@ import { ApiError } from "@/shared";
 import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { enqueueMatchNewExecutor } from "@/shared";
-import { isValidServiceId, getSubcategoryById, getCategoryById, getTypeById } from "@/../services-tree";
+import { getSubcategoryById, getCategoryById, getTypeById, validatePerformerServiceSpecs } from "@/../services-tree";
+import type { Prisma } from "@prisma/client";
 
 // Schema for hierarchical service ID
 const serviceIdSchema = z.string().regex(/^\d+(\.\d+)*$/, "Invalid service ID format");
@@ -20,6 +21,10 @@ const putSchema = z.object({
     radiusKm: z.coerce.number().int().min(0).max(500).nullable().optional(),
   }).nullable().optional(),
   services: z.array(serviceIdSchema).min(1).nullable().optional(),
+  // Equipment specs per service id, e.g. { "3.2": { "Ширина внесення штанги (м)": 30 } }.
+  // Absent key = wildcard (matches anything). Present values are validated
+  // against services-tree options.
+  serviceSpecs: z.record(z.string(), z.record(z.string(), z.unknown())).nullable().optional(),
 });
 
 export async function GET(req: Request) {
@@ -42,9 +47,18 @@ export async function GET(req: Request) {
       where: { performerUserId: user.id },
       select: {
         serviceId: true,
+        specs: true,
       },
       orderBy: { serviceId: "asc" },
     });
+
+    const serviceSpecs: Record<string, unknown> = {};
+    for (const s of services) {
+      const sp = s.specs as Record<string, unknown> | null;
+      if (sp && typeof sp === "object" && Object.keys(sp).length > 0) {
+        serviceSpecs[s.serviceId] = sp;
+      }
+    }
 
     return ok(req, {
       settings: profile
@@ -53,6 +67,7 @@ export async function GET(req: Request) {
             baseCoordinate: { lat: profile.baseLatitude, lng: profile.baseLongitude },
             coverage: { mode: profile.coverageMode, radiusKm: profile.coverageRadiusKm },
             services: services.map((s) => s.serviceId),
+            serviceSpecs,
           }
         : null,
     });
@@ -87,32 +102,54 @@ export async function PUT(req: Request) {
 
     // Validate service IDs if provided
     let validatedServices: string[] = [];
+    let serviceSpecsMap: Record<string, Record<string, unknown>> = {};
+    if (body.serviceSpecs != null && !hasServices) {
+      throw new ApiError(400, "VALIDATION_ERROR", "services are required when serviceSpecs is provided", {
+        fieldErrors: { services: ["Required when serviceSpecs is provided"] },
+      });
+    }
     if (hasServices && body.services) {
       // Remove duplicates
       const uniqueServices = Array.from(new Set(body.services));
-      
+
       // Validate each service ID exists in hierarchy
       const invalidServices: string[] = [];
       for (const serviceId of uniqueServices) {
-        if (!isValidServiceId(undefined, undefined, undefined)) {
-          // We need to check if the ID exists in our tree
-          const category = getCategoryById(serviceId);
-          const subcategory = getSubcategoryById(serviceId);
-          const type = getTypeById(serviceId);
-          
-          if (!category && !subcategory && !type) {
-            invalidServices.push(serviceId);
-          }
+        // Check if the ID exists in our tree
+        const category = getCategoryById(serviceId);
+        const subcategory = getSubcategoryById(serviceId);
+        const type = getTypeById(serviceId);
+
+        if (!category && !subcategory && !type) {
+          invalidServices.push(serviceId);
         }
       }
-      
+
       if (invalidServices.length > 0) {
         throw new ApiError(400, "VALIDATION_ERROR", "Invalid service IDs", {
           fieldErrors: { services: [`Invalid service IDs: ${invalidServices.join(', ')}`] },
         });
       }
-      
+
       validatedServices = uniqueServices;
+
+      // Validate per-service equipment specs (absent key = wildcard)
+      serviceSpecsMap = body.serviceSpecs ?? {};
+      const specErrors: string[] = [];
+      for (const [serviceId, specs] of Object.entries(serviceSpecsMap)) {
+        if (!uniqueServices.includes(serviceId)) {
+          specErrors.push(`${serviceId}: not in services`);
+          continue;
+        }
+        for (const e of validatePerformerServiceSpecs(serviceId, specs ?? {})) {
+          specErrors.push(`${serviceId}: ${e}`);
+        }
+      }
+      if (specErrors.length > 0) {
+        throw new ApiError(400, "VALIDATION_ERROR", "Invalid service specs", {
+          fieldErrors: { serviceSpecs: specErrors },
+        });
+      }
     }
 
     await prisma.$transaction(async (tx) => {
@@ -179,6 +216,7 @@ export async function PUT(req: Request) {
             performerUserId: user.id,
             serviceId,
             serviceLevel: level,
+            specs: (serviceSpecsMap[serviceId] ?? {}) as Prisma.InputJsonValue,
           };
         });
         
