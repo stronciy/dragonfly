@@ -3,7 +3,7 @@ import { ok, fail } from "@/lib/apiResponse";
 import { ApiError } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
-import { normalizeUAIban, validateEdrpou, validateUAIban } from "@/lib/validators";
+import { normalizeEdrpou, normalizeUAIban, validateEdrpou, validateUAIban } from "@/lib/validators";
 
 const companyNameSchema = z.preprocess(
   (v) => (typeof v === "string" ? v.trim() : v),
@@ -16,7 +16,11 @@ const legalAddressSchema = z.preprocess(
 );
 
 const edrpouSchema = z.preprocess(
-  (v) => (typeof v === "string" ? (v.trim() === "" ? null : v.trim()) : v),
+  (v) => {
+    if (typeof v !== "string") return v;
+    const digits = normalizeEdrpou(v.trim());
+    return digits === "" ? null : digits;
+  },
   z.string().refine(validateEdrpou, "EDRPOU must be 8-10 digits").nullable()
 );
 

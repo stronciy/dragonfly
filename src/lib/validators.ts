@@ -2,6 +2,10 @@ export function validateEdrpou(value: string) {
   return /^\d{8,10}$/.test(value);
 }
 
+export function normalizeEdrpou(value: string) {
+  return value.replace(/\D+/g, "");
+}
+
 export function normalizeUAIban(value: string) {
   return value.replace(/\s+/g, "").toUpperCase();
 }
