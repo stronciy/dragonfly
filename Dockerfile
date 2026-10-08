@@ -9,6 +9,8 @@ FROM node:20-bookworm-slim AS build
 WORKDIR /app
 # Prisma needs OpenSSL for version detection (silences "failed to detect libssl" warnings)
 RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+# Cap build memory to ~2GB to avoid spikes on small hosts.
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run prisma:generate

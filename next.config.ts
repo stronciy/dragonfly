@@ -58,6 +58,10 @@ if (process.env.NODE_ENV !== "production" && localIPs.length > 0) {
 const nextConfig: NextConfig = {
   outputFileTracingRoot: process.cwd(),
   allowedDevOrigins: [...STATIC_ORIGINS, ...dynamicOrigins],
+  experimental: {
+    // Low-memory build hosts: static generation in a single worker.
+    cpus: 1,
+  },
 };
 
 export default nextConfig;
