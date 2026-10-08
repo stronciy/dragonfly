@@ -13,6 +13,15 @@ export type PushRequest = {
   data?: Record<string, unknown>;
 };
 
+// Production-visible, logged only once per process: missing/invalid
+// EXPO_ACCESS_TOKEN silently degrades push reliability otherwise.
+const warnedMessages = new Set<string>();
+function warnOnce(msg: string) {
+  if (warnedMessages.has(msg)) return;
+  warnedMessages.add(msg);
+  process.stdout.write(JSON.stringify({ level: "warn", msg }) + "\n");
+}
+
 export class ExpoPushService {
   private expo = new Expo({ accessToken: this.getAccessToken() });
 
@@ -20,17 +29,21 @@ export class ExpoPushService {
 
   private getAccessToken() {
     const token = process.env.EXPO_ACCESS_TOKEN;
-    if (!token) return undefined;
+    if (!token) {
+      warnOnce("expo_access_token_missing_push_degraded");
+      return undefined;
+    }
     const t = token.trim();
-    if (!t) return undefined;
+    if (!t) {
+      warnOnce("expo_access_token_missing_push_degraded");
+      return undefined;
+    }
 
     const looksLikeJwt = t.split(".").length === 3;
     const looksLikeExpoToken = t.startsWith("expo_");
     if (looksLikeJwt || looksLikeExpoToken) return t;
 
-    if (process.env.NODE_ENV !== "production") {
-      process.stdout.write(JSON.stringify({ level: "warn", msg: "expo_access_token_ignored_invalid_format" }) + "\n");
-    }
+    warnOnce("expo_access_token_ignored_invalid_format");
     return undefined;
   }
 

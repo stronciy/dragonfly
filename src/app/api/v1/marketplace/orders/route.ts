@@ -42,6 +42,9 @@ export async function GET(req: Request) {
 
     const orderWhere = {
       status: "published" as const,
+      // Never show your own orders as performer work, even if a stray
+      // orderMatch row links them (matching SQL also excludes self).
+      customerUserId: { not: user.id },
       ...(q.serviceCategoryId ? { serviceCategoryId: q.serviceCategoryId } : {}),
       ...(q.serviceSubCategoryId ? { serviceSubCategoryId: q.serviceSubCategoryId } : {}),
     };

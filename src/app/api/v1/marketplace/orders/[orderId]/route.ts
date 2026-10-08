@@ -14,6 +14,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     if (!order) throw new ApiError(404, "NOT_FOUND", "Order not found");
 
     const isAssigned = order.performerUserId === user.id;
+    // Your own orders are never performer work (open them as customer).
+    if (order.customerUserId === user.id && !isAssigned)
+      throw new ApiError(404, "NOT_FOUND", "Order not found");
     const match = isAssigned
       ? null
       : await prisma.orderMatch.findUnique({
