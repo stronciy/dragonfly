@@ -1,0 +1,13 @@
+node_modules
+.next
+generated
+dist-tests
+tests
+scripts
+.git
+.github
+.env*
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+*.md
