@@ -3,12 +3,15 @@ import { ApiError } from "../lib/errors";
 import { depositAmountFor, nextDepositDeadline } from "../lib/deposit";
 import { canTransition, type OrderStatus } from "../lib/orderStatus";
 import { createLiqPayCheckout, getLiqPayCheckoutUrl, liqpayDecodeData, liqpayVerifySignature, captureHold, refundCaptured, reverseHold } from "./liqpay.service";
+import { publishDomainEvent } from "../realtime/publishDomainEvent";
+import type { DomainEventType } from "../realtime/domainEvents";
+import { notifyUser } from "./notify";
 
 type Tx = Prisma.TransactionClient;
 
-type IntentRole = "performer" | "customer";
+export type IntentRole = "performer" | "customer";
 
-function assertIntentRole(role: string): asserts role is IntentRole {
+export function assertIntentRole(role: string): asserts role is IntentRole {
   if (role !== "performer" && role !== "customer") {
     throw new ApiError(400, "VALIDATION_ERROR", "Invalid intent role");
   }
@@ -343,4 +346,174 @@ export function serializePaymentIntent(intent: SerializableIntent) {
       checkout: { data: intent.data, signature: intent.signature },
     },
   };
+}
+
+export type DepositPaidEvent = {
+  type: DomainEventType;
+  targets: { userIds: string[] };
+  data: Record<string, unknown>;
+};
+
+// Pure builder (unit-tested): the full WS event set for a successful deposit
+// payment. Shared by the LiqPay callback and the manual confirm route so both
+// paths notify identically.
+export function buildDepositPaidEvents(args: {
+  orderId: string;
+  toStatus: string;
+  role: IntentRole;
+  customerUserId: string;
+  performerUserId: string | null;
+  providerStatus: string | null;
+}): DepositPaidEvent[] {
+  const both = [args.customerUserId, args.performerUserId].filter((v): v is string => !!v);
+  const fromStatus = args.role === "performer" ? "accepted" : "requires_confirmation";
+  const events: DepositPaidEvent[] = [
+    {
+      type: args.role === "performer" ? "deposit.performer_paid" : "deposit.customer_paid",
+      targets: { userIds: both },
+      data: { orderId: args.orderId, status: args.toStatus, providerStatus: args.providerStatus },
+    },
+    {
+      type: "escrow.changed",
+      targets: { userIds: both },
+      data: { orderId: args.orderId, role: args.role, status: args.toStatus },
+    },
+    {
+      type: "order.status_changed",
+      targets: { userIds: both },
+      data: { orderId: args.orderId, fromStatus, toStatus: args.toStatus },
+    },
+  ];
+  if (args.role === "performer") {
+    events.push(
+      {
+        type: "deposit.customer_required",
+        targets: { userIds: [args.customerUserId] },
+        data: { orderId: args.orderId, status: args.toStatus },
+      },
+      {
+        type: "payment:required",
+        targets: { userIds: [args.customerUserId] },
+        data: { orderId: args.orderId, status: args.toStatus },
+      }
+    );
+  } else {
+    events.push(
+      {
+        type: "order.confirmed",
+        targets: { userIds: both },
+        data: { orderId: args.orderId },
+      },
+      {
+        type: "order:confirmed",
+        targets: { userIds: both },
+        data: { orderId: args.orderId },
+      }
+    );
+  }
+  return events;
+}
+
+// Notify BOTH parties (push + inbox) about a successful deposit payment,
+// including the payer about their own payment. Throws on publish/notify
+// failure so callers can retry; never call with duplicate=true.
+export async function emitDepositPaidNotifications(args: {
+  requestId?: string;
+  order: { id: string; status: string; customerUserId: string; performerUserId: string | null };
+  role: IntentRole;
+  amount: unknown;
+  currency: string;
+  providerStatus: string | null;
+}) {
+  const shortId = args.order.id.slice(-6);
+  const sum = `${Number(args.amount)} ${args.currency}`;
+  for (const e of buildDepositPaidEvents({
+    orderId: args.order.id,
+    toStatus: args.order.status,
+    role: args.role,
+    customerUserId: args.order.customerUserId,
+    performerUserId: args.order.performerUserId,
+    providerStatus: args.providerStatus,
+  })) {
+    await publishDomainEvent({ ...e, requestId: args.requestId });
+  }
+  if (args.role === "performer") {
+    await notifyUser({
+      userId: args.order.customerUserId,
+      type: "deposit",
+      title: "Виконавець вніс гарантійну суму",
+      message: `Замовлення #${shortId}. Внесіть свою гарантійну суму протягом 12 годин.`,
+      data: { orderId: args.order.id, type: "deposit_customer_required", role: "customer" },
+    });
+    if (args.order.performerUserId) {
+      await notifyUser({
+        userId: args.order.performerUserId,
+        type: "deposit",
+        title: "Гарантійну суму утримано",
+        message: `Замовлення #${shortId}. Ваша гарантійна сума ${sum} утримана. Очікуйте внесення заказчиком.`,
+        data: {
+          orderId: args.order.id,
+          type: "deposit_performer_paid_self",
+          role: "performer",
+          amount: Number(args.amount),
+          currency: args.currency,
+        },
+      });
+    }
+  } else {
+    if (args.order.performerUserId) {
+      await notifyUser({
+        userId: args.order.performerUserId,
+        type: "deposit",
+        title: "Замовник вніс гарантійну суму",
+        message: `Замовлення #${shortId} підтверджено. Можна починати роботу.`,
+        data: { orderId: args.order.id, type: "order_confirmed", role: "performer" },
+      });
+    }
+    await notifyUser({
+      userId: args.order.customerUserId,
+      type: "deposit",
+      title: "Гарантійну суму внесено",
+      message: `Замовлення #${shortId}. Ваша гарантійна сума ${sum} внесена.`,
+      data: {
+        orderId: args.order.id,
+        type: "deposit_customer_paid_self",
+        role: "customer",
+        amount: Number(args.amount),
+        currency: args.currency,
+      },
+    });
+  }
+  process.stdout.write(
+    JSON.stringify({
+      level: "info",
+      msg: "deposit_paid_notified",
+      orderId: args.order.id,
+      role: args.role,
+      amount: Number(args.amount),
+      currency: args.currency,
+      providerStatus: args.providerStatus,
+      requestId: args.requestId ?? null,
+    }) + "\n"
+  );
+}
+
+// Emit one escrow.changed event per affected lock role (both parties targeted).
+export async function emitEscrowChanged(args: {
+  requestId?: string;
+  orderId: string;
+  customerUserId: string;
+  performerUserId: string | null;
+  roles: IntentRole[];
+  orderStatus: string;
+}) {
+  const both = [args.customerUserId, args.performerUserId].filter((v): v is string => !!v);
+  for (const role of args.roles) {
+    await publishDomainEvent({
+      type: "escrow.changed",
+      requestId: args.requestId,
+      targets: { userIds: both },
+      data: { orderId: args.orderId, role, status: args.orderStatus },
+    });
+  }
 }

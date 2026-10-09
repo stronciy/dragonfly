@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
 import { notifyUser } from "@/shared";
-import { releaseEscrowForOrder, settleProviderHolds } from "@/shared";
+import { releaseEscrowForOrder, settleProviderHolds, emitEscrowChanged } from "@/shared";
 import { enqueueMatchNewOrder } from "@/shared";
 
 const schema = z.object({
@@ -64,6 +64,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (customerPaid) {
       await settleProviderHolds({ orderId, role: "customer", to: "released" }).catch(() => {});
     }
+
+    await emitEscrowChanged({
+      requestId,
+      orderId,
+      customerUserId: order.customerUserId,
+      performerUserId: user.id,
+      roles: customerPaid ? ["performer", "customer"] : ["performer"],
+      orderStatus: "published",
+    });
 
     await enqueueMatchNewOrder(orderId).catch(() => {});
 

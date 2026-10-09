@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
 import { ExpoPushService } from "@/shared";
-import { releaseEscrowForOrder, settleProviderHolds } from "@/shared";
+import { releaseEscrowForOrder, settleProviderHolds, emitEscrowChanged } from "@/shared";
 import { Prisma } from "@prisma/client";
 
 const schema = z.object({ reason: z.string().max(2000).optional() });
@@ -57,6 +57,15 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
     });
 
     await settleProviderHolds({ orderId, to: "refunded" }).catch(() => {});
+
+    await emitEscrowChanged({
+      requestId,
+      orderId,
+      customerUserId: order.customerUserId,
+      performerUserId: order.performerUserId,
+      roles: ["performer", "customer"],
+      orderStatus: "cancelled",
+    });
 
     // Якщо був виконавець - відправляємо йому Push
     if (order.performerUserId) {

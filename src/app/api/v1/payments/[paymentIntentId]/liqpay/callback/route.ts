@@ -1,8 +1,7 @@
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { ApiError } from "@/shared";
 import { prisma } from "@/shared";
-import { publishDomainEvent } from "@/shared";
-import { confirmDeposit } from "@/shared";
+import { assertIntentRole, confirmDeposit, emitDepositPaidNotifications } from "@/shared";
 import { liqpayDecodeData } from "@/shared";
 
 async function readCallbackPayload(req: Request) {
@@ -25,9 +24,10 @@ async function readCallbackPayload(req: Request) {
 }
 
 export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentId: string }> }) {
+  const requestId = getRequestId(req);
+  let paymentIntentId = "unknown";
   try {
-    const requestId = getRequestId(req);
-    const { paymentIntentId } = await ctx.params;
+    paymentIntentId = (await ctx.params).paymentIntentId;
     const { data, signature } = await readCallbackPayload(req);
     if (!data || !signature) throw new ApiError(400, "VALIDATION_ERROR", "Missing data or signature");
 
@@ -41,24 +41,33 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
       return ok(req, { ignored: true, providerStatus: decoded.status ?? null });
     }
 
-    const { order, intent } = await prisma.$transaction((tx) =>
+    const { order, intent, duplicate } = await prisma.$transaction((tx) =>
       confirmDeposit(tx, { paymentIntentId, data, signature })
     );
 
-    await publishDomainEvent({
-      type: "order.status_changed",
-      requestId,
-      targets: {
-        userIds: [order.customerUserId, order.performerUserId!].filter(Boolean) as string[],
-      },
-      data: { orderId: order.id, toStatus: order.status, providerStatus: decoded.status ?? null },
-    });
+    // LiqPay retries server callbacks: skip re-notify on duplicates.
+    if (!duplicate) {
+      assertIntentRole(intent.role);
+      await emitDepositPaidNotifications({
+        requestId,
+        order,
+        role: intent.role,
+        amount: intent.amount,
+        currency: intent.currency,
+        providerStatus: decoded.status ?? null,
+      });
+    }
 
     return ok(req, {
       order: { id: order.id, status: order.status },
       paymentIntent: { id: intent.id, status: intent.status },
     });
   } catch (err) {
+    if (err instanceof ApiError && err.message === "Invalid payment signature") {
+      process.stderr.write(
+        JSON.stringify({ level: "error", msg: "liqpay_callback_bad_signature", paymentIntentId, requestId }) + "\n"
+      );
+    }
     return fail(req, err);
   }
 }

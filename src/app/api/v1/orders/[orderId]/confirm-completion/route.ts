@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
 import { ExpoPushService } from "@/shared";
-import { releaseEscrowForOrder, settleProviderHolds } from "@/shared";
+import { releaseEscrowForOrder, settleProviderHolds, emitEscrowChanged } from "@/shared";
 import { recomputePerformerRating } from "@/shared";
 import { Prisma } from "@prisma/client";
 
@@ -98,6 +98,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       } else {
         await settleProviderHolds({ orderId, to: "released" }).catch(() => {});
       }
+
+      await emitEscrowChanged({
+        requestId,
+        orderId,
+        customerUserId: order.customerUserId,
+        performerUserId: order.performerUserId,
+        roles: ["performer", "customer"],
+        orderStatus: "completed",
+      });
 
       // Створюємо notification
       await prisma.notification.create({
