@@ -39,6 +39,48 @@ async function verifyBearerToken(authHeader) {
   return { userId: payload.userId, role: payload.role };
 }
 
+const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const PROBE_LOG_INTERVAL_MS = 60_000;
+const probeLogAt = new Map();
+
+function clip(value, max) {
+  if (!value) return "-";
+  return value.length > max ? `${value.slice(0, max)}...` : value;
+}
+
+function clientIp(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (forwarded) return String(forwarded).split(",")[0].trim();
+  return req.headers["x-real-ip"] || req.socket.remoteAddress || "unknown";
+}
+
+// One detailed line per source IP per minute: enough to see who probes us
+// without replacing the old error flood with a warn flood.
+function shouldLogProbe(ip) {
+  const now = Date.now();
+  const prev = probeLogAt.get(ip);
+  if (prev !== undefined && now - prev < PROBE_LOG_INTERVAL_MS) return false;
+  probeLogAt.set(ip, now);
+  if (probeLogAt.size > 10_000) {
+    for (const [key, ts] of probeLogAt) {
+      if (now - ts >= PROBE_LOG_INTERVAL_MS) probeLogAt.delete(key);
+    }
+  }
+  return true;
+}
+
+function rejectProbe(req, res, kind, detail) {
+  const ip = clientIp(req);
+  if (shouldLogProbe(ip)) {
+    const extra = detail ? ` ${detail}` : "";
+    console.warn(
+      `[probe-blocked] ${kind} ${req.method} ${req.url} ip=${ip}${extra} ua=${clip(req.headers["user-agent"], 120)}`
+    );
+  }
+  res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+  res.end("Not Found");
+}
+
 async function main() {
   const dev = process.env.NODE_ENV !== "production";
   const port = Number(process.env.PORT || 3000);
@@ -51,7 +93,26 @@ async function main() {
   const redisPub = new Redis(getRedisUrl(), { enableReadyCheck: true, maxRetriesPerRequest: null });
   const redisSub = new Redis(getRedisUrl(), { enableReadyCheck: true, maxRetriesPerRequest: null });
 
-  const server = http.createServer((req, res) => handle(req, res));
+  const server = http.createServer((req, res) => {
+    // Security: the app defines zero Server Actions, so any `next-action`
+    // header is a vulnerability scanner probe (CVE-2025-55182 "react2shell",
+    // Next.js discussion #87851: bots send garbage like "x", "0", "action").
+    // Rejecting before Next's action handler keeps its noisy errors out of
+    // the production logs. LiqPay and the mobile app never send this header.
+    if (req.headers["next-action"] !== undefined) {
+      rejectProbe(req, res, "next-action", `action="${clip(String(req.headers["next-action"]), 64)}"`);
+      return;
+    }
+    // Page paths only accept GET: multipart $ACTION_ID_ probes POST straight
+    // to "/", while real traffic (mobile app, LiqPay, health checks) is GET
+    // or lives under /api/ (file uploads included).
+    const path = (req.url || "/").split("?")[0];
+    if (WRITE_METHODS.has(req.method) && !path.startsWith("/api/") && !path.startsWith("/_next/")) {
+      rejectProbe(req, res, "non-api-write", "");
+      return;
+    }
+    handle(req, res);
+  });
   const wss = new WebSocketServer({ noServer: true });
 
   const connectionsByUserId = new Map();
