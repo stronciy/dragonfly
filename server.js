@@ -49,9 +49,18 @@ function clip(value, max) {
 }
 
 function clientIp(req) {
+  // Security: probe-log throttle key must not be client-rotatable — X-Real-IP
+  // is (re)set by our edge proxy; the right-most X-Forwarded-For entry is
+  // appended by that same proxy, unlike the client-controlled head.
+  const real = req.headers["x-real-ip"];
+  if (real && String(real).trim()) return String(real).trim();
   const forwarded = req.headers["x-forwarded-for"];
-  if (forwarded) return String(forwarded).split(",")[0].trim();
-  return req.headers["x-real-ip"] || req.socket.remoteAddress || "unknown";
+  if (forwarded) {
+    const ips = String(forwarded).split(",");
+    const last = ips[ips.length - 1]?.trim();
+    if (last) return last;
+  }
+  return req.socket.remoteAddress || "unknown";
 }
 
 // One detailed line per source IP per minute: enough to see who probes us

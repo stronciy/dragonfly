@@ -44,12 +44,18 @@ function getRequestId(req: NextRequest): string {
 }
 
 function getClientIdentifier(req: NextRequest): string {
+  // Security: rate-limit bucket must not be client-rotatable. X-Real-IP is
+  // (re)set by our edge proxy and the client cannot forge it, while the head
+  // of X-Forwarded-For is fully client-controlled when the proxy appends.
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp && realIp.trim()) return realIp.trim();
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
-    const ips = forwarded.split(",");
-    return ips[0]?.trim() ?? "unknown";
+    const ips = forwarded.split(",").map((s) => s.trim()).filter(Boolean);
+    // Right-most entry is appended by our own proxy — unforgeable from outside.
+    if (ips.length > 0) return ips[ips.length - 1];
   }
-  return req.headers.get("x-real-ip") ?? "unknown";
+  return "unknown";
 }
 
 async function getUserId(req: NextRequest): Promise<string | null> {
