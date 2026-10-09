@@ -28,9 +28,34 @@ export function transitionForConfirm(
   return null;
 }
 
-export function buildDepositCallbackUrl(intentId: string): string | undefined {
-  const base = (process.env.BACKEND_PUBLIC_URL || "").replace(/\/+$/, "");
-  if (!base) return undefined;
+// Без BACKEND_PUBLIC_URL (забули налаштувати на сервері) бераємо публічний
+// origin із самого запиту — інакше server_url не формується і LiqPay взагалі
+// не надсилає серверний колбек.
+function requestOrigin(req?: Request): string {
+  if (!req) return "";
+  const host = (req.headers.get("x-forwarded-host") || req.headers.get("host") || "")
+    .split(",")[0]
+    .trim();
+  if (!host) return "";
+  const forwardedProto = (req.headers.get("x-forwarded-proto") || "").split(",")[0].trim();
+  const proto = forwardedProto || (/^(localhost|127\.0\.0\.1)(:|$)/.test(host) ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
+export function buildDepositCallbackUrl(intentId: string, req?: Request): string | undefined {
+  const base =
+    (process.env.BACKEND_PUBLIC_URL || "").trim().replace(/\/+$/, "") || requestOrigin(req);
+  if (!base) {
+    process.stderr.write(
+      JSON.stringify({
+        level: "error",
+        msg: "liqpay_server_url_missing",
+        intentId,
+        hint: "BACKEND_PUBLIC_URL is not set and request origin is unknown",
+      }) + "\n"
+    );
+    return undefined;
+  }
   return `${base}/api/v1/payments/${intentId}/liqpay/callback`;
 }
 
@@ -73,6 +98,18 @@ export async function createDepositIntent(
       resultUrl: args.resultUrl,
     },
   });
+  // Як serverUrl порожній — у логах одразу видно, що LiqPay колбеку не отримає.
+  process.stdout.write(
+    JSON.stringify({
+      level: args.serverUrl ? "info" : "warn",
+      msg: "liqpay_intent_created",
+      intentId: intent.id,
+      orderId: order.id,
+      role: args.role,
+      serverUrl: args.serverUrl ?? null,
+      resultUrl: args.resultUrl ?? null,
+    }) + "\n"
+  );
   return { intent, checkout, amount };
 }
 
@@ -89,10 +126,10 @@ export async function findPendingIntent(
 // Старі pending-інтенти могли створитись без serverUrl (BACKEND_PUBLIC_URL
 // з'явився пізніше) — LiqPay-колбек за ними ніколи не прийде. В такому разі
 // перестворюємо інтент з тим самим id, щоб новий checkout містив server_url.
-export async function ensureIntentServerUrl(tx: Tx, intent: PaymentIntent) {
+export async function ensureIntentServerUrl(tx: Tx, intent: PaymentIntent, req?: Request) {
   if (intent.serverUrl) return intent;
   assertIntentRole(intent.role);
-  const fresh = buildDepositCallbackUrl(intent.id);
+  const fresh = buildDepositCallbackUrl(intent.id, req);
   if (!fresh) return intent;
   await tx.paymentIntent.delete({ where: { id: intent.id } });
   const created = await createDepositIntent(tx, {

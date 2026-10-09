@@ -42,7 +42,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
     const intent = await prisma.$transaction(async (tx) => {
       const pending = await findPendingIntent(tx, { orderId, role: "customer" });
-      if (pending) return ensureIntentServerUrl(tx, pending);
+      if (pending) return ensureIntentServerUrl(tx, pending, req);
       const intentId = crypto.randomUUID();
       const created = await createDepositIntent(tx, {
         orderId,
@@ -50,7 +50,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         method: body.method,
         wallet: body.wallet,
         resultUrl: body.resultUrl,
-        serverUrl: buildDepositCallbackUrl(intentId),
+        serverUrl: buildDepositCallbackUrl(intentId, req),
         intentId,
       });
       return created.intent;

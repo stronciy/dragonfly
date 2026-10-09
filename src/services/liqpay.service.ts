@@ -14,6 +14,9 @@ type LiqPayCheckoutParams = {
   sandbox?: 1;
   server_url?: string;
   result_url?: string;
+  // Поля з відповіді API status — використовуються у buildCallbackFromStatus.
+  status?: string;
+  payment_id?: number;
 };
 
 function getRequiredEnv(name: "LIQPAY_PUBLIC_KEY" | "LIQPAY_PRIVATE_KEY") {
@@ -95,6 +98,27 @@ export async function refundCaptured(liqpayOrderId: string, amount?: number) {
     order_id: liqpayOrderId,
     ...(amount !== undefined ? { amount } : {}),
   });
+}
+
+// З відповіді автентифікованого API status збираємо data/signance так само, як
+// у серверного колбеку — підпис ставимо своїм ключем, бо запит робили ми самі,
+// і confirmDeposit може прийняти підтвердження без очікування хука від LiqPay.
+export function buildCallbackFromStatus(
+  res: LiqPayApiResult,
+  args: { order_id: string; amount: string | number; currency: string }
+): { data: string; signature: string } {
+  const data = liqpayEncodeData({
+    public_key: process.env.LIQPAY_PUBLIC_KEY ?? "",
+    version: 3,
+    action: res.action === "pay" ? "pay" : "hold",
+    amount: String(res.amount ?? args.amount),
+    currency: String(res.currency ?? args.currency),
+    description: typeof res.description === "string" ? res.description : "",
+    order_id: args.order_id,
+    status: typeof res.status === "string" ? res.status : undefined,
+    payment_id: typeof res.payment_id === "number" ? res.payment_id : undefined,
+  });
+  return { data, signature: liqpaySign(data) };
 }
 
 export function liqpayEncodeData(params: LiqPayCheckoutParams) {

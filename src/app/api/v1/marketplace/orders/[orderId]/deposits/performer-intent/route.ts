@@ -26,7 +26,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         performerUserId: user.id,
       });
       const pending = await findPendingIntent(tx, { orderId, role: "performer" });
-      if (pending) return { intent: await ensureIntentServerUrl(tx, pending), checkout: null as null, amount: pending.amount };
+      if (pending) return { intent: await ensureIntentServerUrl(tx, pending, req), checkout: null as null, amount: pending.amount };
       const intentId = crypto.randomUUID();
       const created = await createDepositIntent(tx, {
         orderId,
@@ -34,7 +34,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         method: body.method,
         wallet: body.wallet,
         resultUrl: body.resultUrl,
-        serverUrl: buildDepositCallbackUrl(intentId),
+        serverUrl: buildDepositCallbackUrl(intentId, req),
         intentId,
       });
       return { order: claim.order, freshClaim: claim.freshClaim, intent: created.intent };
