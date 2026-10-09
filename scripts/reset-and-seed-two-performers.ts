@@ -55,7 +55,7 @@ function assertConfirmed() {
         `Re-run with CONFIRM_WIPE_HOST=${host} to confirm the wipe target.`
     );
   }
-  console.log(`!!! WIPING database on host "${host}" (backend: ${BASE})`);
+  console.log(`target database host "${host}", backend ${BASE}`);
 }
 
 function resetDatabase() {
@@ -139,7 +139,11 @@ async function seedPerformer(p: TestPerformer, serviceIds: string[]) {
 
 async function main() {
   assertConfirmed();
-  resetDatabase();
+  if (process.env.SKIP_DB_RESET === "1") {
+    console.log("SKIP_DB_RESET=1: database reset skipped, seeding only");
+  } else {
+    resetDatabase();
+  }
 
   const { categories, subcategories, types } = getAllServiceIds();
   const serviceIds = [...new Set([...categories, ...subcategories, ...types])];
