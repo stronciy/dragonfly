@@ -36,6 +36,7 @@ const postSchema = z.object({
       lng: z.coerce.number().min(-180).max(180),
       addressLabel: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
       regionName: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)).optional(),
+      settlementName: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1).max(120)).nullable().optional(),
     })
   ),
   comment: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().max(5000)).optional(),
@@ -295,6 +296,7 @@ export async function POST(req: Request) {
           dateTo: body.dateTo ? new Date(body.dateTo) : null,
           locationLabel: body.location.addressLabel,
           regionName: body.location.regionName ?? null,
+          settlementName: body.location.settlementName ?? null,
           lat: body.location.lat,
           lng: body.location.lng,
           comment: body.comment ?? null,

@@ -30,6 +30,7 @@ const patchSchema = z
           lng: z.number().min(-180).max(180),
           addressLabel: z.string().min(1),
           regionName: z.string().min(1).optional(),
+          settlementName: z.string().trim().min(1).max(120).nullable().optional(),
         })
       )
       .optional(),
@@ -134,6 +135,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
           dateTo: body.dateTo ? new Date(body.dateTo) : body.dateTo === null ? null : undefined,
           locationLabel: body.location?.addressLabel,
           regionName: body.location?.regionName,
+          settlementName: body.location?.settlementName,
           lat: body.location?.lat,
           lng: body.location?.lng,
           comment: body.comment ?? undefined,

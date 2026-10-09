@@ -227,6 +227,7 @@ model Order {
   
   locationLabel        String   @map("location_label")
   regionName           String?  @map("region_name")
+  settlementName       String?  @map("settlement_name")
   lat                  Float
   lng                  Float
 
