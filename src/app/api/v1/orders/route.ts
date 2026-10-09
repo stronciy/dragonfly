@@ -9,7 +9,7 @@ import { publishDomainEvent } from "@/shared";
 import { notifyUser } from "@/shared";
 import { validateSpecs, isValidServiceId } from "@/../services-tree";
 import { Prisma } from "@prisma/client";
-import { safeDepositAmount } from "@/shared";
+import { safeDepositAmount, ESCROW_OPEN_STATUSES } from "@/shared";
 
 const postSchema = z.object({
   serviceCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
@@ -141,7 +141,7 @@ export async function GET(req: Request) {
           createdAt: true,
           specs: true,
           escrowLocks: {
-            where: { status: "held" },
+            where: { status: { in: [...ESCROW_OPEN_STATUSES] } },
             select: { amount: true },
           },
         },

@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { enqueueMatchNewOrder } from "@/shared";
 import { publishDomainEvent } from "@/shared";
-import { safeDepositAmount } from "@/shared";
+import { safeDepositAmount, ESCROW_OPEN_STATUSES } from "@/shared";
 
 const patchSchema = z
   .object({
@@ -63,7 +63,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     });
 
     const heldLocks = await prisma.escrowLock.findMany({
-      where: { orderId, status: "held" },
+      where: { orderId, status: { in: [...ESCROW_OPEN_STATUSES] } },
       select: { amount: true },
     });
 

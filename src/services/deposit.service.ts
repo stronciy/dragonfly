@@ -271,9 +271,25 @@ export async function confirmDeposit(
   return { order: updated!, intent: paidIntent, duplicate: false as const };
 }
 
+export const ESCROW_OPEN_STATUSES = ["held", "release_pending", "refund_pending", "forfeit_pending"] as const;
+
+type SettleTarget = "released" | "refunded" | "forfeited";
+
+const PENDING_BY_TARGET: Record<SettleTarget, string> = {
+  released: "release_pending",
+  refunded: "refund_pending",
+  forfeited: "forfeit_pending",
+};
+
+const TARGET_BY_PENDING: Record<string, SettleTarget> = {
+  release_pending: "released",
+  refund_pending: "refunded",
+  forfeit_pending: "forfeited",
+};
+
 export async function releaseEscrowForOrder(
   tx: Tx,
-  args: { orderId: string; role?: IntentRole; to: "released" | "refunded" | "forfeited" }
+  args: { orderId: string; role?: IntentRole; to: SettleTarget }
 ) {
   await tx.escrowLock.updateMany({
     where: {
@@ -281,7 +297,7 @@ export async function releaseEscrowForOrder(
       status: "held",
       ...(args.role ? { role: args.role } : {}),
     },
-    data: { status: args.to, releasedAt: new Date() },
+    data: { status: PENDING_BY_TARGET[args.to] },
   });
 }
 export async function heldEscrowTotal(tx: Tx, orderId: string) {
@@ -297,22 +313,18 @@ export async function heldEscrowTotal(tx: Tx, orderId: string) {
 // і НЕ ламають стан замовлення (повтор — вручну через кабінет LiqPay).
 // Пропускає симульовані оплати (e2e/тести без payment_id) та legacy pay-інтенти
 // без providerRaw — їхнє повернення тільки вручну.
-export async function settleProviderHolds(args: {
-  orderId: string;
-  role?: IntentRole;
-  to: "released" | "refunded" | "forfeited";
-}) {
-  // prisma імпортується динамічно: статичний імпорт тягне generated client
-  // у тестовий бандл dist-tests, де його немає (unit-тести викликають лише чисті функції цього модуля).
+type PendingLock = { id: string; orderId: string; role: string; status: string };
+
+async function settlePendingLock(lock: PendingLock): Promise<boolean> {
   const { prisma } = await import("../lib/prisma");
+  const to = TARGET_BY_PENDING[lock.status];
+  if (!to) return false;
   const intents = await prisma.paymentIntent.findMany({
-    where: {
-      orderId: args.orderId,
-      status: "paid",
-      ...(args.role ? { role: args.role } : {}),
-    },
+    where: { orderId: lock.orderId, status: "paid", role: lock.role },
     select: { id: true, role: true, providerOrderId: true, providerRaw: true },
   });
+  const logCtx = { orderId: lock.orderId, lockId: lock.id, role: lock.role, to };
+
   for (const intent of intents) {
     const raw =
       intent.providerRaw && typeof intent.providerRaw === "object"
@@ -321,36 +333,78 @@ export async function settleProviderHolds(args: {
     const isHold = raw?.action === "hold";
     const liqpayOrderId = intent.providerOrderId;
     const liqpayPaymentId = raw?.payment_id;
-    const logCtx = { orderId: args.orderId, intentId: intent.id, to: args.to };
     if (!liqpayOrderId || liqpayPaymentId == null) {
-      process.stdout.write(JSON.stringify({ level: "info", msg: "settle_skipped_no_provider_payment", ...logCtx }) + "\n");
+      process.stdout.write(JSON.stringify({ level: "info", msg: "settle_skipped_no_provider_payment", ...logCtx, intentId: intent.id }) + "\n");
+      continue;
+    }
+    if (to === "forfeited" && !isHold) {
+      process.stdout.write(JSON.stringify({ level: "info", msg: "settle_skipped_already_captured", ...logCtx, intentId: intent.id }) + "\n");
       continue;
     }
     try {
-      if (args.to === "forfeited") {
-        if (!isHold) {
-          process.stdout.write(JSON.stringify({ level: "info", msg: "settle_skipped_already_captured", ...logCtx }) + "\n");
-          continue;
-        }
+      if (to === "forfeited") {
         await captureHold(liqpayOrderId);
       } else if (isHold) {
         await reverseHold(liqpayOrderId);
       } else {
         await refundCaptured(liqpayOrderId);
       }
-      process.stdout.write(JSON.stringify({ level: "info", msg: "settle_ok", ...logCtx, liqpayOrderId }) + "\n");
+      process.stdout.write(JSON.stringify({ level: "info", msg: "settle_ok", ...logCtx, intentId: intent.id, liqpayOrderId }) + "\n");
     } catch (e) {
       process.stdout.write(
         JSON.stringify({
           level: "error",
-          msg: "settle_failed",
+          msg: "settle_failed_will_retry",
           ...logCtx,
+          intentId: intent.id,
           liqpayOrderId,
           error: e instanceof Error ? e.message : String(e),
         }) + "\n"
       );
+      return false;
     }
   }
+
+  const updated = await prisma.escrowLock.updateMany({
+    where: { id: lock.id, status: lock.status },
+    data: { status: to, releasedAt: new Date() },
+  });
+  return updated.count === 1;
+}
+
+export async function settleProviderHolds(args: {
+  orderId: string;
+  role?: IntentRole;
+  to: SettleTarget;
+}) {
+  const { prisma } = await import("../lib/prisma");
+  const locks = await prisma.escrowLock.findMany({
+    where: {
+      orderId: args.orderId,
+      status: PENDING_BY_TARGET[args.to],
+      ...(args.role ? { role: args.role } : {}),
+    },
+    select: { id: true, orderId: true, role: true, status: true },
+  });
+  for (const lock of locks) {
+    await settlePendingLock(lock);
+  }
+}
+
+export async function retryPendingEscrowSettlements(args: { olderThanMs: number; limit?: number }) {
+  const { prisma } = await import("../lib/prisma");
+  const cutoff = new Date(Date.now() - args.olderThanMs);
+  const locks = await prisma.escrowLock.findMany({
+    where: { status: { in: Object.values(PENDING_BY_TARGET) }, updatedAt: { lt: cutoff } },
+    select: { id: true, orderId: true, role: true, status: true },
+    orderBy: { updatedAt: "asc" },
+    take: args.limit ?? 200,
+  });
+  let settled = 0;
+  for (const lock of locks) {
+    if (await settlePendingLock(lock)) settled += 1;
+  }
+  return { checked: locks.length, settled, failed: locks.length - settled };
 }
 
 type SerializableIntent = {
