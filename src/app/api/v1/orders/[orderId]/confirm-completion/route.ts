@@ -108,21 +108,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         orderStatus: "completed",
       });
 
-      // Створюємо notification
-      await prisma.notification.create({
-        data: {
-          userId: order.customerUserId,
-          type: "order",
-          title: "Замовлення завершено",
-          message: `Замовлення #${orderId.slice(-6)} успішно завершено та переміщено в архів.`,
-          data: {
-            orderId,
-            type: "order_confirmed_completed",
-            role: "customer",
-            accepted: true,
-          } as unknown as Prisma.InputJsonValue,
-        },
-      });
 
       // Відправляємо Push виконавцю
       if (order.performerUserId) {
@@ -211,21 +196,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         }),
       ]);
 
-      // Створюємо notification
-      await prisma.notification.create({
-        data: {
-          userId: order.customerUserId,
-          type: "order",
-          title: "Відкрито арбітраж",
-          message: `Замовлення #${orderId.slice(-6)}. Заказчик відхилив завершення. Відкрито арбітраж.`,
-          data: {
-            orderId,
-            type: "order_rejected_completion",
-            role: "customer",
-            accepted: false,
-          } as unknown as Prisma.InputJsonValue,
-        },
-      });
 
       // Відправляємо Push виконавцю
       if (order.performerUserId) {

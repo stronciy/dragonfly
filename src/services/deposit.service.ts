@@ -505,9 +505,9 @@ export function buildDepositPaidEvents(args: {
   return events;
 }
 
-// Notify BOTH parties (push + inbox) about a successful deposit payment,
-// including the payer about their own payment. Throws on publish/notify
-// failure so callers can retry; never call with duplicate=true.
+// Notify only the counterparty (push + inbox) about a deposit payment; the
+// payer already knows they paid. WebSocket events still go to both parties
+// so both apps refresh. Throws on publish/notify failure so callers can retry.
 export async function emitDepositPaidNotifications(args: {
   requestId?: string;
   order: { id: string; status: string; customerUserId: string; performerUserId: string | null };
@@ -536,21 +536,6 @@ export async function emitDepositPaidNotifications(args: {
       message: `Замовлення #${shortId}. Внесіть свою гарантійну суму протягом 12 годин.`,
       data: { orderId: args.order.id, type: "deposit_customer_required", role: "customer" },
     });
-    if (args.order.performerUserId) {
-      await notifyUser({
-        userId: args.order.performerUserId,
-        type: "deposit",
-        title: "Гарантійну суму утримано",
-        message: `Замовлення #${shortId}. Ваша гарантійна сума ${sum} утримана. Очікуйте внесення заказчиком.`,
-        data: {
-          orderId: args.order.id,
-          type: "deposit_performer_paid_self",
-          role: "performer",
-          amount: Number(args.amount),
-          currency: args.currency,
-        },
-      });
-    }
   } else {
     if (args.order.performerUserId) {
       await notifyUser({
@@ -561,19 +546,6 @@ export async function emitDepositPaidNotifications(args: {
         data: { orderId: args.order.id, type: "order_confirmed", role: "performer" },
       });
     }
-    await notifyUser({
-      userId: args.order.customerUserId,
-      type: "deposit",
-      title: "Гарантійну суму внесено",
-      message: `Замовлення #${shortId}. Ваша гарантійна сума ${sum} внесена.`,
-      data: {
-        orderId: args.order.id,
-        type: "deposit_customer_paid_self",
-        role: "customer",
-        amount: Number(args.amount),
-        currency: args.currency,
-      },
-    });
   }
   process.stdout.write(
     JSON.stringify({

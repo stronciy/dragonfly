@@ -443,13 +443,6 @@ export async function POST(req: Request) {
       data: { orderId: order.id, status: order.status },
     });
 
-    await notifyUser({
-      userId: user.id,
-      type: "order",
-      title: "Замовлення створено",
-      message: `Замовлення #${order.id.slice(-6)} опубліковано. Підбираємо виконавців за вашими параметрами.`,
-      data: { orderId: order.id, type: "order_created", role: "customer", status: order.status },
-    });
 
     return ok(req, { order }, { status: 201, message: "Створено" });
   } catch (err) {
