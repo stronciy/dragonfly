@@ -44,15 +44,15 @@ export async function PATCH(req: Request) {
       role: updated.role,
     });
 
-    return ok(req, { user: updated, accessToken }, { message: "Role updated" });
+    return ok(req, { user: updated, accessToken }, { message: "Роль оновлено" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     if (err instanceof ApiError) {
       return fail(req, err);
     }
     console.error("[PATCH /api/v1/users/me/role] Unexpected error:", err);
-    return fail(req, new ApiError(500, "INTERNAL_ERROR", "Failed to update role"));
+    return fail(req, new ApiError(500, "INTERNAL_ERROR", "Не вдалося оновити роль"));
   }
 }

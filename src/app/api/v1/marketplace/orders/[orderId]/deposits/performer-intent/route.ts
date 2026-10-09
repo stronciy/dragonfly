@@ -16,7 +16,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
@@ -71,7 +71,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     return ok(req, { paymentIntent: serializePaymentIntent(intent) });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

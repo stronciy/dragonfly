@@ -18,16 +18,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.performerUserId !== user.id) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
     if (!(REFUSABLE as readonly string[]).includes(order.status)) {
-      throw new ApiError(409, "CONFLICT", "Order cannot be refused in its current status");
+      throw new ApiError(409, "CONFLICT", "Замовлення не можна відхилити в поточному статусі");
     }
 
     const customerPaid = order.status === "confirmed";
@@ -101,7 +101,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     return ok(req, { order: { id: orderId, status: "published" }, forfeited: customerPaid });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

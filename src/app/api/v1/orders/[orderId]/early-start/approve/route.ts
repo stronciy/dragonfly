@@ -10,20 +10,20 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.customerUserId !== user.id) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
     if (order.status !== "confirmed") {
-      throw new ApiError(409, "CONFLICT", "Order is no longer awaiting start");
+      throw new ApiError(409, "CONFLICT", "Замовлення більше не очікує старту");
     }
 
     const pending = await getLatestEarlyStartRequest(orderId);
     if (!pending || pending.status !== "pending") {
-      throw new ApiError(409, "CONFLICT", "No pending early start request");
+      throw new ApiError(409, "CONFLICT", "Немає активного запиту раннього старту");
     }
 
     const decided = await prisma.earlyStartRequest.update({
@@ -47,7 +47,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       });
     }
 
-    return ok(req, { earlyStart: serializeEarlyStartRequest(decided) }, { message: "Early start approved" });
+    return ok(req, { earlyStart: serializeEarlyStartRequest(decided) }, { message: "Ранній старт погоджено" });
   } catch (err) {
     return fail(req, err);
   }

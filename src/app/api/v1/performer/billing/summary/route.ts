@@ -6,7 +6,7 @@ import { prisma } from "@/shared";
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
 
     const [completedAgg] = await prisma.$transaction([
       prisma.order.aggregate({ where: { performerUserId: user.id, status: "completed" }, _sum: { budget: true } }),

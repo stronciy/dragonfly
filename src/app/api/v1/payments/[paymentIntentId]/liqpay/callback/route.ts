@@ -29,7 +29,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
   try {
     paymentIntentId = (await ctx.params).paymentIntentId;
     const { data, signature } = await readCallbackPayload(req);
-    if (!data || !signature) throw new ApiError(400, "VALIDATION_ERROR", "Missing data or signature");
+    if (!data || !signature) throw new ApiError(400, "VALIDATION_ERROR", "Відсутні data або signature");
 
     const decoded = liqpayDecodeData(data) as { status?: string };
     // hold-чекауты подтверждаются статусом hold_wait, sandbox — sandbox,
@@ -63,7 +63,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
       paymentIntent: { id: intent.id, status: intent.status },
     });
   } catch (err) {
-    if (err instanceof ApiError && err.message === "Invalid payment signature") {
+    if (err instanceof ApiError && err.message === "Недійсний підпис оплати") {
       process.stderr.write(
         JSON.stringify({ level: "error", msg: "liqpay_callback_bad_signature", paymentIntentId, requestId }) + "\n"
       );

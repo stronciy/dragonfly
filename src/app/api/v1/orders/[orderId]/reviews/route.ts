@@ -16,20 +16,20 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.performerUserId !== user.id) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
     if (order.status !== "completed") {
-      throw new ApiError(409, "CONFLICT", "Customer can only be rated after work is completed");
+      throw new ApiError(409, "CONFLICT", "Замовника можна оцінити лише після завершення робіт");
     }
 
     const existing = await prisma.review.findFirst({ where: { orderId, authorUserId: user.id } });
-    if (existing) throw new ApiError(409, "CONFLICT", "Review already submitted");
+    if (existing) throw new ApiError(409, "CONFLICT", "Відгук вже надіслано");
 
     await prisma.review.create({
       data: {
@@ -56,10 +56,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       data: { orderId },
     });
 
-    return ok(req, { rated: true }, { status: 201, message: "Review submitted" });
+    return ok(req, { rated: true }, { status: 201, message: "Відгук надіслано" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

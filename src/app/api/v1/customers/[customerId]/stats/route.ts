@@ -23,7 +23,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ customerId: str
     
     // Перевірка що користувач має доступ до статистики
     if (user.role !== "customer" || user.id !== customerId) {
-      throw new ApiError(403, "FORBIDDEN", "Access denied");
+      throw new ApiError(403, "FORBIDDEN", "Доступ заборонено");
     }
     
     const now = new Date();

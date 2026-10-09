@@ -13,17 +13,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.performerUserId !== user.id) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
 
     const pending = await getLatestArbitrationResolution(orderId);
     if (!pending || pending.status !== "pending") {
-      throw new ApiError(409, "CONFLICT", "No pending resolution proposal");
+      throw new ApiError(409, "CONFLICT", "Немає активної пропозиції");
     }
 
     const decided = await prisma.arbitrationResolution.update({
@@ -45,7 +45,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       data: { orderId },
     });
 
-    return ok(req, { resolution: serializeArbitrationResolution(decided) }, { message: "Proposal rejected" });
+    return ok(req, { resolution: serializeArbitrationResolution(decided) }, { message: "Пропозицію відхилено" });
   } catch (err) {
     return fail(req, err);
   }

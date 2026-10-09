@@ -6,13 +6,13 @@ import { prisma } from "@/shared";
 export async function POST(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({ where: { id: orderId }, select: { performerUserId: true } });
-    if (!order || order.performerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Order not found");
+    if (!order || order.performerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
-    return ok(req, { report: { orderId, status: "submitted" } }, { message: "Submitted" });
+    return ok(req, { report: { orderId, status: "submitted" } }, { message: "Надіслано" });
   } catch (err) {
     return fail(req, err);
   }

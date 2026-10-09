@@ -32,7 +32,7 @@ export async function PATCH(req: Request) {
     return ok(req, { biometrics: { enabled: updated.biometricsEnabled } });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

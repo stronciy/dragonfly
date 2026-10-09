@@ -37,11 +37,11 @@ const patchSchema = z
     budget: z.number().positive().optional(),
     status: z.enum(["draft", "published"]).optional(),
   })
-  .refine((v) => Object.keys(v).length > 0, { message: "No fields to update" });
+  .refine((v) => Object.keys(v).length > 0, { message: "Немає полів для оновлення" });
 
 async function getOrderOr404(orderId: string) {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) throw new ApiError(404, "NOT_FOUND", "Order not found");
+  if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
   return order;
 }
 
@@ -54,7 +54,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     const canRead =
       (user.role === "customer" && order.customerUserId === user.id) ||
       (user.role === "performer" && order.performerUserId === user.id);
-    if (!canRead) throw new ApiError(404, "NOT_FOUND", "Order not found");
+    if (!canRead) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
     const timeline = await prisma.orderStatusEvent.findMany({
       where: { orderId },
@@ -112,11 +112,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
     const { orderId } = await ctx.params;
     const order = await getOrderOr404(orderId);
-    if (order.customerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Order not found");
-    if (!["draft", "published"].includes(order.status)) throw new ApiError(403, "FORBIDDEN", "Order cannot be edited");
+    if (order.customerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+    if (!["draft", "published"].includes(order.status)) throw new ApiError(403, "FORBIDDEN", "Замовлення не можна редагувати");
 
     const body = patchSchema.parse(await req.json());
     const nextStatus = body.status ?? order.status;
@@ -193,10 +193,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       });
     }
 
-    return ok(req, { order: updated }, { message: "Updated" });
+    return ok(req, { order: updated }, { message: "Оновлено" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }
@@ -206,7 +206,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ orderId: str
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
     const { orderId } = await ctx.params;
     let order: Awaited<ReturnType<typeof getOrderOr404>>;
     try {
@@ -224,14 +224,14 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ orderId: str
           `[api] DELETE /api/v1/orders/${orderId} not_owned userId=${user.id} ownerUserId=${order.customerUserId}`
         );
       }
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
 
     if (!["draft", "published", "cancelled"].includes(order.status)) {
       if (process.env.NODE_ENV !== "production") {
         console.info(`[api] DELETE /api/v1/orders/${orderId} bad_status userId=${user.id} status=${order.status}`);
       }
-      throw new ApiError(403, "FORBIDDEN", "Order cannot be deleted");
+      throw new ApiError(403, "FORBIDDEN", "Замовлення не можна видалити");
     }
 
     const matchedPerformers = await prisma.orderMatch.findMany({ where: { orderId }, select: { performerUserId: true } });
@@ -264,7 +264,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ orderId: str
       data: { orderId },
     });
 
-    return ok(req, { deleted: true, orderId }, { status: 200, message: "Deleted" });
+    return ok(req, { deleted: true, orderId }, { status: 200, message: "Видалено" });
   } catch (err) {
     return fail(req, err);
   }

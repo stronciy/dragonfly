@@ -14,7 +14,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     const { orderId } = await ctx.params;
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || (order.customerUserId !== user.id && order.performerUserId !== user.id)) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
     const items = await prisma.workProgressUpdate.findMany({
       where: { orderId },
@@ -43,15 +43,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.performerUserId !== user.id) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
     if (order.status !== "started") {
-      throw new ApiError(409, "CONFLICT", "Progress can only be reported while work is started");
+      throw new ApiError(409, "CONFLICT", "Про прогрес можна звітувати лише після старту робіт");
     }
 
     const form = await req.formData();
@@ -63,14 +63,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         : (() => {
             const n = Number(percentRaw);
             if (!Number.isInteger(n) || n < 0 || n > 100) {
-              throw new ApiError(400, "VALIDATION_ERROR", "Percent must be an integer 0-100");
+              throw new ApiError(400, "VALIDATION_ERROR", "Відсоток має бути цілим числом 0–100");
             }
             return n;
           })();
     const comment = typeof commentRaw === "string" && commentRaw.trim() ? commentRaw.trim().slice(0, 2000) : null;
     const files = await readFormFilesAsDataUrl(form, "files", MAX_FILES);
     if (!comment && files.length === 0) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Provide a comment or at least one photo");
+      throw new ApiError(400, "VALIDATION_ERROR", "Додайте коментар або хоча б одне фото");
     }
 
     const created = await prisma.workProgressUpdate.create({
@@ -105,7 +105,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       data: { orderId, progressId: created.id },
     });
 
-    return ok(req, { progress: { id: created.id } }, { status: 201, message: "Progress reported" });
+    return ok(req, { progress: { id: created.id } }, { status: 201, message: "Про прогрес повідомлено" });
   } catch (err) {
     return fail(req, err);
   }

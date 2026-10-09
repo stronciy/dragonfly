@@ -7,16 +7,16 @@ import { safeDepositAmount } from "@/shared";
 export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) throw new ApiError(404, "NOT_FOUND", "Order not found");
+    if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
     const isAssigned = order.performerUserId === user.id;
     // Your own orders are never performer work (open them as customer).
     if (order.customerUserId === user.id && !isAssigned)
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     const match = isAssigned
       ? null
       : await prisma.orderMatch.findUnique({
@@ -24,7 +24,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
             uniq_performer_order_match: { performerUserId: user.id, orderId },
           },
         });
-    if (!isAssigned && !match) throw new ApiError(404, "NOT_FOUND", "Order not found");
+    if (!isAssigned && !match) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
     const deposit = safeDepositAmount(order.budget);
 

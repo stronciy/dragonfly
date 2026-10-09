@@ -33,7 +33,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number) {
 
 function normalizeError(err: unknown) {
   if (err instanceof Error) return err.message;
-  return "Unknown error";
+  return "Невідома помилка";
 }
 
 async function checkDb(): Promise<HealthCheck> {
@@ -191,17 +191,17 @@ export async function GET(req: Request) {
     const checks: Record<string, unknown> = { db, redis };
 
     if (detailed) {
-      if (!isDetailedAuthorized(req)) throw new ApiError(404, "NOT_FOUND", "Not found");
+      if (!isDetailedAuthorized(req)) throw new ApiError(404, "NOT_FOUND", "Не знайдено");
       const [migrations, schema] = await Promise.all([checkMigrations(), checkSchema()]);
       checks.migrations = migrations;
       checks.schema = schema;
     }
 
     if (typeof checks.db === "object" && checks.db && "ok" in checks.db && !(checks.db as HealthCheck).ok) {
-      throw new ApiError(503, "SERVICE_UNAVAILABLE", "Service unavailable", { checks });
+      throw new ApiError(503, "SERVICE_UNAVAILABLE", "Сервіс тимчасово недоступний", { checks });
     }
     if (typeof checks.redis === "object" && checks.redis && "ok" in checks.redis && !(checks.redis as HealthCheck).ok) {
-      throw new ApiError(503, "SERVICE_UNAVAILABLE", "Service unavailable", { checks });
+      throw new ApiError(503, "SERVICE_UNAVAILABLE", "Сервіс тимчасово недоступний", { checks });
     }
     if (detailed) {
       const schema = checks.schema as Awaited<ReturnType<typeof checkSchema>> | undefined;
@@ -209,7 +209,7 @@ export async function GET(req: Request) {
       const hasFailedMigrations = (migrations?.failed?.length ?? 0) > 0;
       const missingTables = schema ? (schema.missingTables.length > 0 || schema.missingUserColumns.length > 0) : false;
       if (hasFailedMigrations || missingTables || schema?.postgisInstalled === false) {
-        throw new ApiError(503, "SERVICE_UNAVAILABLE", "Service unavailable", { checks });
+        throw new ApiError(503, "SERVICE_UNAVAILABLE", "Сервіс тимчасово недоступний", { checks });
       }
     }
 

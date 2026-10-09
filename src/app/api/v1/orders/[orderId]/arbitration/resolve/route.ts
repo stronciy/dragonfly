@@ -23,7 +23,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     const { orderId } = await ctx.params;
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || (order.customerUserId !== user.id && order.performerUserId !== user.id)) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
     const latest = await getLatestArbitrationResolution(orderId);
     return ok(req, { resolution: latest ? serializeArbitrationResolution(latest) : null });
@@ -36,21 +36,21 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.customerUserId !== user.id) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
     if (order.status !== "arbitration") {
-      throw new ApiError(409, "CONFLICT", "Order is not in arbitration");
+      throw new ApiError(409, "CONFLICT", "Замовлення не в арбітражі");
     }
 
     const pending = await getLatestArbitrationResolution(orderId);
     if (pending && pending.status === "pending") {
-      throw new ApiError(409, "CONFLICT", "Resolution proposal is already pending");
+      throw new ApiError(409, "CONFLICT", "Пропозиція вже очікує рішення");
     }
 
     const created = await prisma.arbitrationResolution.create({
@@ -84,10 +84,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       });
     }
 
-    return ok(req, { resolution: serializeArbitrationResolution(created) }, { status: 201, message: "Proposal created" });
+    return ok(req, { resolution: serializeArbitrationResolution(created) }, { status: 201, message: "Пропозицію створено" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

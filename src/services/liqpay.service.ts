@@ -18,9 +18,9 @@ type LiqPayCheckoutParams = {
 
 function getRequiredEnv(name: "LIQPAY_PUBLIC_KEY" | "LIQPAY_PRIVATE_KEY") {
   const value = process.env[name];
-  if (!value) throw new ApiError(503, "INTERNAL_ERROR", "Payments provider not configured");
+  if (!value) throw new ApiError(503, "INTERNAL_ERROR", "Платіжний провайдер не налаштовано");
   const trimmed = value.trim();
-  if (!trimmed) throw new ApiError(503, "INTERNAL_ERROR", "Payments provider not configured");
+  if (!trimmed) throw new ApiError(503, "INTERNAL_ERROR", "Платіжний провайдер не налаштовано");
   return trimmed;
 }
 

@@ -12,13 +12,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({ where: { id: orderId }, select: { customerUserId: true, performerUserId: true, status: true } });
-    if (!order) throw new ApiError(404, "NOT_FOUND", "Order not found");
+    if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     const canUpload =
       (user.role === "customer" && order.customerUserId === user.id) ||
       (user.role === "performer" && order.performerUserId === user.id);
-    if (!canUpload) throw new ApiError(404, "NOT_FOUND", "Order not found");
+    if (!canUpload) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
-    if (order.status !== "arbitration") throw new ApiError(409, "CONFLICT", "Order is not in arbitration");
+    if (order.status !== "arbitration") throw new ApiError(409, "CONFLICT", "Замовлення не в арбітражі");
 
     const form = await req.formData();
     const { dataUrl, mimeType, size, name } = await readFormFileAsDataUrl(form, "file");
@@ -36,7 +36,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       select: { id: true, createdAt: true },
     });
 
-    return ok(req, { media }, { status: 201, message: "Uploaded" });
+    return ok(req, { media }, { status: 201, message: "Завантажено" });
   } catch (err) {
     return fail(req, err);
   }

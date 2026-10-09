@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
 
     const rawBody = await req.json();
     if (process.env.NODE_ENV !== "production") {
@@ -53,8 +53,8 @@ export async function POST(req: Request) {
           select: { id: true },
         });
         if (!firstSubcategory) {
-          throw new ApiError(400, "VALIDATION_ERROR", "No subcategories found for this category", {
-            fieldErrors: { serviceSubCategoryId: ["No subcategories available"] },
+          throw new ApiError(400, "VALIDATION_ERROR", "Для цієї категорії не знайдено підкатегорій", {
+            fieldErrors: { serviceSubCategoryId: ["Немає доступних підкатегорій"] },
           });
         }
         serviceSubCategoryId = firstSubcategory.id;
@@ -87,9 +87,9 @@ export async function POST(req: Request) {
         select: { id: true, categoryId: true, _count: { select: { types: true } } },
       }),
     ]);
-    if (!category) throw new ApiError(404, "NOT_FOUND", "Service category not found");
+    if (!category) throw new ApiError(404, "NOT_FOUND", "Категорію послуг не знайдено");
     if (!subcategory || subcategory.categoryId !== serviceCategoryId) {
-      throw new ApiError(404, "NOT_FOUND", "Service subcategory not found");
+      throw new ApiError(404, "NOT_FOUND", "Підкатегорію послуг не знайдено");
     }
 
     const hasTypes = (subcategory._count.types ?? 0) > 0;
@@ -97,8 +97,8 @@ export async function POST(req: Request) {
 
     if (serviceTypeId == null) {
       if (hasTypes) {
-        throw new ApiError(400, "VALIDATION_ERROR", "serviceTypeId is required for this subcategory", {
-          fieldErrors: { serviceTypeId: ["Required for this subcategory"] },
+        throw new ApiError(400, "VALIDATION_ERROR", "Для цієї підкатегорії потрібен serviceTypeId", {
+          fieldErrors: { serviceTypeId: ["Обов'язково для цієї підкатегорії"] },
         });
       }
 
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
     }
 
     if (!serviceSubCategoryId) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Service subcategory is required", {
+      throw new ApiError(400, "VALIDATION_ERROR", "Потрібна підкатегорія послуги", {
         fieldErrors: { serviceSubCategoryId: ["Required"] },
       });
     }
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
     const type = await prisma.serviceType.findUnique({
       where: { subcategoryId_id: { subcategoryId: serviceSubCategoryId, id: serviceTypeId } },
     });
-    if (!type) throw new ApiError(404, "NOT_FOUND", "Service type not found");
+    if (!type) throw new ApiError(404, "NOT_FOUND", "Тип послуги не знайдено");
 
     const amount = body.areaHa * 100;
     const validUntil = new Date(Date.now() + 60 * 60 * 1000);
@@ -139,7 +139,7 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

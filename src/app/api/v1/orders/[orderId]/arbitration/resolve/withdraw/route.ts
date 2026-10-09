@@ -12,17 +12,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.customerUserId !== user.id) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
 
     const pending = await getLatestArbitrationResolution(orderId);
     if (!pending || pending.status !== "pending" || pending.proposedById !== user.id) {
-      throw new ApiError(409, "CONFLICT", "No pending proposal to withdraw");
+      throw new ApiError(409, "CONFLICT", "Немає активної пропозиції для відкликання");
     }
 
     const decided = await prisma.arbitrationResolution.update({
@@ -37,7 +37,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       data: { orderId },
     });
 
-    return ok(req, { resolution: serializeArbitrationResolution(decided) }, { message: "Proposal withdrawn" });
+    return ok(req, { resolution: serializeArbitrationResolution(decided) }, { message: "Пропозицію відкликано" });
   } catch (err) {
     return fail(req, err);
   }

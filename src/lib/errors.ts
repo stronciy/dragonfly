@@ -109,5 +109,5 @@ export function asApiError(err: unknown): ApiError {
     // Default to non-retryable for unexpected application errors
     return new ApiError(500, "INTERNAL_ERROR", err.message, undefined, false);
   }
-  return new ApiError(500, "INTERNAL_ERROR", "Unknown error", undefined, false);
+  return new ApiError(500, "INTERNAL_ERROR", "Невідома помилка", undefined, false);
 }

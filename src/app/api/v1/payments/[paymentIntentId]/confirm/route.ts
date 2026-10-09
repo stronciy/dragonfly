@@ -24,11 +24,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
       where: { id: paymentIntentId },
       include: { order: { select: { id: true, customerUserId: true, performerUserId: true } } },
     });
-    if (!pre) throw new ApiError(404, "NOT_FOUND", "Payment intent not found");
+    if (!pre) throw new ApiError(404, "NOT_FOUND", "Платіж не знайдено");
     const allowed =
       (pre.role === "customer" && pre.order.customerUserId === user.id) ||
       (pre.role === "performer" && pre.order.performerUserId === user.id);
-    if (!allowed) throw new ApiError(404, "NOT_FOUND", "Payment intent not found");
+    if (!allowed) throw new ApiError(404, "NOT_FOUND", "Платіж не знайдено");
 
     const { order, intent, duplicate } = await prisma.$transaction((tx) =>
       confirmDeposit(tx, {
@@ -56,7 +56,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

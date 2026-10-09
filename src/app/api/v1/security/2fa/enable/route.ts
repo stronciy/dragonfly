@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const body = schema.parse(await req.json());
 
     const okCode = verify({ token: body.code, secret: body.secret });
-    if (!okCode) throw new ApiError(400, "VALIDATION_ERROR", "Invalid code");
+    if (!okCode) throw new ApiError(400, "VALIDATION_ERROR", "Невірний код");
 
     const enabledAt = new Date();
     await prisma.user.update({
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     return ok(req, { twoFactor: { enabled: true, method: "totp", enabledAt: enabledAt.toISOString() } });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

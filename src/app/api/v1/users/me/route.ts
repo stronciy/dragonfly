@@ -14,7 +14,7 @@ const patchSchema = z
       .transform((s) => s.trim().toLowerCase())
       .optional(),
   })
-  .refine((v) => Object.keys(v).length > 0, { message: "No fields to update" });
+  .refine((v) => Object.keys(v).length > 0, { message: "Немає полів для оновлення" });
 
 export async function GET(req: Request) {
   try {
@@ -32,7 +32,7 @@ export async function PATCH(req: Request) {
 
     if (body.email && body.email !== authUser.email) {
       const existing = await prisma.user.findUnique({ where: { email: body.email } });
-      if (existing) throw new ApiError(409, "CONFLICT", "Email already in use");
+      if (existing) throw new ApiError(409, "CONFLICT", "Цей email вже використовується");
     }
 
     const user = await prisma.user.update({
@@ -41,10 +41,10 @@ export async function PATCH(req: Request) {
       select: { id: true, name: true, email: true, phone: true, role: true, avatarUrl: true, createdAt: true },
     });
 
-    return ok(req, { user }, { message: "Updated" });
+    return ok(req, { user }, { message: "Оновлено" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

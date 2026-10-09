@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       ?.slice("refreshToken=".length);
 
     if (!refreshToken) {
-      const res = fail(req, new ApiError(401, "UNAUTHORIZED", "Missing refresh token"));
+      const res = fail(req, new ApiError(401, "UNAUTHORIZED", "Відсутній refresh-токен"));
       res.cookies.set({
         name: "refreshToken",
         value: "",
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     try {
       payload = await verifyRefreshToken(refreshToken);
     } catch {
-      const res = fail(req, new ApiError(401, "UNAUTHORIZED", "Invalid refresh token"));
+      const res = fail(req, new ApiError(401, "UNAUTHORIZED", "Недійсний refresh-токен"));
       res.cookies.set({
         name: "refreshToken",
         value: "",
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     });
 
     if (!tokenRow || tokenRow.revokedAt || tokenRow.expiresAt <= new Date()) {
-      const res = fail(req, new ApiError(401, "UNAUTHORIZED", "Refresh token expired"));
+      const res = fail(req, new ApiError(401, "UNAUTHORIZED", "Строк дії refresh-токена минув"));
       res.cookies.set({
         name: "refreshToken",
         value: "",
@@ -69,11 +69,11 @@ export async function POST(req: Request) {
       select: { id: true, email: true, role: true },
     });
 
-    if (!user) throw new ApiError(401, "UNAUTHORIZED", "User not found");
-    if (payload.userId !== user.id) throw new ApiError(401, "UNAUTHORIZED", "Invalid refresh token");
+    if (!user) throw new ApiError(401, "UNAUTHORIZED", "Користувача не знайдено");
+    if (payload.userId !== user.id) throw new ApiError(401, "UNAUTHORIZED", "Недійсний refresh-токен");
 
     const accessToken = await signAccessToken({ userId: user.id, email: user.email, role: user.role });
-    return ok(req, { accessToken }, { status: 200, message: "Refreshed" });
+    return ok(req, { accessToken }, { status: 200, message: "Оновлено" });
   } catch (err) {
     return fail(req, err);
   }

@@ -18,9 +18,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
     const body = schema.parse(await req.json().catch(() => ({})));
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) throw new ApiError(404, "NOT_FOUND", "Order not found");
+    if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
-    if (user.role !== "customer" || order.customerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Order not found");
+    if (user.role !== "customer" || order.customerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     
     // Дозволяємо скасування для:
     // - draft, published (завжди)
@@ -35,7 +35,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       throw new ApiError(
         403, 
         "FORBIDDEN", 
-        `Order cannot be cancelled now. Status: ${order.status}. Expired: ${isExpired}`
+        `Замовлення не можна скасувати зараз. Статус: ${order.status}. Прострочено: ${isExpired}`
       );
     }
 
@@ -123,10 +123,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       `\n   Reason: ${body.reason ?? 'N/A'}\n`
     );
 
-    return ok(req, { order: { id: orderId, status: "cancelled" } }, { message: "Cancelled" });
+    return ok(req, { order: { id: orderId, status: "cancelled" } }, { message: "Скасовано" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

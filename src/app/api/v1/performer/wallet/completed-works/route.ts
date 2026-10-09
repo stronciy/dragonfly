@@ -7,7 +7,7 @@ import { makePage, parsePagination } from "@/lib/pagination";
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
 
     const url = new URL(req.url);
     const { limit, offset } = parsePagination(url);

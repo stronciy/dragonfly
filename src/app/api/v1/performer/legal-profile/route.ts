@@ -21,7 +21,7 @@ const edrpouSchema = z.preprocess(
     const digits = normalizeEdrpou(v.trim());
     return digits === "" ? null : digits;
   },
-  z.string().refine(validateEdrpou, "EDRPOU must be 8-10 digits").nullable()
+  z.string().refine(validateEdrpou, "ЄДРПОУ має містити 8–10 цифр").nullable()
 );
 
 const ibanSchema = z.preprocess(
@@ -31,7 +31,7 @@ const ibanSchema = z.preprocess(
     if (trimmed === "") return null;
     return normalizeUAIban(trimmed);
   },
-  z.string().refine(validateUAIban, "Invalid UA IBAN").nullable()
+  z.string().refine(validateUAIban, "Невірний IBAN України").nullable()
 );
 
 const patchSchema = z.object({
@@ -45,7 +45,7 @@ const patchSchema = z.object({
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
 
     const legalProfile = await prisma.legalProfile.findUnique({
       where: { userId: user.id },
@@ -77,7 +77,7 @@ export async function GET(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
 
     const body = patchSchema.parse(await req.json());
 
@@ -132,7 +132,7 @@ export async function PATCH(req: Request) {
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

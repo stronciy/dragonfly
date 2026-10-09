@@ -17,7 +17,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       !order ||
       (order.customerUserId !== user.id && order.performerUserId !== user.id)
     ) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
     const latest = await getLatestEarlyStartRequest(orderId);
     return ok(req, { earlyStart: latest ? serializeEarlyStartRequest(latest) : null });
@@ -30,23 +30,23 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.performerUserId !== user.id) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
     if (order.status !== "confirmed") {
-      throw new ApiError(409, "CONFLICT", "Early start can only be requested for confirmed orders");
+      throw new ApiError(409, "CONFLICT", "Ранній старт можна запросити лише для підтверджених замовлень");
     }
     if (!order.dateFrom || new Date(order.dateFrom).getTime() <= Date.now()) {
-      throw new ApiError(409, "CONFLICT", "Work can already be started, no approval needed");
+      throw new ApiError(409, "CONFLICT", "Роботу вже можна починати, погодження не потрібне");
     }
 
     const pending = await getLatestEarlyStartRequest(orderId);
     if (pending && pending.status === "pending") {
-      throw new ApiError(409, "CONFLICT", "Early start request is already pending");
+      throw new ApiError(409, "CONFLICT", "Запит раннього старту вже очікує");
     }
 
     const created = await prisma.earlyStartRequest.create({
@@ -67,10 +67,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       data: { orderId },
     });
 
-    return ok(req, { earlyStart: serializeEarlyStartRequest(created) }, { status: 201, message: "Request created" });
+    return ok(req, { earlyStart: serializeEarlyStartRequest(created) }, { status: 201, message: "Запит створено" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

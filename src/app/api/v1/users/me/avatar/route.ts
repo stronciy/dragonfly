@@ -12,17 +12,17 @@ const patchSchema = z
   .object({
     avatarUrl: z.string().max(MAX_AVATAR_BASE64_CHARS).nullable(),
   })
-  .refine((v) => typeof v.avatarUrl === "string", { message: "avatarUrl required" });
+  .refine((v) => typeof v.avatarUrl === "string", { message: "потрібен avatarUrl" });
 
 function validateDataUrl(dataUrl: string) {
   const match = /^data:(image\/[a-z+]+);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
-  if (!match) throw new ApiError(400, "VALIDATION_ERROR", "avatarUrl must be a base64 image data URL");
+  if (!match) throw new ApiError(400, "VALIDATION_ERROR", "avatarUrl має бути base64 data URL зображення");
   const [, mime, base64] = match;
   if (!ALLOWED_MIME.includes(mime)) {
-    throw new ApiError(400, "VALIDATION_ERROR", `Unsupported image type. Allowed: ${ALLOWED_MIME.join(", ")}`);
+    throw new ApiError(400, "VALIDATION_ERROR", `Непідтримуваний тип зображення. Дозволені: ${ALLOWED_MIME.join(", ")}`);
   }
   const bytes = Math.floor((base64.length * 3) / 4);
-  if (bytes > MAX_AVATAR_RAW_BYTES) throw new ApiError(400, "VALIDATION_ERROR", "Image too large (max 2MB)");
+  if (bytes > MAX_AVATAR_RAW_BYTES) throw new ApiError(400, "VALIDATION_ERROR", "Зображення завелике (макс. 2МБ)");
 }
 
 export async function PATCH(req: Request) {
@@ -37,7 +37,7 @@ export async function PATCH(req: Request) {
         data: { avatarUrl: null },
         select: { id: true, avatarUrl: true },
       });
-      return ok(req, { user }, { message: "Avatar removed" });
+      return ok(req, { user }, { message: "Аватар видалено" });
     }
 
     validateDataUrl(avatarUrl);
@@ -48,10 +48,10 @@ export async function PATCH(req: Request) {
       select: { id: true, avatarUrl: true },
     });
 
-    return ok(req, { user }, { message: "Avatar updated" });
+    return ok(req, { user }, { message: "Аватар оновлено" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

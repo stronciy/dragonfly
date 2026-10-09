@@ -35,10 +35,10 @@ export async function POST(req: Request) {
       select: { id: true, expoPushToken: true, platform: true, createdAt: true },
     });
 
-    return ok(req, { device }, { status: 201, message: "Registered" });
+    return ok(req, { device }, { status: 201, message: "Зареєстровано" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

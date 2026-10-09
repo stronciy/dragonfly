@@ -13,7 +13,7 @@ export type IntentRole = "performer" | "customer";
 
 export function assertIntentRole(role: string): asserts role is IntentRole {
   if (role !== "performer" && role !== "customer") {
-    throw new ApiError(400, "VALIDATION_ERROR", "Invalid intent role");
+    throw new ApiError(400, "VALIDATION_ERROR", "Невірна роль платежу");
   }
 }
 
@@ -47,7 +47,7 @@ export async function createDepositIntent(
   }
 ) {
   const order = await tx.order.findUnique({ where: { id: args.orderId } });
-  if (!order) throw new ApiError(404, "NOT_FOUND", "Order not found");
+  if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
   const amount = depositAmountFor(order.budget);
   const checkout = createLiqPayCheckout({
     orderId: `${order.id}:${args.role}:${Date.now()}`,
@@ -127,14 +127,14 @@ export async function claimOrderForPerformer(
     return { order: order!, freshClaim: true as const };
   }
   const existing = await tx.order.findUnique({ where: { id: args.orderId } });
-  if (!existing) throw new ApiError(404, "NOT_FOUND", "Order not found");
+  if (!existing) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
   if (
     existing.status === "accepted" &&
     existing.performerUserId === args.performerUserId
   ) {
     return { order: existing, freshClaim: false as const };
   }
-  throw new ApiError(409, "CONFLICT", "Order is no longer available");
+  throw new ApiError(409, "CONFLICT", "Замовлення більше недоступне");
 }
 
 export async function confirmDeposit(
@@ -144,17 +144,17 @@ export async function confirmDeposit(
   const intent = await tx.paymentIntent.findUnique({
     where: { id: args.paymentIntentId },
   });
-  if (!intent) throw new ApiError(404, "NOT_FOUND", "Payment intent not found");
+  if (!intent) throw new ApiError(404, "NOT_FOUND", "Платіж не знайдено");
   assertIntentRole(intent.role);
   if (intent.status === "paid") {
     const order = await tx.order.findUnique({ where: { id: intent.orderId } });
     return { order: order!, intent, duplicate: true as const };
   }
   if (intent.status !== "pending") {
-    throw new ApiError(409, "CONFLICT", "Payment intent is not payable");
+    throw new ApiError(409, "CONFLICT", "Платіж не підлягає оплаті");
   }
   if (!liqpayVerifySignature(args.data, args.signature)) {
-    throw new ApiError(400, "VALIDATION_ERROR", "Invalid payment signature");
+    throw new ApiError(400, "VALIDATION_ERROR", "Недійсний підпис оплати");
   }
   const decoded = liqpayDecodeData(args.data) as {
     status?: unknown;
@@ -166,19 +166,19 @@ export async function confirmDeposit(
   const providerStatus = typeof decoded.status === "string" ? decoded.status : null;
   const isCheckoutReplay = !providerStatus && args.data === intent.data;
   if (!isCheckoutReplay && providerStatus !== "success" && providerStatus !== "hold_wait" && providerStatus !== "sandbox") {
-    throw new ApiError(400, "VALIDATION_ERROR", `Payment not completed (status: ${providerStatus ?? "unknown"})`);
+    throw new ApiError(400, "VALIDATION_ERROR", `Оплату не завершено (статус: ${providerStatus ?? "unknown"})`);
   }
   if (typeof decoded.amount !== "undefined") {
     const paidAmount = Number(decoded.amount);
     if (!Number.isFinite(paidAmount) || paidAmount < Number(intent.amount)) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Payment amount is less than required deposit");
+      throw new ApiError(400, "VALIDATION_ERROR", "Сума оплати менша за необхідну заставу");
     }
   }
   const order = await tx.order.findUnique({ where: { id: intent.orderId } });
-  if (!order) throw new ApiError(404, "NOT_FOUND", "Order not found");
+  if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
   const toStatus = transitionForConfirm(intent.role, order.status);
   if (!toStatus || !canTransition(order.status as OrderStatus, toStatus)) {
-    throw new ApiError(409, "CONFLICT", "Order status does not allow deposit");
+    throw new ApiError(409, "CONFLICT", "Статус замовлення не дозволяє внесення застави");
   }
   const now = new Date();
   const deadlineReset =
@@ -191,7 +191,7 @@ export async function confirmDeposit(
     },
   });
   if (moved.count !== 1) {
-    throw new ApiError(409, "CONFLICT", "Order status changed concurrently");
+    throw new ApiError(409, "CONFLICT", "Статус замовлення паралельно змінено");
   }
   const paidIntent = await tx.paymentIntent.update({
     where: { id: intent.id },

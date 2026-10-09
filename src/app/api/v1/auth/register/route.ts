@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const body = schema.parse(await req.json());
 
     const existing = await prisma.user.findUnique({ where: { email: body.email }, select: { id: true } });
-    if (existing) throw new ApiError(409, "CONFLICT", "Email already in use");
+    if (existing) throw new ApiError(409, "CONFLICT", "Цей email вже використовується");
 
     const passwordHash = await bcrypt.hash(body.password, 12);
 
@@ -37,10 +37,10 @@ export async function POST(req: Request) {
       return created;
     });
 
-    return ok(req, { user }, { status: 201, message: "Registered" });
+    return ok(req, { user }, { status: 201, message: "Зареєстровано" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

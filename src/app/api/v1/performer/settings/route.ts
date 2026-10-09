@@ -8,7 +8,7 @@ import { getSubcategoryById, getCategoryById, getTypeById, validatePerformerServ
 import type { Prisma } from "@prisma/client";
 
 // Schema for hierarchical service ID
-const serviceIdSchema = z.string().regex(/^\d+(\.\d+)*$/, "Invalid service ID format");
+const serviceIdSchema = z.string().regex(/^\d+(\.\d+)*$/, "Невірний формат ID послуги");
 
 const putSchema = z.object({
   baseLocationLabel: z.preprocess((v) => (typeof v === "string" ? (v.trim() === "" ? null : v.trim()) : v), z.string().min(1).nullable().optional()),
@@ -30,7 +30,7 @@ const putSchema = z.object({
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
 
     const profile = await prisma.performerProfile.findUnique({
       where: { userId: user.id },
@@ -79,14 +79,14 @@ export async function GET(req: Request) {
 export async function PUT(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
 
     const body = putSchema.parse(await req.json());
 
     // Перевірка: coverage.mode = radius вимагає radiusKm
     if (body.coverage?.mode === "radius" && (body.coverage.radiusKm ?? null) === null) {
-      throw new ApiError(400, "VALIDATION_ERROR", "radiusKm is required for radius mode", {
-        fieldErrors: { "coverage.radiusKm": ["Required for radius mode"] },
+      throw new ApiError(400, "VALIDATION_ERROR", "radiusKm обов'язковий для режиму radius", {
+        fieldErrors: { "coverage.radiusKm": ["Обов'язково для режиму radius"] },
       });
     }
     const hasBaseLocation = body.baseLocationLabel !== undefined && body.baseLocationLabel !== null;
@@ -95,8 +95,8 @@ export async function PUT(req: Request) {
     const hasServices = body.services !== undefined && body.services !== null;
 
     if (!hasBaseLocation && !hasBaseCoordinate && !hasCoverage && !hasServices) {
-      throw new ApiError(400, "VALIDATION_ERROR", "At least one field must be provided", {
-        fieldErrors: { _: ["At least one field must be provided"] },
+      throw new ApiError(400, "VALIDATION_ERROR", "Потрібно вказати хоча б одне поле", {
+        fieldErrors: { _: ["Потрібно вказати хоча б одне поле"] },
       });
     }
 
@@ -104,8 +104,8 @@ export async function PUT(req: Request) {
     let validatedServices: string[] = [];
     let serviceSpecsMap: Record<string, Record<string, unknown>> = {};
     if (body.serviceSpecs != null && !hasServices) {
-      throw new ApiError(400, "VALIDATION_ERROR", "services are required when serviceSpecs is provided", {
-        fieldErrors: { services: ["Required when serviceSpecs is provided"] },
+      throw new ApiError(400, "VALIDATION_ERROR", "services обов'язкові, якщо передано serviceSpecs", {
+        fieldErrors: { services: ["Обов'язково, якщо передано serviceSpecs"] },
       });
     }
     if (hasServices && body.services) {
@@ -126,8 +126,8 @@ export async function PUT(req: Request) {
       }
 
       if (invalidServices.length > 0) {
-        throw new ApiError(400, "VALIDATION_ERROR", "Invalid service IDs", {
-          fieldErrors: { services: [`Invalid service IDs: ${invalidServices.join(', ')}`] },
+        throw new ApiError(400, "VALIDATION_ERROR", "Невірні ID послуг", {
+          fieldErrors: { services: [`Невірні ID послуг: ${invalidServices.join(', ')}`] },
         });
       }
 
@@ -138,7 +138,7 @@ export async function PUT(req: Request) {
       const specErrors: string[] = [];
       for (const [serviceId, specs] of Object.entries(serviceSpecsMap)) {
         if (!uniqueServices.includes(serviceId)) {
-          specErrors.push(`${serviceId}: not in services`);
+          specErrors.push(`${serviceId}: немає у services`);
           continue;
         }
         for (const e of validatePerformerServiceSpecs(serviceId, specs ?? {})) {
@@ -146,7 +146,7 @@ export async function PUT(req: Request) {
         }
       }
       if (specErrors.length > 0) {
-        throw new ApiError(400, "VALIDATION_ERROR", "Invalid service specs", {
+        throw new ApiError(400, "VALIDATION_ERROR", "Невірні характеристики послуг", {
           fieldErrors: { serviceSpecs: specErrors },
         });
       }
@@ -230,10 +230,10 @@ export async function PUT(req: Request) {
       await enqueueMatchNewExecutor(user.id);
     }
 
-    return ok(req, { ok: true }, { message: "Saved" });
+    return ok(req, { ok: true }, { message: "Збережено" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

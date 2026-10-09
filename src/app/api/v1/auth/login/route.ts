@@ -23,10 +23,10 @@ export async function POST(req: Request) {
       select: { id: true, name: true, email: true, role: true, passwordHash: true },
     });
 
-    if (!user) throw new ApiError(401, "UNAUTHORIZED", "Invalid credentials");
+    if (!user) throw new ApiError(401, "UNAUTHORIZED", "Невірний логін або пароль");
 
     const okPassword = await bcrypt.compare(body.password, user.passwordHash);
-    if (!okPassword) throw new ApiError(401, "UNAUTHORIZED", "Invalid credentials");
+    if (!okPassword) throw new ApiError(401, "UNAUTHORIZED", "Невірний логін або пароль");
 
     const accessToken = await signAccessToken({
       userId: user.id,
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     const res = ok(
       req,
       { accessToken, user: { id: user.id, name: user.name, email: user.email, role: user.role } },
-      { status: 200, message: "Logged in" }
+      { status: 200, message: "Вхід виконано" }
     );
 
     res.cookies.set({
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     return res;
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

@@ -10,17 +10,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.performerUserId !== user.id) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
 
     const pending = await getLatestEarlyStartRequest(orderId);
     if (!pending || pending.status !== "pending" || pending.requestedById !== user.id) {
-      throw new ApiError(409, "CONFLICT", "No pending early start request to withdraw");
+      throw new ApiError(409, "CONFLICT", "Немає активного запиту раннього старту для відкликання");
     }
 
     const decided = await prisma.earlyStartRequest.update({
@@ -42,7 +42,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       data: { orderId },
     });
 
-    return ok(req, { earlyStart: serializeEarlyStartRequest(decided) }, { message: "Request withdrawn" });
+    return ok(req, { earlyStart: serializeEarlyStartRequest(decided) }, { message: "Запит відкликано" });
   } catch (err) {
     return fail(req, err);
   }

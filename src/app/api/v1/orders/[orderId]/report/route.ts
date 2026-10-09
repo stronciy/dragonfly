@@ -9,12 +9,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({ where: { id: orderId }, select: { customerUserId: true, performerUserId: true } });
-    if (!order) throw new ApiError(404, "NOT_FOUND", "Order not found");
+    if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
     const canRead =
       (user.role === "customer" && order.customerUserId === user.id) ||
       (user.role === "performer" && order.performerUserId === user.id);
-    if (!canRead) throw new ApiError(404, "NOT_FOUND", "Order not found");
+    if (!canRead) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
     const rows = await prisma.orderMedia.findMany({
       where: { orderId, userId: user.id, kind: "report" },

@@ -64,7 +64,7 @@ const listQuerySchema = z.object({
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
 
     const url = new URL(req.url);
     const { limit, offset } = parsePagination(url);
@@ -182,7 +182,7 @@ export async function GET(req: Request) {
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }
@@ -191,7 +191,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
 
     const requestId = getRequestId(req);
     const rawBody = await req.json().catch(() => ({}));
@@ -215,11 +215,11 @@ export async function POST(req: Request) {
 
     // Validate service IDs exist (hierarchical format)
     if (!isValidServiceId(body.serviceCategoryId, body.serviceSubCategoryId, body.serviceTypeId)) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Invalid service hierarchy", {
+      throw new ApiError(400, "VALIDATION_ERROR", "Невірна ієрархія послуг", {
         fieldErrors: {
-          serviceCategoryId: ["Invalid category ID"],
-          serviceSubCategoryId: ["Invalid subcategory ID"],
-          serviceTypeId: body.serviceTypeId ? ["Invalid type ID"] : [],
+          serviceCategoryId: ["Невірний ID категорії"],
+          serviceSubCategoryId: ["Невірний ID підкатегорії"],
+          serviceTypeId: body.serviceTypeId ? ["Невірний ID типу"] : [],
         },
       });
     }
@@ -227,7 +227,7 @@ export async function POST(req: Request) {
     // Validate specs against service requirements
     const specErrors = validateSpecs(body.serviceTypeId ?? null, body.serviceSubCategoryId, body.specs ?? {});
     if (specErrors.length > 0) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Invalid technical specifications", {
+      throw new ApiError(400, "VALIDATION_ERROR", "Невірні технічні характеристики", {
         fieldErrors: { specs: specErrors },
       });
     }
@@ -270,16 +270,16 @@ export async function POST(req: Request) {
       });
     }
 
-    if (!categoryOk) throw new ApiError(404, "NOT_FOUND", "Service category not found");
-    if (!subcategoryOk) throw new ApiError(404, "NOT_FOUND", "Service subcategory not found");
+    if (!categoryOk) throw new ApiError(404, "NOT_FOUND", "Категорію послуг не знайдено");
+    if (!subcategoryOk) throw new ApiError(404, "NOT_FOUND", "Підкатегорію послуг не знайдено");
 
     if (body.serviceTypeId == null && subcategoryHasTypes) {
-      throw new ApiError(400, "VALIDATION_ERROR", "serviceTypeId is required for this subcategory", {
-        fieldErrors: { serviceTypeId: ["Required for this subcategory"] },
+      throw new ApiError(400, "VALIDATION_ERROR", "Для цієї підкатегорії потрібен serviceTypeId", {
+        fieldErrors: { serviceTypeId: ["Обов'язково для цієї підкатегорії"] },
       });
     }
     if (body.serviceTypeId != null && !serviceTypeOk) {
-      throw new ApiError(404, "NOT_FOUND", "Service type not found");
+      throw new ApiError(404, "NOT_FOUND", "Тип послуги не знайдено");
     }
 
     const order = await prisma.$transaction(async (tx) => {
@@ -449,10 +449,10 @@ export async function POST(req: Request) {
       data: { orderId: order.id, type: "order_created", role: "customer", status: order.status },
     });
 
-    return ok(req, { order }, { status: 201, message: "Created" });
+    return ok(req, { order }, { status: 201, message: "Створено" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

@@ -22,22 +22,22 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.customerUserId !== user.id) {
-      throw new ApiError(404, "NOT_FOUND", "Order not found");
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
     if (order.status !== "requires_confirmation" && order.status !== "accepted") {
-      throw new ApiError(400, "VALIDATION_ERROR", "Order does not require a customer deposit");
+      throw new ApiError(400, "VALIDATION_ERROR", "Замовлення не потребує застави замовника");
     }
     if (!order.performerUserId) {
-      throw new ApiError(400, "VALIDATION_ERROR", "No performer assigned yet");
+      throw new ApiError(400, "VALIDATION_ERROR", "Виконавця ще не призначено");
     }
     if (order.depositDeadline && order.depositDeadline.getTime() <= Date.now()) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Deposit deadline has passed");
+      throw new ApiError(400, "VALIDATION_ERROR", "Строк внесення застави минув");
     }
 
     const intent = await prisma.$transaction(async (tx) => {
@@ -66,7 +66,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     return ok(req, { paymentIntent: serializePaymentIntent(intent) });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

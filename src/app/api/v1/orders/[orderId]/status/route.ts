@@ -20,15 +20,15 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order || order.performerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Order not found");
+    if (!order || order.performerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
     const allowed = allowedTransitions[order.status] ?? [];
-    if (!allowed.includes(body.status)) throw new ApiError(400, "VALIDATION_ERROR", "Invalid status transition");
+    if (!allowed.includes(body.status)) throw new ApiError(400, "VALIDATION_ERROR", "Невірна зміна статусу");
 
     if (body.status === "started" && order.dateFrom && new Date(order.dateFrom).getTime() > Date.now()) {
       const earlyStart = await prisma.earlyStartRequest.findFirst({
@@ -36,7 +36,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         orderBy: { createdAt: "desc" },
       });
       if (!earlyStart) {
-        throw new ApiError(400, "VALIDATION_ERROR", "Early start is not approved by the customer yet");
+        throw new ApiError(400, "VALIDATION_ERROR", "Ранній старт ще не погоджено замовником");
       }
     }
 
@@ -168,10 +168,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       },
     });
 
-    return ok(req, { order: { id: updated.id, status: updated.status } }, { message: "Status updated" });
+    return ok(req, { order: { id: updated.id, status: updated.status } }, { message: "Статус оновлено" });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

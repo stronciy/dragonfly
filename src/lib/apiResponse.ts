@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { asApiError, ApiError } from "@/shared";
+import "./zodUkLocale";
 
 type SuccessBody<T> = {
   success: true;

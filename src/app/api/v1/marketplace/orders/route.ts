@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Performer role required");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
 
     const url = new URL(req.url);
     const { limit, offset } = parsePagination(url);
@@ -117,7 +117,7 @@ export async function GET(req: Request) {
     return ok(req, { items, page: makePage(limit, offset, totalCount) });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

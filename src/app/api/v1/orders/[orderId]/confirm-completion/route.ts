@@ -35,13 +35,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Customer role required");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order || order.customerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Order not found");
-    if (order.status !== "completed") throw new ApiError(409, "CONFLICT", "Order is not completed yet");
+    if (!order || order.customerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+    if (order.status !== "completed") throw new ApiError(409, "CONFLICT", "Роботу ще не завершено");
     
     // Перевірка чи вже не було підтвердження завершення
     // Перевіряємо чи вже є review від цього заказчикa
@@ -53,7 +53,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     });
     
     if (existingReview) {
-      throw new ApiError(409, "CONFLICT", "Order completion already confirmed");
+      throw new ApiError(409, "CONFLICT", "Завершення вже підтверджено");
     }
 
     const resolvedArbitration = await prisma.arbitrationResolution.findFirst({
@@ -61,7 +61,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       select: { id: true },
     });
     if (resolvedArbitration) {
-      throw new ApiError(409, "CONFLICT", "Order was already closed via arbitration");
+      throw new ApiError(409, "CONFLICT", "Замовлення вже закрито через арбітраж");
     }
 
     const expo = new ExpoPushService(prisma);
@@ -194,7 +194,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       return ok(req, {
         order: { id: order.id, status: "completed" },
         review: body.rating ? { rating: body.rating, comment: body.comment } : null,
-      }, { message: "Completion confirmed" });
+      }, { message: "Завершення підтверджено" });
     } else {
       // Заказчик відхиляє завершення → арбітраж
       await prisma.$transaction([
@@ -286,11 +286,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
       return ok(req, {
         order: { id: order.id, status: "arbitration" },
-      }, { message: "Completion rejected, arbitration opened" });
+      }, { message: "Завершення відхилено, відкрито арбітраж" });
     }
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

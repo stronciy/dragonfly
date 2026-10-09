@@ -154,7 +154,7 @@ export async function retryAfterMiddleware(
         success: false,
         code: "SERVICE_UNAVAILABLE",
         error: { type: "RateLimitExceeded" },
-        message: "Too many requests. Please retry after the specified time.",
+        message: "Забагато запитів. Повторіть спробу пізніше.",
         timestamp: new Date().toISOString(),
         requestId,
       },

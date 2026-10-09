@@ -21,7 +21,7 @@ const edrpouSchema = z.preprocess(
     const digits = normalizeEdrpou(v.trim());
     return digits === "" ? null : digits;
   },
-  z.string().refine(validateEdrpou, "EDRPOU must be 8-10 digits").nullable()
+  z.string().refine(validateEdrpou, "ЄДРПОУ має містити 8–10 цифр").nullable()
 );
 
 const ibanSchema = z.preprocess(
@@ -31,7 +31,7 @@ const ibanSchema = z.preprocess(
     if (trimmed === "") return null;
     return normalizeUAIban(trimmed);
   },
-  z.string().refine(validateUAIban, "Invalid UA IBAN").nullable()
+  z.string().refine(validateUAIban, "Невірний IBAN України").nullable()
 );
 
 const patchSchema = z.object({
@@ -130,7 +130,7 @@ export async function PATCH(req: Request) {
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Request validation failed", err.flatten()));
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));
     }
     return fail(req, err);
   }

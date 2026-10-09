@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const res = ok(req, {}, { status: 200, message: "Logged out" });
+    const res = ok(req, {}, { status: 200, message: "Вихід виконано" });
     res.cookies.set({
       name: "refreshToken",
       value: "",
