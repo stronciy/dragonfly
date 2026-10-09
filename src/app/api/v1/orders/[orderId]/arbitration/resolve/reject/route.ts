@@ -1,5 +1,5 @@
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -35,7 +35,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       userId: order.customerUserId,
       type: "arbitration",
       title: "Рішення відхилено",
-      message: `Замовлення #${orderId.slice(-6)}. Виконавець відхилив запропоноване рішення спору. Спір лишається відкритим.`,
+      message: `Замовлення ${await orderRef(orderId)}. Виконавець відхилив запропоноване рішення спору. Спір лишається відкритим.`,
       data: { orderId, type: "arbitration_resolve_rejected", role: "customer" },
     });
     await publishDomainEvent({

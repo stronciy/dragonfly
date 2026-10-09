@@ -131,6 +131,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
         serviceSubCategoryId: order.serviceSubCategoryId,
         serviceTypeId: order.serviceTypeId ?? null,
         locationLabel: order.locationLabel,
+        orderNumber: order.orderNumber,
         regionName: order.regionName ?? null,
         dateFrom: order.dateFrom,
         dateTo: order.dateTo,

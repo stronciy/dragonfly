@@ -228,6 +228,7 @@ model Order {
   locationLabel        String   @map("location_label")
   regionName           String?  @map("region_name")
   settlementName       String?  @map("settlement_name")
+  orderNumber          String?  @unique @map("order_number")
   lat                  Float
   lng                  Float
 
@@ -528,4 +529,13 @@ model EscrowLock {
   @@unique([orderId, role], name: "uniq_order_role_lock")
   @@index([userId])
   @@map("escrow_locks")
+}
+
+model OrderNumberCounter {
+  serviceCode String @map("service_code")
+  yy          Int
+  lastSeq     Int    @default(0) @map("last_seq")
+
+  @@id([serviceCode, yy])
+  @@map("order_number_counters")
 }

@@ -7,6 +7,7 @@ import { enqueueMatchNewOrder } from "@/shared";
 import { makePage, parsePagination } from "@/lib/pagination";
 import { publishDomainEvent } from "@/shared";
 import { notifyUser } from "@/shared";
+import { nextOrderNumber } from "@/shared";
 import { validateSpecs, isValidServiceId } from "@/../services-tree";
 import { Prisma } from "@prisma/client";
 import { safeDepositAmount, ESCROW_OPEN_STATUSES } from "@/shared";
@@ -130,6 +131,7 @@ export async function GET(req: Request) {
           serviceTypeId: true,
           areaHa: true,
           locationLabel: true,
+          orderNumber: true,
           regionName: true,
           lat: true,
           lng: true,
@@ -160,6 +162,7 @@ export async function GET(req: Request) {
         serviceTypeId: o.serviceTypeId,
         areaHa: Number(o.areaHa),
         locationLabel: o.locationLabel,
+        orderNumber: o.orderNumber,
         addressLabel: o.locationLabel,
         regionName: o.regionName ?? null,
         location: {
@@ -284,8 +287,10 @@ export async function POST(req: Request) {
     }
 
     const order = await prisma.$transaction(async (tx) => {
+      const orderNumber = await nextOrderNumber(tx, body.serviceCategoryId, new Date());
       const created = await tx.order.create({
         data: {
+          orderNumber,
           customerUserId: user.id,
           serviceCategoryId: body.serviceCategoryId,
           serviceSubCategoryId: body.serviceSubCategoryId,
@@ -307,7 +312,7 @@ export async function POST(req: Request) {
             create: { status, note: null },
           },
         },
-        select: { id: true, status: true, createdAt: true },
+        select: { id: true, orderNumber: true, status: true, createdAt: true },
       });
 
       return created;

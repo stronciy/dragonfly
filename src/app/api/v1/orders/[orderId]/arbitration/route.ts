@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -44,7 +44,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         userId: otherUserId,
         type: "arbitration",
         title: "Відкрито арбітраж",
-        message: `Замовлення #${orderId.slice(-6)}. ${initiatorLabel} передав спір на арбітраж: ${body.reason.slice(0, 120)}`,
+        message: `Замовлення ${await orderRef(orderId)}. ${initiatorLabel} передав спір на арбітраж: ${body.reason.slice(0, 120)}`,
         data: { orderId, type: "arbitration_opened", role: otherUserId === order.customerUserId ? "customer" : "performer" },
       });
     }

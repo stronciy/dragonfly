@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -57,7 +57,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       userId: order.customerUserId,
       type: "order",
       title: "Виконавець просить почати раніше",
-      message: `Замовлення #${orderId.slice(-6)}. Виконавець готовий розпочати роботи достроково (заплановано: ${formatOrderDateRange(order.dateFrom, order.dateTo) ?? "—"}). Підтвердіть, щоб відкрити кнопку старту.`,
+      message: `Замовлення ${await orderRef(orderId)}. Виконавець готовий розпочати роботи достроково (заплановано: ${formatOrderDateRange(order.dateFrom, order.dateTo) ?? "—"}). Підтвердіть, щоб відкрити кнопку старту.`,
       data: { orderId, type: "early_start_requested", role: "customer" },
     });
     await publishDomainEvent({

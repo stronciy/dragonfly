@@ -1,5 +1,5 @@
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -32,7 +32,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       userId: order.customerUserId,
       type: "order",
       title: "Запит на достроковий старт відкликано",
-      message: `Замовлення #${orderId.slice(-6)}. Виконавець відкликав прохання почати роботи раніше.`,
+      message: `Замовлення ${await orderRef(orderId)}. Виконавець відкликав прохання почати роботи раніше.`,
       data: { orderId, type: "early_start_withdrawn", role: "customer" },
     });
     await publishDomainEvent({

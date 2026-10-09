@@ -76,6 +76,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     return ok(req, {
       order: {
         id: order.id,
+        orderNumber: order.orderNumber,
         status: order.status,
         serviceCategoryId: order.serviceCategoryId,
         serviceSubCategoryId: order.serviceSubCategoryId,

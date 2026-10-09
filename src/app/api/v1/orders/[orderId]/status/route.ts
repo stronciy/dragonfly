@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -67,7 +67,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
           userId: order.customerUserId,
           type: "order",
           title: "Виконавець почав роботу",
-          message: `Замовлення #${orderId.slice(-6)}. Виконавець розпочав виконання робіт.`,
+          message: `Замовлення ${await orderRef(orderId)}. Виконавець розпочав виконання робіт.`,
           data: {
             orderId,
             type: "order_started",
@@ -88,7 +88,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
           toUserId: order.customerUserId,
           toExpoToken: device.expoPushToken,
           title: "Виконавець почав роботу",
-          body: `Замовлення #${orderId.slice(-6)}. Виконавець розпочав виконання робіт.`,
+          body: `Замовлення ${await orderRef(orderId)}. Виконавець розпочав виконання робіт.`,
           data: {
             orderId,
             type: "order_started",
@@ -110,7 +110,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
           userId: order.customerUserId,
           type: "order",
           title: "Виконавець завершив роботу",
-          message: `Замовлення #${orderId.slice(-6)}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`,
+          message: `Замовлення ${await orderRef(orderId)}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`,
           data: {
             orderId,
             type: "order_completed",
@@ -131,7 +131,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
           toUserId: order.customerUserId,
           toExpoToken: device.expoPushToken,
           title: "Виконавець завершив роботу",
-          body: `Замовлення #${orderId.slice(-6)}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`,
+          body: `Замовлення ${await orderRef(orderId)}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`,
           data: {
             orderId,
             type: "order_completed",

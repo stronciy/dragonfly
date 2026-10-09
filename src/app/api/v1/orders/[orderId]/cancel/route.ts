@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -79,7 +79,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
           toUserId: order.performerUserId,
           toExpoToken: device.expoPushToken,
           title: "Замовлення скасовано заказчиком",
-          body: `Замовлення #${orderId.slice(-6)} скасовано. ${isExpired ? "Час підтвердження минув." : ""} ${body.reason || ''}`.trim(),
+          body: `Замовлення ${await orderRef(orderId)} скасовано. ${isExpired ? "Час підтвердження минув." : ""} ${body.reason || ''}`.trim(),
           data: {
             orderId,
             type: "order_cancelled_by_customer",
@@ -96,7 +96,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
           userId: order.performerUserId,
           type: "order",
           title: "Замовлення скасовано заказчиком",
-          message: `Замовлення #${orderId.slice(-6)} скасовано заказчиком. ${body.reason || ''}`.trim(),
+          message: `Замовлення ${await orderRef(orderId)} скасовано заказчиком. ${body.reason || ''}`.trim(),
           data: {
             orderId,
             type: "order_cancelled_by_customer",

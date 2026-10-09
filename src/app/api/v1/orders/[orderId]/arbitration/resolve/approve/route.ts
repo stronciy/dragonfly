@@ -1,5 +1,5 @@
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -95,8 +95,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       type: "arbitration",
       title: "Спір закрито",
       message: withFine
-        ? `Замовлення #${orderId.slice(-6)}. Виконавець погодився закрити спір зі штрафом.`
-        : `Замовлення #${orderId.slice(-6)}. Виконавець погодився закрити спір без штрафу.`,
+        ? `Замовлення ${await orderRef(orderId)}. Виконавець погодився закрити спір зі штрафом.`
+        : `Замовлення ${await orderRef(orderId)}. Виконавець погодився закрити спір без штрафу.`,
       data: { orderId, type: "arbitration_resolved", role: "customer" },
     });
     await publishDomainEvent({

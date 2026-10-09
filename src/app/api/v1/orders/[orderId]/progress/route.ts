@@ -1,5 +1,5 @@
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -95,7 +95,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       userId: order.customerUserId,
       type: "order",
       title: `Прогрес робіт${percent != null ? ` ${percent}%` : ""}`.trim(),
-      message: `Замовлення #${orderId.slice(-6)}. ${comment ?? "Виконавець додав фото прогресу."}`.slice(0, 500),
+      message: `Замовлення ${await orderRef(orderId)}. ${comment ?? "Виконавець додав фото прогресу."}`.slice(0, 500),
       data: { orderId, type: "order_progress_updated", role: "customer", progressId: created.id },
     });
     await publishDomainEvent({

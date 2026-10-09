@@ -19,7 +19,7 @@ export async function GET(req: Request) {
         orderBy: { updatedAt: "desc" },
         take: limit,
         skip: offset,
-        select: { id: true, locationLabel: true, budget: true, currency: true, updatedAt: true },
+        select: { id: true, locationLabel: true, orderNumber: true, budget: true, currency: true, updatedAt: true },
       }),
       prisma.order.count({ where }),
     ]);
@@ -31,6 +31,7 @@ export async function GET(req: Request) {
         amount: Number(o.budget),
         currency: o.currency,
         locationLabel: o.locationLabel,
+        orderNumber: o.orderNumber,
         completedAt: o.updatedAt,
       })),
       page: makePage(limit, offset, totalCount),

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -37,7 +37,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         userId: order.performerUserId,
         type: "order",
         title: "Достроковий старт відхилено",
-        message: `Замовлення #${orderId.slice(-6)}. Замовник не погодив достроковий початок${body.reason ? `: ${body.reason.slice(0, 120)}` : ""}. Старт — з запланованої дати.`,
+        message: `Замовлення ${await orderRef(orderId)}. Замовник не погодив достроковий початок${body.reason ? `: ${body.reason.slice(0, 120)}` : ""}. Старт — з запланованої дати.`,
         data: { orderId, type: "early_start_rejected", role: "performer" },
       });
       await publishDomainEvent({

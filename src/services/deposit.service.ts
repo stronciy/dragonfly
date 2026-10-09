@@ -6,6 +6,7 @@ import { createLiqPayCheckout, getLiqPayCheckoutUrl, liqpayDecodeData, liqpayVer
 import { publishDomainEvent } from "../realtime/publishDomainEvent";
 import type { DomainEventType } from "../realtime/domainEvents";
 import { notifyUser } from "./notify";
+import { formatOrderNumber, orderRef } from "../lib/orderNumber";
 
 type Tx = Prisma.TransactionClient;
 
@@ -78,7 +79,7 @@ export async function createDepositIntent(
     orderId: `${order.id}:${args.role}:${Date.now()}`,
     amount: amount.toNumber(),
     currency: order.currency,
-    description: `Гарантійна сума за замовлення #${order.id.slice(-6)}`,
+    description: `Гарантійна сума за замовлення ${formatOrderNumber(order.orderNumber) ?? ""}`.trim(),
     method: args.method,
     serverUrl: args.serverUrl,
     resultUrl: args.resultUrl,
@@ -113,12 +114,19 @@ export async function createDepositIntent(
   return { intent, checkout, amount };
 }
 
+const LIVE_CHECKOUT_MS = 15 * 60 * 1000;
+
 export async function findPendingIntent(
   tx: Tx,
   args: { orderId: string; role: IntentRole }
 ) {
   return tx.paymentIntent.findFirst({
-    where: { orderId: args.orderId, role: args.role, status: "pending" },
+    where: {
+      orderId: args.orderId,
+      role: args.role,
+      status: "pending",
+      createdAt: { gt: new Date(Date.now() - LIVE_CHECKOUT_MS) },
+    },
     orderBy: { createdAt: "desc" },
   });
 }
@@ -516,7 +524,7 @@ export async function emitDepositPaidNotifications(args: {
   currency: string;
   providerStatus: string | null;
 }) {
-  const shortId = args.order.id.slice(-6);
+  const shortRef = await orderRef(args.order.id);
   const sum = `${Number(args.amount)} ${args.currency}`;
   for (const e of buildDepositPaidEvents({
     orderId: args.order.id,
@@ -533,7 +541,7 @@ export async function emitDepositPaidNotifications(args: {
       userId: args.order.customerUserId,
       type: "deposit",
       title: "Виконавець вніс гарантійну суму",
-      message: `Замовлення #${shortId}. Внесіть свою гарантійну суму протягом 12 годин.`,
+      message: `Замовлення ${shortRef}. Внесіть свою гарантійну суму протягом 12 годин.`,
       data: { orderId: args.order.id, type: "deposit_customer_required", role: "customer" },
     });
   } else {
@@ -542,7 +550,7 @@ export async function emitDepositPaidNotifications(args: {
         userId: args.order.performerUserId,
         type: "deposit",
         title: "Замовник вніс гарантійну суму",
-        message: `Замовлення #${shortId} підтверджено. Можна починати роботу.`,
+        message: `Замовлення ${shortRef} підтверджено. Можна починати роботу.`,
         data: { orderId: args.order.id, type: "order_confirmed", role: "performer" },
       });
     }

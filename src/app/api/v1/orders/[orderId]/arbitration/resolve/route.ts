@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -72,8 +72,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         title: "Запропоновано рішення спору",
         message:
           body.decision === "close_fine"
-            ? `Замовлення #${orderId.slice(-6)}. Замовник пропонує закрити спір зі штрафом (утримання вашої застави). Підтвердіть або відхиліть.`
-            : `Замовлення #${orderId.slice(-6)}. Замовник пропонує закрити спір без штрафу (застави повертаються). Підтвердіть або відхиліть.`,
+            ? `Замовлення ${await orderRef(orderId)}. Замовник пропонує закрити спір зі штрафом (утримання вашої застави). Підтвердіть або відхиліть.`
+            : `Замовлення ${await orderRef(orderId)}. Замовник пропонує закрити спір без штрафу (застави повертаються). Підтвердіть або відхиліть.`,
         data: { orderId, type: "arbitration_resolve_requested", role: "performer" },
       });
       await publishDomainEvent({

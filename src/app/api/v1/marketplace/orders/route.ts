@@ -69,6 +69,7 @@ export async function GET(req: Request) {
               budget: true,
               currency: true,
               locationLabel: true,
+              orderNumber: true,
               regionName: true,
               lat: true,
               lng: true,
@@ -95,6 +96,7 @@ export async function GET(req: Request) {
         dateFrom: m.order.dateFrom,
         dateTo: m.order.dateTo,
         locationLabel: m.order.locationLabel,
+        orderNumber: m.order.orderNumber,
         addressLabel: m.order.locationLabel,
         regionName: m.order.regionName,
         location: {

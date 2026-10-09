@@ -42,6 +42,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
           priceUah: Number(order.budget),
           currency: order.currency,
           locationLabel: order.locationLabel,
+          orderNumber: order.orderNumber,
           addressLabel: order.locationLabel,
           regionName: order.regionName,
           location: {

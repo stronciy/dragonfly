@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -46,7 +46,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       userId: order.customerUserId,
       type: "order",
       title: "Вас оцінили",
-      message: `Замовлення #${orderId.slice(-6)}. Виконавець оцінив співпрацю: ${body.rating}/5.`,
+      message: `Замовлення ${await orderRef(orderId)}. Виконавець оцінив співпрацю: ${body.rating}/5.`,
       data: { orderId, type: "customer_rated", role: "customer", rating: body.rating },
     });
     await publishDomainEvent({

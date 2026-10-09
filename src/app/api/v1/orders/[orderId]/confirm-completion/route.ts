@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -122,8 +122,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
             toExpoToken: device.expoPushToken,
             title: "Замовлення підтверджено",
             body: body.fine
-              ? `Замовлення #${orderId.slice(-6)}. Заказчик підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
-              : `Замовлення #${orderId.slice(-6)}. Заказчик підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
+              ? `Замовлення ${await orderRef(orderId)}. Заказчик підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
+              : `Замовлення ${await orderRef(orderId)}. Заказчик підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
             data: {
               orderId,
               type: "order_confirmed_completed",
@@ -142,8 +142,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
             type: "order",
             title: "Замовлення підтверджено",
             message: body.fine
-              ? `Замовлення #${orderId.slice(-6)}. Заказчик підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
-              : `Замовлення #${orderId.slice(-6)}. Заказчик підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
+              ? `Замовлення ${await orderRef(orderId)}. Заказчик підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
+              : `Замовлення ${await orderRef(orderId)}. Заказчик підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
             data: {
               orderId,
               type: "order_confirmed_completed",
@@ -209,7 +209,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
             toUserId: order.performerUserId,
             toExpoToken: device.expoPushToken,
             title: "Замовлення відхилено",
-            body: `Замовлення #${orderId.slice(-6)}. Заказчик відхилив завершення. Відкрито арбітраж.`,
+            body: `Замовлення ${await orderRef(orderId)}. Заказчик відхилив завершення. Відкрито арбітраж.`,
             data: {
               orderId,
               type: "order_rejected_completion",
@@ -225,7 +225,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
             userId: order.performerUserId,
             type: "order",
             title: "Замовлення відхилено",
-            message: `Замовлення #${orderId.slice(-6)}. Заказчик відхилив завершення. Відкрито арбітраж.`,
+            message: `Замовлення ${await orderRef(orderId)}. Заказчик відхилив завершення. Відкрито арбітраж.`,
             data: {
               orderId,
               type: "order_rejected_completion",

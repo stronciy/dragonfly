@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -80,7 +80,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       userId: order.customerUserId,
       type: "order",
       title: "Виконавець відмовився",
-      message: `Замовлення #${orderId.slice(-6)} повернуто на біржу. Причина: ${body.reason.slice(0, 120)}${
+      message: `Замовлення ${await orderRef(orderId)} повернуто на біржу. Причина: ${body.reason.slice(0, 120)}${
         customerPaid ? " Гарантійна сума виконавця утримана як штраф, ваша застава повернута." : ""
       }`,
       data: {

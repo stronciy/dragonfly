@@ -1,5 +1,5 @@
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -36,7 +36,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         userId: order.performerUserId,
         type: "order",
         title: "Дозволено достроковий старт",
-        message: `Замовлення #${orderId.slice(-6)}. Замовник підтвердив достроковий початок робіт — кнопка старту вже активна.`,
+        message: `Замовлення ${await orderRef(orderId)}. Замовник підтвердив достроковий початок робіт — кнопка старту вже активна.`,
         data: { orderId, type: "early_start_approved", role: "performer" },
       });
       await publishDomainEvent({
