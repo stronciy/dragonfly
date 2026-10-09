@@ -75,13 +75,13 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: tokenRow.userId },
-      select: { id: true, email: true, role: true },
+      select: { id: true, email: true, role: true, sessionVersion: true },
     });
 
     if (!user) throw new ApiError(401, "UNAUTHORIZED", "Користувача не знайдено");
     if (payload.userId !== user.id) throw new ApiError(401, "UNAUTHORIZED", "Недійсний refresh-токен");
 
-    const accessToken = await signAccessToken({ userId: user.id, email: user.email, role: user.role });
+    const accessToken = await signAccessToken({ userId: user.id, email: user.email, role: user.role, sv: user.sessionVersion });
     return ok(req, { accessToken, refreshToken }, { status: 200, message: "Оновлено" });
   } catch (err) {
     return fail(req, err);

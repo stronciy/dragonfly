@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email: body.email },
-      select: { id: true, name: true, email: true, role: true, passwordHash: true },
+      select: { id: true, name: true, email: true, role: true, passwordHash: true, sessionVersion: true },
     });
 
     if (!user) throw new ApiError(401, "UNAUTHORIZED", "Невірний логін або пароль");
@@ -28,18 +28,33 @@ export async function POST(req: Request) {
     const okPassword = await bcrypt.compare(body.password, user.passwordHash);
     if (!okPassword) throw new ApiError(401, "UNAUTHORIZED", "Невірний логін або пароль");
 
-    const accessToken = await signAccessToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    });
+    // Single active session: bump the version (kicks older access tokens) and
+    // revoke every other refresh token, so other devices are logged out.
+    const sessionVersion = (user.sessionVersion ?? 0) + 1;
 
     const refreshToken = await signRefreshToken({ userId: user.id, jti: crypto.randomUUID() });
     const tokenHash = await sha256(refreshToken);
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    await prisma.refreshToken.create({
-      data: { userId: user.id, tokenHash, expiresAt },
+    await prisma.$transaction([
+      prisma.refreshToken.updateMany({
+        where: { userId: user.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+      prisma.user.update({
+        where: { id: user.id },
+        data: { sessionVersion },
+      }),
+      prisma.refreshToken.create({
+        data: { userId: user.id, tokenHash, expiresAt },
+      }),
+    ]);
+
+    const accessToken = await signAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      sv: sessionVersion,
     });
 
     const res = ok(

@@ -4,6 +4,9 @@ type AccessTokenPayload = {
   userId: string;
   email: string;
   role: "customer" | "performer" | "admin";
+  // Session version: bumped on every login so tokens from other devices
+  // become invalid immediately (single active session per account).
+  sv?: number;
 };
 
 type RefreshTokenPayload = {

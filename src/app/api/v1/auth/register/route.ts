@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       return created;
     });
 
-    const accessToken = await signAccessToken({ userId: user.id, email: user.email, role: user.role });
+    const accessToken = await signAccessToken({ userId: user.id, email: user.email, role: user.role, sv: 0 });
     const refreshToken = await signRefreshToken({ userId: user.id, jti: crypto.randomUUID() });
     const tokenHash = await sha256(refreshToken);
     await prisma.refreshToken.create({

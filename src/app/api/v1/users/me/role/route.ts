@@ -42,6 +42,7 @@ export async function PATCH(req: Request) {
       userId: updated.id,
       email: updated.email,
       role: updated.role,
+      sv: user.sessionVersion,
     });
 
     return ok(req, { user: updated, accessToken }, { message: "Роль оновлено" });

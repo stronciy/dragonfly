@@ -18,10 +18,16 @@ export async function requireUser(req: Request) {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
-    select: { id: true, name: true, email: true, role: true, phone: true, avatarUrl: true, createdAt: true },
+    select: { id: true, name: true, email: true, role: true, phone: true, avatarUrl: true, createdAt: true, sessionVersion: true },
   });
 
   if (!user) throw new ApiError(401, "UNAUTHORIZED", "Користувача не знайдено");
+
+  // Single active session: a newer login bumped sessionVersion, so this
+  // token (from an older device) is no longer valid.
+  if ((payload.sv ?? 0) !== user.sessionVersion) {
+    throw new ApiError(401, "UNAUTHORIZED", "Сесію завершено на іншому пристрої");
+  }
 
   return user;
 }
