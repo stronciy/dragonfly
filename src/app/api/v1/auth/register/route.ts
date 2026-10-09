@@ -3,6 +3,8 @@ import { z } from "zod";
 import { ok, fail } from "@/lib/apiResponse";
 import { ApiError } from "@/shared";
 import { prisma } from "@/shared";
+import { sha256, signAccessToken, signRefreshToken } from "@/lib/auth/tokens";
+import { isSecureRequest } from "@/lib/cookies";
 
 const schema = z.object({
   name: z.string().min(1).transform((s) => s.trim()),
@@ -37,7 +39,28 @@ export async function POST(req: Request) {
       return created;
     });
 
-    return ok(req, { user }, { status: 201, message: "Зареєстровано" });
+    const accessToken = await signAccessToken({ userId: user.id, email: user.email, role: user.role });
+    const refreshToken = await signRefreshToken({ userId: user.id, jti: crypto.randomUUID() });
+    const tokenHash = await sha256(refreshToken);
+    await prisma.refreshToken.create({
+      data: { userId: user.id, tokenHash, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+    });
+
+    const res = ok(
+      req,
+      { user, accessToken, refreshToken },
+      { status: 201, message: "Зареєстровано" }
+    );
+    res.cookies.set({
+      name: "refreshToken",
+      value: refreshToken,
+      httpOnly: true,
+      secure: isSecureRequest(req),
+      sameSite: "lax",
+      path: "/api/v1/auth",
+      maxAge: 7 * 24 * 60 * 60,
+    });
+    return res;
   } catch (err) {
     if (err instanceof z.ZodError) {
       return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));

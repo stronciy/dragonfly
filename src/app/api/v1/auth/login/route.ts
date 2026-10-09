@@ -44,7 +44,13 @@ export async function POST(req: Request) {
 
     const res = ok(
       req,
-      { accessToken, user: { id: user.id, name: user.name, email: user.email, role: user.role } },
+      {
+        accessToken,
+        user: { id: user.id, name: user.name, email: user.email, role: user.role },
+        // Also returned for native clients that cannot rely on cross-domain
+        // httpOnly cookies (RN fetch). Cookie stays for browsers.
+        refreshToken,
+      },
       { status: 200, message: "Вхід виконано" }
     );
 
