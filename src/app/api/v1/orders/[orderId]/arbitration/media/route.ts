@@ -14,8 +14,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const order = await prisma.order.findUnique({ where: { id: orderId }, select: { customerUserId: true, performerUserId: true, status: true } });
     if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     const canUpload =
-      (user.role === "customer" && order.customerUserId === user.id) ||
-      (user.role === "performer" && order.performerUserId === user.id);
+      order.customerUserId === user.id || order.performerUserId === user.id;
     if (!canUpload) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
     if (order.status !== "arbitration") throw new ApiError(409, "CONFLICT", "Замовлення не в арбітражі");

@@ -22,8 +22,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
     const canOpen =
-      (user.role === "customer" && order.customerUserId === user.id) ||
-      (user.role === "performer" && order.performerUserId === user.id);
+      order.customerUserId === user.id || order.performerUserId === user.id;
     if (!canOpen) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     if (order.status === "cancelled") throw new ApiError(403, "FORBIDDEN", "Замовлення скасовано");
 
