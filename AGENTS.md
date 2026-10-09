@@ -22,7 +22,7 @@ npm test                  # = tsx --test tests/unit/*.test.ts (з source, без
 **Доступ:** `http://localhost:3000` (LAN: `http://192.168.0.136:3000`). **WebSocket:** `ws://localhost:3000/wws` або `ws://localhost:3000/api/v1/ws`. Health: `http://localhost:3000/api/v1/health`.
 
 **CORS allowlist** у двох місцях — додай свій LAN IP, якщо відрізняється від `192.168.0.136`:
-- `middleware.ts` рядки 5–12 (для API)
+- `src/middleware.ts` рядки 41–51 (для API)
 - `next.config.ts` рядки 5–16 (для Next.js dev)
 
 ## Required env vars
@@ -55,7 +55,7 @@ src/
     globals.css
   lib/
     auth/                    # requireAuth, rbac, tokens (jose JWT)
-    middleware/              # idempotency, retryAfter (rate-limit) — використовуються в middleware.ts
+    middleware/              # idempotency, retryAfter (rate-limit) — використовуються в src/middleware.ts
     apiResponse.ts           # ok()/fail() envelope
     cookies.ts               # refresh-token cookie helpers
     errors.ts                # ApiError + retryable flag
@@ -70,6 +70,7 @@ src/
   realtime/                  # Redis pub/sub (channel: domain-events-v1) + presence
   services/                  # ExpoPush, LiqPay, Stripe, deposit, ratings, arbitration, earlyStart, notify
   shared.ts                  # barrel — усе, що імпортується як "@/shared"
+  middleware.ts               # Next.js middleware: CORS + rate-limit + idempotency (runtime: nodejs)
 prisma/
   schema.prisma              # 17 моделей, 2 enum-и (UserRole, TaxSystem)
   migrations/                # 26 міграцій (з них 20260329214130_30_march — major refactor)
@@ -78,7 +79,6 @@ generated/prisma/            # Prisma Client output (генерується, .gi
 services-tree.ts             # каталог послуг (validateSpecs/getCategoryById тощо), імпорт `@/../services-tree`
 scripts/                     # e2e_*.mjs, seed_demo.mjs, check-endpoints.js
 tests/unit/                  # node:test + tsx (з source)
-middleware.ts                # Next.js middleware: CORS + rate-limit + idempotency
 server.js                    # Custom Node server: Next.js + WebSocket + Redis presence
 prisma.config.ts             # Prisma 7 config з experimental.externalTables=true
 next.config.ts               # allowedDevOrigins (LAN IP)
@@ -96,7 +96,7 @@ tsconfig.json                # paths "@/*" → src/*
 4. **Build artifact:** `npm run build` → `next build` → `.next/`. Тести НЕ компілюються — `npm test` запускає `tsx --test tests/unit/*.test.ts` безпосередньо з TypeScript-джерела (tsx резолвить `@/*` aliases та relative імпорти з source-локації, тому deep-relative `../../generated/prisma/client` працює коректно).
 
 5. **Graceful degradation на відсутній `REDIS_URL`.** Якщо `REDIS_URL` не встановлено:
-   - `idempotencyMiddleware` / `retryAfterMiddleware` (в `middleware.ts`) — пропускають запит (warning у dev)
+   - `idempotencyMiddleware` / `retryAfterMiddleware` (в `src/middleware.ts`) — пропускають запит (warning у dev)
    - `realtime/publishDomainEvent` — логують warning, не публікують
    - `realtime/presence` — повертає порожні результати
    - **BullMQ queues** (enqueue з API) — кидають помилку при спробі enqueue
@@ -249,4 +249,4 @@ npm run db:reset      # --force — ВИДАЛЯЄ ДАНІ
 - **Міграції 26 шт, дублікати імен:** `20260319*`, `20260329*`, `20260329214130_30_march` — фінальна "great simplification". НЕ перейменовуй старі, навіть якщо виглядають дивно (Prisma заблокує).
 - **No `server-only` guard** в коді. Lib файли (`prisma.ts`, `auth/*`, `queues/*`) технічно можуть імпортуватись в edge runtime — обережно з новими залежностями.
 - **Дубльований спільний код:** `src/lib/{prisma,errors,deposit,orderStatus,matching}.ts`, `src/queues/**`, `src/realtime/**`, `src/services/**`, `prisma/**` — **також існують в `../worker/src/**`**. Будь-яка зміна тут має бути скопійована в worker (і навпаки). Barrel: `src/shared.ts` (тут) ↔ `worker/src/shared.ts` (там, імпорт `../shared`).
-- **Структурні файли (НЕ редагуй без розуміння наслідків):** `prisma.config.ts`, `tsconfig.json`, `middleware.ts`, `next.config.ts`, `server.js`, `services-tree.ts`, `src/shared.ts`.
+- **Структурні файли (НЕ редагуй без розуміння наслідків):** `prisma.config.ts`, `tsconfig.json`, `src/middleware.ts`, `next.config.ts`, `server.js`, `services-tree.ts`, `src/shared.ts`.

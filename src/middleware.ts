@@ -108,7 +108,18 @@ async function runMiddlewareChain(req: NextRequest): Promise<NextResponse> {
   return withRetryAfter();
 }
 
+// Node.js runtime is required: node:os (LAN IP detection) and ioredis
+// (rate-limit/idempotency storage) are unavailable in the Edge runtime.
+export const runtime = "nodejs";
+
 export async function middleware(req: NextRequest) {
+  // The config.matcher below scopes us to /api/*, but Node.js middleware
+  // matchers are not applied by every Next.js serving path — enforce the
+  // scope here so static assets and pages never hit rate-limit bookkeeping.
+  if (!req.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   const origin = req.headers.get("origin");
 
   if (!origin || !isOriginAllowed(origin)) {
