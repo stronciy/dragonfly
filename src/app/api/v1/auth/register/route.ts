@@ -12,7 +12,11 @@ const schema = z.object({
     .string()
     .email()
     .transform((s) => s.trim().toLowerCase()),
-  password: z.string().min(6),
+  password: z
+    .string()
+    .min(8, "Пароль має містити щонайменше 8 символів")
+    .regex(/[A-ZА-ЯІЇЄҐ]/, "Пароль має містити щонайменше одну велику літеру")
+    .regex(/\d/, "Пароль має містити щонайменше одну цифру"),
 });
 
 export async function POST(req: Request) {
