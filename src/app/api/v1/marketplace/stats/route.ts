@@ -3,6 +3,14 @@ import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { countOnlineByRole } from "@/shared";
 
+const ACTIVE_STATUSES = [
+  "published",
+  "accepted",
+  "requires_confirmation",
+  "confirmed",
+  "started",
+];
+
 type StatsPayload = {
   activeOrders: number;
   regionsCount: number;
@@ -10,7 +18,7 @@ type StatsPayload = {
   performersOnline: number;
 };
 
-const CACHE_MS = 30_000;
+const CACHE_MS = 5_000;
 let cache: { data: StatsPayload; at: number } | null = null;
 
 export async function GET(req: Request) {
@@ -22,10 +30,10 @@ export async function GET(req: Request) {
     }
 
     const [activeOrders, regionGroups, online] = await Promise.all([
-      prisma.order.count({ where: { status: "published" } }),
+      prisma.order.count({ where: { status: { in: ACTIVE_STATUSES } } }),
       prisma.order.groupBy({
         by: ["regionName"],
-        where: { status: "published", regionName: { not: null } },
+        where: { status: { in: ACTIVE_STATUSES }, regionName: { not: null } },
       }),
       countOnlineByRole(),
     ]);
