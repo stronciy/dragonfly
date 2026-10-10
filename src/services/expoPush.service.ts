@@ -39,9 +39,9 @@ export class ExpoPushService {
       return undefined;
     }
 
-    const looksLikeJwt = t.split(".").length === 3;
-    const looksLikeExpoToken = t.startsWith("expo_");
-    if (looksLikeJwt || looksLikeExpoToken) return t;
+    // Accept all real Expo access-token shapes: legacy JWT (eyJ...),
+    // historical expo_ prefix, and current u:/e: tokens from expo.dev.
+    if (t.split(".").length === 3 || t.startsWith("expo_") || t.startsWith("u:") || t.startsWith("e:")) return t;
 
     warnOnce("expo_access_token_ignored_invalid_format");
     return undefined;
