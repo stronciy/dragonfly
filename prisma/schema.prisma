@@ -46,6 +46,7 @@ model User {
   legalProfile     LegalProfile?
 
   refreshTokens RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
   authoredReviews Review[] @relation("AuthoredReviews")
   performerReviews Review[] @relation("PerformerReviews")
   customerReviews Review[] @relation("CustomerReviews")
@@ -73,6 +74,22 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  codeHash  String    @map("code_hash")
+  attempts  Int       @default(0)
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model CustomerProfile {
@@ -242,6 +259,9 @@ model Order {
   acceptedAt           DateTime? @map("accepted_at")
   completedAt          DateTime? @map("completed_at")
   depositDeadline      DateTime? @map("deposit_deadline")
+  enRouteAt            DateTime? @map("en_route_at")
+  customerPart2Deadline DateTime? @map("customer_part2_deadline")
+  paymentPaused        Boolean   @default(false) @map("payment_paused")
 
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
@@ -492,6 +512,7 @@ model PaymentIntent {
   id              String   @id @default(cuid())
   orderId         String   @map("order_id")
   role            String   @map("role") // performer, customer
+  part            Int      @default(1) @map("part") // 1 = performer full OR customer part1; 2 = customer part2
   amount          Decimal  @db.Decimal(12, 2)
   currency        String   @default("UAH")
   provider        String   @default("liqpay")

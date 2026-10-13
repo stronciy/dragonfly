@@ -26,6 +26,7 @@
     "ioredis": "^5.10.0",
     "jose": "^6.2.1",
     "next": "^15.5.13",
+    "nodemailer": "^10.1.0",
     "otplib": "^13.3.0",
     "pg": "^8.20.0",
     "qrcode": "^1.5.4",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.2",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",

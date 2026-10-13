@@ -7,6 +7,7 @@ export type DomainEventType =
   | "order.completed"
   | "order.accepted"
   | "order.confirmed"
+  | "order.en_route"
   | "marketplace.match_added"
   | "marketplace.match_removed"
   | "agreement.assigned"
@@ -14,6 +15,8 @@ export type DomainEventType =
   | "deposit.performer_paid"
   | "deposit.customer_paid"
   | "deposit.customer_required"
+  | "deposit.customer_part2_required"
+  | "deposit.customer_part2_paid"
   | "deposit.timeout"
   | "order.expired"
   | "order:accepted"
@@ -24,6 +27,8 @@ export type DomainEventType =
   | "order.early_start_rejected"
   | "order.early_start_withdrawn"
   | "order.progress_updated"
+  | "order.payment_paused"
+  | "order.payment_resumed"
   | "arbitration.resolve_requested"
   | "arbitration.resolved";
 

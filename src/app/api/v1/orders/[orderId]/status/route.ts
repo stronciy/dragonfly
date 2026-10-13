@@ -8,13 +8,20 @@ import { ExpoPushService } from "@/shared";
 import { Prisma } from "@prisma/client";
 
 const schema = z.object({
-  status: z.enum(["started", "completed"]),
+  status: z.enum(["en_route", "started", "completed"]),
 });
 
 const allowedTransitions: Record<string, Array<string>> = {
-  confirmed: ["started"],
+  confirmed: ["en_route", "started"],
+  en_route: ["started"],
   started: ["completed"],
 };
+
+const statusEventType = {
+  en_route: "order.en_route",
+  started: "order.started",
+  completed: "order.completed",
+} as const;
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
@@ -57,7 +64,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       return u;
     });
 
-    // Відправляємо Push сповіщення заказчику
+    // Відправляємо Push сповіщення замовнику
     const expo = new ExpoPushService(prisma);
     
     if (body.status === "started") {
@@ -158,7 +165,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
     
     // Додаткове специфічне сповіщення
     await publishDomainEvent({
-      type: body.status === "started" ? "order.started" : "order.completed",
+      type: statusEventType[body.status],
       requestId,
       targets: { userIds: [updated.customerUserId] },
       data: { 

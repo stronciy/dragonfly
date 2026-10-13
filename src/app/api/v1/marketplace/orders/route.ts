@@ -4,6 +4,10 @@ import { ApiError } from "@/shared";
 import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { makePage, parsePagination } from "@/lib/pagination";
+import {
+  maskOrderLocationForMarketplace,
+  marketplaceDistanceKm,
+} from "@/lib/marketplaceVisibility";
 
 const querySchema = z.object({
   serviceCategoryId: z.string().optional(),
@@ -71,6 +75,7 @@ export async function GET(req: Request) {
               locationLabel: true,
               orderNumber: true,
               regionName: true,
+              settlementName: true,
               lat: true,
               lng: true,
               createdAt: true,
@@ -81,34 +86,44 @@ export async function GET(req: Request) {
       prisma.orderMatch.count({ where: { ...whereMatch, order: orderWhere } }),
     ]);
 
-    const items = matches.map((m) => ({
-        id: m.order.id,
-        orderId: m.order.id,
-        title: m.order.locationLabel,
-        serviceCategoryId: m.order.serviceCategoryId,
-        serviceSubCategoryId: m.order.serviceSubCategoryId,
-        serviceTypeId: m.order.serviceTypeId,
-        areaHa: Number(m.order.areaHa),
-        durationDays: null,
-        price: Number(m.order.budget),
-        budget: Number(m.order.budget),
-        currency: m.order.currency,
-        dateFrom: m.order.dateFrom,
-        dateTo: m.order.dateTo,
-        locationLabel: m.order.locationLabel,
-        orderNumber: m.order.orderNumber,
-        addressLabel: m.order.locationLabel,
-        regionName: m.order.regionName,
-        location: {
-          lat: Number(m.order.lat),
-          lng: Number(m.order.lng),
-          locationLabel: m.order.locationLabel,
-          addressLabel: m.order.locationLabel,
-          regionName: m.order.regionName,
-        },
-        status: m.order.status,
-        createdAt: m.order.createdAt,
-      }));
+    const profile = await prisma.performerProfile.findUnique({
+      where: { userId: user.id },
+      select: { baseLatitude: true, baseLongitude: true },
+    });
+    const base = {
+      baseLatitude: profile?.baseLatitude ?? null,
+      baseLongitude: profile?.baseLongitude ?? null,
+    };
+
+    const items = matches.map((m) => {
+        // Coarse location only — the marketplace is discovery, never the
+        // assigned performer's view. `title` reuses the masked coarse label so
+        // the exact address is not smuggled in via the title field.
+        const locationMask = maskOrderLocationForMarketplace(m.order, { assigned: false });
+        return {
+          id: m.order.id,
+          orderId: m.order.id,
+          title: locationMask.locationLabel,
+          serviceCategoryId: m.order.serviceCategoryId,
+          serviceSubCategoryId: m.order.serviceSubCategoryId,
+          serviceTypeId: m.order.serviceTypeId,
+          areaHa: Number(m.order.areaHa),
+          durationDays: null,
+          price: Number(m.order.budget),
+          budget: Number(m.order.budget),
+          currency: m.order.currency,
+          dateFrom: m.order.dateFrom,
+          dateTo: m.order.dateTo,
+          orderNumber: m.order.orderNumber,
+          status: m.order.status,
+          createdAt: m.order.createdAt,
+          distanceKm: marketplaceDistanceKm(base, {
+            lat: Number(m.order.lat),
+            lng: Number(m.order.lng),
+          }),
+          ...locationMask,
+        };
+      });
 
     if (process.env.NODE_ENV !== "production") {
       console.info(`[api] GET /api/v1/marketplace/orders requestId=${requestId} userId=${user.id} total=${totalCount} returned=${items.length}`, {

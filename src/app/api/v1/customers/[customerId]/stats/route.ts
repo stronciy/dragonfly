@@ -6,7 +6,7 @@ import { prisma } from "@/shared";
 /**
  * GET /api/v1/customers/:customerId/stats
  * 
- * Статистика замовлень заказчикa:
+ * Статистика замовлень замовника:
  * - completedSum: сума виконаних замовлень (status = completed)
  * - inProgressSum: сума замовлень в процесі (confirmed, started, arbitration)
  * - activeCount: кількість активних замовлень
@@ -29,7 +29,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ customerId: str
     const now = new Date();
     const expiredStatuses = ["requires_confirmation", "accepted"];
     
-    // Отримуємо всі замовлення заказчикa окрім cancelled
+    // Отримуємо всі замовлення замовника окрім cancelled
     const orders = await prisma.order.findMany({
       where: {
         customerUserId: customerId,

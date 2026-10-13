@@ -3,6 +3,10 @@ import { ApiError } from "@/shared";
 import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { safeDepositAmount } from "@/shared";
+import {
+  maskOrderLocationForMarketplace,
+  marketplaceDistanceKm,
+} from "@/lib/marketplaceVisibility";
 
 export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
@@ -28,6 +32,18 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
 
     const deposit = safeDepositAmount(order.budget);
 
+    const profile = await prisma.performerProfile.findUnique({
+      where: { userId: user.id },
+      select: { baseLatitude: true, baseLongitude: true },
+    });
+    const distanceKm = marketplaceDistanceKm(
+      {
+        baseLatitude: profile?.baseLatitude ?? null,
+        baseLongitude: profile?.baseLongitude ?? null,
+      },
+      { lat: Number(order.lat), lng: Number(order.lng) }
+    );
+
     return ok(req, {
         order: {
           id: order.id,
@@ -41,16 +57,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
           budget: Number(order.budget),
           priceUah: Number(order.budget),
           currency: order.currency,
-          locationLabel: order.locationLabel,
           orderNumber: order.orderNumber,
-          addressLabel: order.locationLabel,
-          regionName: order.regionName,
-          location: {
-            lat: Number(order.lat),
-            lng: Number(order.lng),
-            addressLabel: order.locationLabel,
-            regionName: order.regionName,
-          },
           comment: order.comment,
           acceptedAt: order.acceptedAt,
           depositDeadline: order.depositDeadline,
@@ -63,6 +70,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
           },
           performerUserId: order.performerUserId,
           createdAt: order.createdAt,
+          distanceKm,
+          // Full address/geo only for the assigned performer once confirmed.
+          ...maskOrderLocationForMarketplace(order, { assigned: isAssigned }),
         },
       }
     );

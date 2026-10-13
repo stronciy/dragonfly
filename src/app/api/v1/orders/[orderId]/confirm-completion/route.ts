@@ -19,7 +19,7 @@ const schema = z.object({
 /**
  * POST /api/v1/orders/:orderId/confirm-completion
  * 
- * Заказчик підтверджує або відхиляє завершення роботи виконавцем
+ * Замовник підтверджує або відхиляє завершення роботи виконавцем
  * 
  * Якщо accepted=true:
  * - Статус залишається completed
@@ -44,7 +44,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (order.status !== "completed") throw new ApiError(409, "CONFLICT", "Роботу ще не завершено");
     
     // Перевірка чи вже не було підтвердження завершення
-    // Перевіряємо чи вже є review від цього заказчикa
+    // Перевіряємо чи вже є review від цього замовника
     const existingReview = await prisma.review.findFirst({
       where: {
         orderId,
@@ -67,7 +67,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const expo = new ExpoPushService(prisma);
 
     if (body.accepted) {
-      // Заказчик підтверджує завершення
+      // Замовник підтверджує завершення
       await prisma.$transaction(async (tx) => {
         // Створюємо Review якщо є рейтинг
         if (body.rating && order.performerUserId) {
@@ -122,8 +122,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
             toExpoToken: device.expoPushToken,
             title: "Замовлення підтверджено",
             body: body.fine
-              ? `Замовлення ${await orderRef(orderId)}. Заказчик підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
-              : `Замовлення ${await orderRef(orderId)}. Заказчик підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
+              ? `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
+              : `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
             data: {
               orderId,
               type: "order_confirmed_completed",
@@ -142,8 +142,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
             type: "order",
             title: "Замовлення підтверджено",
             message: body.fine
-              ? `Замовлення ${await orderRef(orderId)}. Заказчик підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
-              : `Замовлення ${await orderRef(orderId)}. Заказчик підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
+              ? `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
+              : `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
             data: {
               orderId,
               type: "order_confirmed_completed",
@@ -170,7 +170,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       }
 
       console.log(
-        "\n✅ [ConfirmCompletion] Заказчик підтвердив завершення:",
+        "\n✅ [ConfirmCompletion] Замовник підтвердив завершення:",
         `\n   OrderId: ${orderId}`,
         `\n   Rating: ${body.rating ?? 'N/A'}`,
         `\n   Comment: ${body.comment ?? 'N/A'}\n`
@@ -181,7 +181,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         review: body.rating ? { rating: body.rating, comment: body.comment } : null,
       }, { message: "Завершення підтверджено" });
     } else {
-      // Заказчик відхиляє завершення → арбітраж
+      // Замовник відхиляє завершення → арбітраж
       await prisma.$transaction([
         prisma.order.update({
           where: { id: orderId },
@@ -191,7 +191,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
           data: {
             orderId,
             status: "arbitration",
-            note: body.comment ?? "Заказчик відхилив завершення",
+            note: body.comment ?? "Замовник відхилив завершення",
           },
         }),
       ]);
@@ -209,7 +209,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
             toUserId: order.performerUserId,
             toExpoToken: device.expoPushToken,
             title: "Замовлення відхилено",
-            body: `Замовлення ${await orderRef(orderId)}. Заказчик відхилив завершення. Відкрито арбітраж.`,
+            body: `Замовлення ${await orderRef(orderId)}. Замовник відхилив завершення. Відкрито арбітраж.`,
             data: {
               orderId,
               type: "order_rejected_completion",
@@ -225,7 +225,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
             userId: order.performerUserId,
             type: "order",
             title: "Замовлення відхилено",
-            message: `Замовлення ${await orderRef(orderId)}. Заказчик відхилив завершення. Відкрито арбітраж.`,
+            message: `Замовлення ${await orderRef(orderId)}. Замовник відхилив завершення. Відкрито арбітраж.`,
             data: {
               orderId,
               type: "order_rejected_completion",
@@ -249,7 +249,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       }
 
       console.log(
-        "\n❌ [ConfirmCompletion] Заказчик відхилив завершення:",
+        "\n❌ [ConfirmCompletion] Замовник відхилив завершення:",
         `\n   OrderId: ${orderId}`,
         `\n   Reason: ${body.comment ?? 'N/A'}\n`
       );

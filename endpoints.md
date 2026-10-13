@@ -62,12 +62,20 @@
 - `order.confirmed` — оба депозита оплачены (customer + performer)
 - `order:accepted` / `order:confirmed` — алиасы для фронта (customer + performer)
 - `deposit.performer_paid` — исполнитель оплатил депозит (customer + performer)
-- `deposit.customer_paid` — заказчик оплатил депозит (customer + performer)
-- `deposit.customer_required` — требуется депозит заказчика (customer)
-- `payment:required` — алиас для фронта, требуется оплата заказчика (customer)
+- `deposit.customer_paid` — замовник оплатил депозит (customer + performer)
+- `deposit.customer_required` — требуется депозит замовника (customer)
+- `deposit.customer_part2_required` — при ≥30% прогресса открыт этап второй части гарантійної суми замовника (customer)
+- `deposit.customer_part2_paid` — замовник оплатил вторую часть гарантійної суми (customer + performer)
+- `deposit.timeout` — дедлайн депозита истёк, заказ вернулся в биржу (performer)
+- `order.expired` — заказ отменён из-за неоплаты депозита исполнителем (performer)
+- `payment:required` — алиас для фронта, требуется оплата замовника (customer)
 - `escrow.changed` — изменение эскроу-блокировки (customer + performer)
+- `order.en_route` — исполнитель выехал к полю (customer)
 - `order.started` — заказ начат исполнителем (customer)
 - `order.completed` — заказ завершён исполнителем (customer)
+- `order.progress_updated` — новый отчёт о прогрессе работ (customer)
+- `order.payment_paused` — работа на паузе: замовник не внес вторую часть гарантійної суми в дедлайн (customer + performer)
+- `order.payment_resumed` — вторая часть внесена, пауза снята (customer + performer)
 - `marketplace.match_added` — заказ стал доступен исполнителю (performer)
 - `marketplace.match_removed` — заказ больше не доступен исполнителю (performer)
 - `agreement.assigned` — исполнитель назначен / заказ принят (customer + performer)
@@ -91,8 +99,8 @@
   "password": "string (min 6)"
 }
 ```
-- **Returns:** `201 { user: { id, name, email, role, createdAt } }`
-- **Side effects:** создаёт user с role=`customer` и customerProfile
+- **Returns:** `201 { user: { id, name, email, role, createdAt }, accessToken, refreshToken }`
+- **Side effects:** создаёт user с role=`customer` и customerProfile; выставляет httpOnly cookie `refreshToken`
 
 ### POST `/api/v1/auth/login`
 - **Auth:** public
@@ -103,8 +111,8 @@
   "password": "string"
 }
 ```
-- **Returns:** `200 { accessToken, user: { id, name, email, role } }`
-- **Side effects:** выставляет httpOnly cookie `refreshToken` (path: `/api/v1/auth`, maxAge: 7 дней)
+- **Returns:** `200 { accessToken, user: { id, name, email, role }, refreshToken }`
+- **Side effects:** bumps `sessionVersion` (единая активная сессия), ревокает прочие refresh-токены, выставляет httpOnly cookie `refreshToken` (path: `/api/v1/auth`, maxAge: 7 дней)
 
 ### POST `/api/v1/auth/refresh`
 - **Auth:** refresh cookie
@@ -115,6 +123,32 @@
 - **Auth:** refresh cookie
 - **Returns:** `200 {}`
 - **Side effects:** отзывает refreshToken в БД, очищает cookie
+
+### POST `/api/v1/auth/forgot-password`
+- **Auth:** public
+- **Body:**
+```json
+{
+  "email": "string (email, trim, lowercase)"
+}
+```
+- **Returns:** `200 {}` (message: `Якщо email існує, код надіслано`) — всегда одинаковый ответ, без user enumeration
+- **Behavior:** если user существует — инвалидирует прежние неиспользованные коды, генерирует 6-значный код (valid 15 min), сохраняет его SHA-256 и отправляет письмом
+- **Rate limit:** строже глобального — 5 запросов / 15 мин на IP, 3 / 15 мин на email (при превышении молча пропускает отправку, всё равно `200`)
+
+### POST `/api/v1/auth/reset-password`
+- **Auth:** public
+- **Body:**
+```json
+{
+  "email": "string (email, trim, lowercase)",
+  "code": "string (6 digits)",
+  "newPassword": "string (min 8, ≥1 uppercase, ≥1 digit)"
+}
+```
+- **Returns:** `200 {}` (message: `Пароль оновлено`)
+- **Errors:** `400 VALIDATION_ERROR` при невалидном body; `400 INVALID_CODE` (единое сообщение `Невірний або прострочений код`) когда код отсутствует/просрочен/неверный либо attempts ≥ 5
+- **Side effects:** обновляет passwordHash (bcrypt, cost 12), помечает код использованным, ревокает все refresh-токены, bump `sessionVersion` (инвалидирует действующие access-токены)
 
 ### GET `/api/v1/auth/me`
 - **Auth:** Bearer
@@ -408,7 +442,7 @@
 }
 ```
 - **Returns:** `200 { order: { id, status: "published" }, forfeited: boolean }`
-- **Side effects:** возвращает заказ в `published` (снимает исполнителя, сбрасывает дедлайн), удаляет `order_matches`, ставит событие в `order_status_events`, перевыставляет в очередь `match-new-order`, escrow исполнителя — `released`, а если заказчик уже оплатил (`confirmed`) — `forfeited` (штраф за вину), уведомляет заказчика (push + inbox) и шлёт `order.status_changed`
+- **Side effects:** возвращает заказ в `published` (снимает исполнителя, сбрасывает дедлайн), удаляет `order_matches`, ставит событие в `order_status_events`, перевыставляет в очередь `match-new-order`, escrow исполнителя — `released`, а если замовник уже оплатил (`confirmed`) — `forfeited` (штраф за вину), уведомляет замовника (push + inbox) и шлёт `order.status_changed`
 
 ### POST `/api/v1/orders/:orderId/arbitration/media`
 - **Auth:** Bearer
@@ -432,14 +466,30 @@
 }
 ```
 - **Allowed transitions:**
+  - `confirmed → en_route`
+  - `en_route → started`
   - `confirmed → started`
   - `started → completed`
 - **Returns:** `200 { order: { id, status } }`
 - **Side effects:**
-  - при `started`: отправляет Push заказчику "Виконавець почав роботу"
-  - при `completed`: ставит `completedAt`, отправляет Push заказчику "Виконавець завершив роботу", удаляет `order_matches`
+  - при `en_route`: отправляет `order.en_route` WebSocket
+  - при `started`: отправляет Push замовнику "Виконавець почав роботу"
+  - при `completed`: ставит `completedAt`, отправляет Push замовнику "Виконавець завершив роботу", удаляет `order_matches`
   - создаёт `orderStatusEvent`
-  - отправляет `order.status_changed` + `order.started` / `order.completed` WebSocket
+  - отправляет `order.status_changed` + `order.en_route` / `order.started` / `order.completed` WebSocket
+
+### GET `/api/v1/orders/:orderId/progress`
+- **Auth:** Bearer (замовник-владелец или назначенный исполнитель)
+- **Returns:** `200 { progress: [{ id, percent, comment, createdAt, media: [{ id, url, mimeType, name, createdAt }] }] }`
+
+### POST `/api/v1/orders/:orderId/progress`
+- **Auth:** Bearer
+- **Role:** `performer` (assigned)
+- **Preconditions:** статус `started` И заказ не на паузе (`paymentPaused = false`)
+- **Body:** multipart form — `percent` (optional, целое 0–100), `comment` (optional, ≤2000), `files` (≤5 фото; нужен `comment` или хотя бы одно фото)
+- **Errors:** `409 CONFLICT` — статус не `started`, ИЛИ прогресс призупинено (замовник не внес вторую часть гарантійної суми после авто-паузы `order.payment_paused`)
+- **Side effects:** создаёт `work_progress_update` (+ media), уведомляет замовника и шлёт `order.progress_updated`. При `percent >= 30` идемпотентно открывает этап второй части гарантійної суми замовника: атомарно ставит `customerPart2Deadline = now + PART2_DEADLINE_HOURS` и создаёт part-2 `paymentIntent` ровно один раз (повторные ≥30% отчёты — no-op; latch на `customerPart2Deadline IS NULL`), шлёт `deposit.customer_part2_required` + уведомления обеим сторонам
+- **Returns:** `201 { progress: { id } }`
 
 ---
 
@@ -465,9 +515,9 @@
 
 ---
 
-## Deposits & Payments (escrow 10%)
+## Deposits & Payments (escrow 30%, поэтапно)
 
-Сумма депозита всегда `budget * 0.1` (считается на лету, `DEPOSIT_RATE = 0.1`).
+Гарантійна сума = 30% от бюджета (`DEPOSIT_RATE = 0.3`), вносится каждой стороной. Исполнитель вносит полную сумму сразу (`part 1`); замовник — поэтапно 30/70: `part 1` (30% от его гарантійної суми) при подтверждении заказа, `part 2` (70%, остаток) — этап открывается при ≥30% прогресса работ (см. `POST /orders/:orderId/progress`).
 Подтверждение оплаты идемпотентно: повторный `confirm` с тем же `paymentIntentId` возвращает текущий статус без повторного перехода.
 
 ### POST `/api/v1/marketplace/orders/:orderId/deposits/performer-intent`
@@ -475,7 +525,7 @@
 - **Role:** `performer`
 - **Body:** `{ method?: "card" | "apple-pay" | "google-pay" | "bank-transfer", wallet?: string, resultUrl?: string }`
 - **Side effects (атомарно):** claim заказа условным `UPDATE ... WHERE status = 'published'` → `accepted` (`performerUserId`, `acceptedAt`, `depositDeadline = now + 12h`); повторный вызов тем же исполнителем возвращает существующий pending intent; чужой claim → `409 CONFLICT`
-- **Events:** `agreement.assigned`, `order.status_changed` (`published → accepted`), `order.accepted`, `order:accepted` + Push заказчику
+- **Events:** `agreement.assigned`, `order.status_changed` (`published → accepted`), `order.accepted`, `order:accepted` + Push замовнику
 - **Returns:** `200 { paymentIntent: { id, orderId, role, amount, currency, status, data, signature, checkoutUrl, liqpay: { data, signature, checkoutUrl, checkout: { data, signature } } } }`
 
 ### POST `/api/v1/orders/:orderId/deposits/customer-intent`
@@ -487,11 +537,12 @@
 - **Returns:** `200 { paymentIntent: {...} }` (формат как выше)
 
 ### POST `/api/v1/payments/:paymentIntentId/confirm`
-- **Auth:** Bearer (заказчик для `role=customer`, назначенный исполнитель для `role=performer`)
+- **Auth:** Bearer (замовник для `role=customer`, назначенный исполнитель для `role=performer`)
 - **Body:** `{ providerPayload: { provider: "liqpay", data: string, signature: string } }`
-- **Side effects:** проверка LiqPay-подписи; guarded-переход (`accepted → requires_confirmation` для performer с ресетом дедлайна +12ч; `requires_confirmation → confirmed` для customer со снятием дедлайна); создание `escrow_locks` (upsert по `(orderId, role)`); `orderStatusEvent`
-- **Events (performer):** `deposit.performer_paid`, `escrow.changed`, `order.status_changed`, `deposit.customer_required`, `payment:required` + Push заказчику
-- **Events (customer):** `deposit.customer_paid`, `escrow.changed`, `order.status_changed`, `order.confirmed`, `order:confirmed` + Push исполнителю
+- **Side effects:** проверка LiqPay-подписи; guarded-переход (`accepted → requires_confirmation` для performer с ресетом дедлайна +12ч; `requires_confirmation → confirmed` для customer со снятием дедлайна); создание `escrow_locks` (upsert по `(orderId, role)`); `orderStatusEvent`. Для part-2 интента замовника (`part: 2`): статус НЕ меняется — эскроу замовника дополняется до полных 30% (сумма его оплаченных интентов), снимаются `customerPart2Deadline` и `paymentPaused` (resume); оплатить part-2 можно только пока заказ `started`, иначе `409 CONFLICT`
+- **Events (performer):** `deposit.performer_paid`, `escrow.changed`, `order.status_changed`, `deposit.customer_required`, `payment:required` + Push замовнику
+- **Events (customer, part 1):** `deposit.customer_paid`, `escrow.changed`, `order.status_changed`, `order.confirmed`, `order:confirmed` + Push исполнителю
+- **Events (customer, part 2):** `deposit.customer_part2_paid`, `escrow.changed`, `order.payment_resumed` + уведомления обеим сторонам
 - **Returns:** `200 { order: { id, status }, paymentIntent: { id, status } }`
 
 ### POST `/api/v1/payments/:paymentIntentId/liqpay/callback`
@@ -764,10 +815,10 @@
 - `draft` — черновик
 - `published` — опубликован, виден в бирже
 - `accepted` — принят исполнителем (ставится атомарным claim в performer-intent)
-- `requires_confirmation` — ожидает депозита заказчика (12ч таймер; просрочка → возврат в `published`)
+- `requires_confirmation` — ожидает депозита замовника (12ч таймер; просрочка → возврат в `published`)
 - `confirmed` — сделка подтверждена, оба депозита оплачены
-- `started` — в работе (статус устанавливается исполнителем через `/status`)
-- `completed` — завершён исполнителем (ожидает подтверждения заказчиком)
+- `started` — в работе (статус устанавливается исполнителем через `/status`); может быть на паузе (`paymentPaused`) из-за неоплаты второй части гарантійної суми — на паузе отчёты о прогрессе отклоняются `409`, поздняя оплата part-2 снимает паузу (`order.payment_resumed`)
+- `completed` — завершён исполнителем (ожидает подтверждения замовником)
 - `arbitration` — арбитраж
 - `cancelled` — отменён
 
@@ -783,7 +834,7 @@
 - 8-10 цифр
 
 ### Ролевая модель
-- `customer` — заказчик услуг
+- `customer` — замовник услуг
 - `performer` — исполнитель услуг
 
 ### Rate limiting

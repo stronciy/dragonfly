@@ -1,6 +1,7 @@
 export type ApiErrorCode =
   | "SUCCESS"
   | "VALIDATION_ERROR"
+  | "INVALID_CODE"
   | "UNAUTHORIZED"
   | "FORBIDDEN"
   | "NOT_FOUND"

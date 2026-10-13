@@ -78,7 +78,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         await expo.sendPush({
           toUserId: order.performerUserId,
           toExpoToken: device.expoPushToken,
-          title: "Замовлення скасовано заказчиком",
+          title: "Замовлення скасовано замовником",
           body: `Замовлення ${await orderRef(orderId)} скасовано. ${isExpired ? "Час підтвердження минув." : ""} ${body.reason || ''}`.trim(),
           data: {
             orderId,
@@ -95,8 +95,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         data: {
           userId: order.performerUserId,
           type: "order",
-          title: "Замовлення скасовано заказчиком",
-          message: `Замовлення ${await orderRef(orderId)} скасовано заказчиком. ${body.reason || ''}`.trim(),
+          title: "Замовлення скасовано замовником",
+          message: `Замовлення ${await orderRef(orderId)} скасовано замовником. ${body.reason || ''}`.trim(),
           data: {
             orderId,
             type: "order_cancelled_by_customer",
@@ -116,7 +116,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
     });
 
     console.log(
-      "\n❌ [Cancel] Заказчик скасував замовлення:",
+      "\n❌ [Cancel] Замовник скасував замовлення:",
       `\n   OrderId: ${orderId}`,
       `\n   Status: ${order.status}`,
       `\n   Expired: ${isExpired}`,

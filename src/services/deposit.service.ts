@@ -1,6 +1,6 @@
 import { Prisma, type PaymentIntent } from "@prisma/client";
 import { ApiError } from "../lib/errors";
-import { depositAmountFor, nextDepositDeadline } from "../lib/deposit";
+import { DEPOSIT_DEADLINE_HOURS, customerPartAmounts, performerDepositAmount, nextDepositDeadline, nextPart2Deadline } from "../lib/deposit";
 import { canTransition, type OrderStatus } from "../lib/orderStatus";
 import { createLiqPayCheckout, getLiqPayCheckoutUrl, liqpayDecodeData, liqpayVerifySignature, captureHold, refundCaptured, reverseHold } from "./liqpay.service";
 import { publishDomainEvent } from "../realtime/publishDomainEvent";
@@ -27,6 +27,21 @@ export function transitionForConfirm(
   if (role === "customer" && status === "requires_confirmation")
     return "confirmed";
   return null;
+}
+
+// Escrow amount for a role = the sum of that role's PAID deposit intents, so
+// the staged customer deposit (part1 + part2) lands on the full 30% without an
+// independent recomputation (no rounding drift). Reads inside the caller's
+// transaction, so an intent marked paid earlier in the same tx is included.
+async function sumPaidIntentAmounts(
+  tx: Tx,
+  args: { orderId: string; role: IntentRole }
+): Promise<Prisma.Decimal> {
+  const rows = await tx.paymentIntent.findMany({
+    where: { orderId: args.orderId, role: args.role, status: "paid" },
+    select: { amount: true },
+  });
+  return rows.reduce((sum, row) => sum.add(row.amount), new Prisma.Decimal(0));
 }
 
 // Без BACKEND_PUBLIC_URL (забули налаштувати на сервері) бераємо публічний
@@ -65,6 +80,8 @@ export async function createDepositIntent(
   args: {
     orderId: string;
     role: IntentRole;
+    /** Deposit stage: 1 = performer full / customer part1 (default), 2 = customer part2. */
+    part?: 1 | 2;
     method?: "card" | "apple-pay" | "google-pay" | "bank-transfer";
     wallet?: string;
     resultUrl?: string;
@@ -74,12 +91,28 @@ export async function createDepositIntent(
 ) {
   const order = await tx.order.findUnique({ where: { id: args.orderId } });
   if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
-  const amount = depositAmountFor(order.budget);
+  const part = args.part ?? 1;
+  if (part === 2 && args.role !== "customer") {
+    throw new ApiError(400, "VALIDATION_ERROR", "Другу частину гарантійної суми вносить лише замовник");
+  }
+  // Performer locks the full per-side deposit (30% of budget, part 1, no
+  // staging). The customer side is staged: part1 (30% of the per-side deposit)
+  // confirms the order; part2 (the remainder) is created later, once work
+  // reaches 30% progress (openPart2DepositStage).
+  const amount =
+    args.role === "performer"
+      ? performerDepositAmount(order.budget)
+      : part === 2
+        ? customerPartAmounts(order.budget).part2
+        : customerPartAmounts(order.budget).part1;
   const checkout = createLiqPayCheckout({
     orderId: `${order.id}:${args.role}:${Date.now()}`,
     amount: amount.toNumber(),
     currency: order.currency,
-    description: `Гарантійна сума за замовлення ${formatOrderNumber(order.orderNumber) ?? ""}`.trim(),
+    description:
+      part === 2
+        ? `Друга частина гарантійної суми за замовлення ${formatOrderNumber(order.orderNumber) ?? ""}`.trim()
+        : `Гарантійна сума за замовлення ${formatOrderNumber(order.orderNumber) ?? ""}`.trim(),
     method: args.method,
     serverUrl: args.serverUrl,
     resultUrl: args.resultUrl,
@@ -89,6 +122,7 @@ export async function createDepositIntent(
       id: args.intentId ?? undefined,
       orderId: order.id,
       role: args.role,
+      part,
       amount,
       currency: order.currency,
       provider: "liqpay",
@@ -143,11 +177,74 @@ export async function ensureIntentServerUrl(tx: Tx, intent: PaymentIntent, req?:
   const created = await createDepositIntent(tx, {
     orderId: intent.orderId,
     role: intent.role,
+    part: intent.part === 2 ? 2 : 1,
     resultUrl: intent.resultUrl ?? undefined,
     serverUrl: fresh,
     intentId: intent.id,
   });
   return created.intent;
+}
+
+// A "staged" order is one whose customer deposit follows the 30/70 split:
+// there is a paid customer part-1 intent AND its amount equals the staged
+// part-1 for the order's budget. Legacy in-flight orders paid a single deposit
+// (backfilled as part 1), which does not match the staged split — so they are
+// NOT staged and must never be asked for a part-2 payment.
+export async function isStagedDepositOrder(
+  tx: Tx,
+  order: { id: string; budget: Prisma.Decimal.Value }
+): Promise<boolean> {
+  const part1 = customerPartAmounts(order.budget).part1;
+  const staged = await tx.paymentIntent.findFirst({
+    where: {
+      orderId: order.id,
+      role: "customer",
+      part: 1,
+      status: "paid",
+      amount: part1,
+    },
+    select: { id: true },
+  });
+  return staged != null;
+}
+
+// ≥30% progress milestone: idempotently open the customer's part-2 deposit
+// stage. The guarded `customerPart2Deadline` update is the latch — under
+// concurrency exactly one caller claims it — and the deadline write and the
+// part-2 intent are written in the caller's transaction, so they commit or
+// roll back together. Returns the fresh part-2 intent, or null when the stage
+// is already open (a part-2 intent exists), the order is not a staged deposit
+// order (part-1 unpaid, or a legacy single-deposit order), or the latch was
+// lost to a concurrent post.
+export async function openPart2DepositStage(
+  tx: Tx,
+  args: { orderId: string; intentId: string; serverUrl?: string }
+): Promise<PaymentIntent | null> {
+  const existingPart2 = await tx.paymentIntent.findFirst({
+    where: { orderId: args.orderId, role: "customer", part: 2 },
+    select: { id: true },
+  });
+  if (existingPart2) return null;
+  const order = await tx.order.findUnique({
+    where: { id: args.orderId },
+    select: { id: true, budget: true },
+  });
+  if (!order) return null;
+  if (!(await isStagedDepositOrder(tx, order))) return null;
+  const now = new Date();
+  const claimed = await tx.order.updateMany({
+    where: { id: args.orderId, customerPart2Deadline: null },
+    data: { customerPart2Deadline: nextPart2Deadline(now) },
+  });
+  if (claimed.count !== 1) return null;
+  const { intent } = await createDepositIntent(tx, {
+    orderId: args.orderId,
+    role: "customer",
+    part: 2,
+    serverUrl: args.serverUrl,
+    intentId: args.intentId,
+  });
+  return intent;
 }
 
 export async function claimOrderForPerformer(
@@ -221,19 +318,28 @@ export async function confirmDeposit(
   }
   const order = await tx.order.findUnique({ where: { id: intent.orderId } });
   if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
-  const toStatus = transitionForConfirm(intent.role, order.status);
-  if (!toStatus || !canTransition(order.status as OrderStatus, toStatus)) {
+  // Part-2 (the customer deposit remainder) does NOT transition the order: the
+  // order is already confirmed/started. Paying it tops the customer escrow up
+  // to the full 30% and resumes a paused order (deadline cleared, pause off).
+  const isPart2 = intent.role === "customer" && intent.part === 2;
+  const toStatus = isPart2 ? null : transitionForConfirm(intent.role, order.status);
+  if (!isPart2 && (!toStatus || !canTransition(order.status as OrderStatus, toStatus))) {
     throw new ApiError(409, "CONFLICT", "Статус замовлення не дозволяє внесення застави");
+  }
+  // The part-2 stage only exists while the work is in progress (`started`);
+  // paying a stale checkout after the order moved on would strand money in
+  // escrow with no release path ever returning it.
+  if (isPart2 && order.status !== "started") {
+    throw new ApiError(409, "CONFLICT", "Другу частину гарантійної суми можна внести лише під час виконання робіт");
   }
   const now = new Date();
   const deadlineReset =
     intent.role === "performer" ? nextDepositDeadline(now) : null;
   const moved = await tx.order.updateMany({
     where: { id: order.id, status: order.status },
-    data: {
-      status: toStatus,
-      depositDeadline: deadlineReset,
-    },
+    data: isPart2
+      ? { customerPart2Deadline: null, paymentPaused: false }
+      : { status: toStatus!, depositDeadline: deadlineReset },
   });
   if (moved.count !== 1) {
     throw new ApiError(409, "CONFLICT", "Статус замовлення паралельно змінено");
@@ -257,6 +363,9 @@ export async function confirmDeposit(
       } as unknown as Prisma.InputJsonValue,
     },
   });
+  const lockAmount = isPart2
+    ? await sumPaidIntentAmounts(tx, { orderId: order.id, role: intent.role })
+    : paidIntent.amount;
   const lockUserId =
     intent.role === "performer" ? order.performerUserId! : order.customerUserId;
   await tx.escrowLock.upsert({
@@ -267,14 +376,16 @@ export async function confirmDeposit(
       orderId: order.id,
       userId: lockUserId,
       role: intent.role,
-      amount: paidIntent.amount,
+      amount: lockAmount,
       status: "held",
     },
-    update: { status: "held", releasedAt: null, amount: paidIntent.amount },
+    update: { status: "held", releasedAt: null, amount: lockAmount },
   });
-  await tx.orderStatusEvent.create({
-    data: { orderId: order.id, status: toStatus, note: null },
-  });
+  if (!isPart2) {
+    await tx.orderStatusEvent.create({
+      data: { orderId: order.id, status: toStatus!, note: null },
+    });
+  }
   const updated = await tx.order.findUnique({ where: { id: order.id } });
   return { order: updated!, intent: paidIntent, duplicate: false as const };
 }
@@ -323,11 +434,23 @@ export async function heldEscrowTotal(tx: Tx, orderId: string) {
 // без providerRaw — їхнє повернення тільки вручну.
 type PendingLock = { id: string; orderId: string; role: string; status: string };
 
-async function settlePendingLock(lock: PendingLock): Promise<boolean> {
-  const { prisma } = await import("../lib/prisma");
+// Final PaymentIntent status once its money has been moved for a settlement
+// target. Marking intents settled makes retries idempotent per intent: a
+// retry after a partial failure re-reads only the still-"paid" intents, so
+// money that already moved is never moved twice.
+const INTENT_STATUS_BY_TARGET: Record<SettleTarget, string> = {
+  released: "released",
+  refunded: "refunded",
+  forfeited: "forfeited",
+};
+
+async function settlePendingLock(
+  lock: PendingLock,
+  client: Prisma.TransactionClient
+): Promise<boolean> {
   const to = TARGET_BY_PENDING[lock.status];
   if (!to) return false;
-  const intents = await prisma.paymentIntent.findMany({
+  const intents = await client.paymentIntent.findMany({
     where: { orderId: lock.orderId, status: "paid", role: lock.role },
     select: { id: true, role: true, providerOrderId: true, providerRaw: true },
   });
@@ -357,6 +480,13 @@ async function settlePendingLock(lock: PendingLock): Promise<boolean> {
       } else {
         await refundCaptured(liqpayOrderId);
       }
+      const marked = await client.paymentIntent.updateMany({
+        where: { id: intent.id, status: "paid" },
+        data: { status: INTENT_STATUS_BY_TARGET[to] },
+      });
+      if (marked.count !== 1) {
+        process.stdout.write(JSON.stringify({ level: "info", msg: "settle_mark_raced", ...logCtx, intentId: intent.id }) + "\n");
+      }
       process.stdout.write(JSON.stringify({ level: "info", msg: "settle_ok", ...logCtx, intentId: intent.id, liqpayOrderId }) + "\n");
     } catch (e) {
       process.stdout.write(
@@ -373,7 +503,7 @@ async function settlePendingLock(lock: PendingLock): Promise<boolean> {
     }
   }
 
-  const updated = await prisma.escrowLock.updateMany({
+  const updated = await client.escrowLock.updateMany({
     where: { id: lock.id, status: lock.status },
     data: { status: to, releasedAt: new Date() },
   });
@@ -384,9 +514,10 @@ export async function settleProviderHolds(args: {
   orderId: string;
   role?: IntentRole;
   to: SettleTarget;
+  client?: Prisma.TransactionClient;
 }) {
-  const { prisma } = await import("../lib/prisma");
-  const locks = await prisma.escrowLock.findMany({
+  const client = args.client ?? (await import("../lib/prisma")).prisma;
+  const locks = await client.escrowLock.findMany({
     where: {
       orderId: args.orderId,
       status: PENDING_BY_TARGET[args.to],
@@ -395,14 +526,18 @@ export async function settleProviderHolds(args: {
     select: { id: true, orderId: true, role: true, status: true },
   });
   for (const lock of locks) {
-    await settlePendingLock(lock);
+    await settlePendingLock(lock, client);
   }
 }
 
-export async function retryPendingEscrowSettlements(args: { olderThanMs: number; limit?: number }) {
-  const { prisma } = await import("../lib/prisma");
+export async function retryPendingEscrowSettlements(args: {
+  olderThanMs: number;
+  limit?: number;
+  client?: Prisma.TransactionClient;
+}) {
+  const client = args.client ?? (await import("../lib/prisma")).prisma;
   const cutoff = new Date(Date.now() - args.olderThanMs);
-  const locks = await prisma.escrowLock.findMany({
+  const locks = await client.escrowLock.findMany({
     where: { status: { in: Object.values(PENDING_BY_TARGET) }, updatedAt: { lt: cutoff } },
     select: { id: true, orderId: true, role: true, status: true },
     orderBy: { updatedAt: "asc" },
@@ -410,7 +545,7 @@ export async function retryPendingEscrowSettlements(args: { olderThanMs: number;
   });
   let settled = 0;
   for (const lock of locks) {
-    if (await settlePendingLock(lock)) settled += 1;
+    if (await settlePendingLock(lock, client)) settled += 1;
   }
   return { checked: locks.length, settled, failed: locks.length - settled };
 }
@@ -460,11 +595,33 @@ export function buildDepositPaidEvents(args: {
   orderId: string;
   toStatus: string;
   role: IntentRole;
+  part?: number;
   customerUserId: string;
   performerUserId: string | null;
   providerStatus: string | null;
 }): DepositPaidEvent[] {
   const both = [args.customerUserId, args.performerUserId].filter((v): v is string => !!v);
+  // Customer part-2 tops the escrow up to the full 30% and lifts a pause — it
+  // does not change the order status, so it emits its own event set.
+  if (args.role === "customer" && args.part === 2) {
+    return [
+      {
+        type: "deposit.customer_part2_paid",
+        targets: { userIds: both },
+        data: { orderId: args.orderId, role: "customer", part: 2, providerStatus: args.providerStatus },
+      },
+      {
+        type: "escrow.changed",
+        targets: { userIds: both },
+        data: { orderId: args.orderId, role: "customer", status: args.toStatus },
+      },
+      {
+        type: "order.payment_resumed",
+        targets: { userIds: both },
+        data: { orderId: args.orderId },
+      },
+    ];
+  }
   const fromStatus = args.role === "performer" ? "accepted" : "requires_confirmation";
   const events: DepositPaidEvent[] = [
     {
@@ -513,13 +670,16 @@ export function buildDepositPaidEvents(args: {
   return events;
 }
 
-// Notify only the counterparty (push + inbox) about a deposit payment; the
-// payer already knows they paid. WebSocket events still go to both parties
+// Notify BOTH sides (push + inbox) about a deposit payment: the counterparty
+// is told what the other side did, and the payer gets a confirmation of their
+// own payment. Every payload carries orderId + role + action so the app can
+// deep-link to the specific order. WebSocket events still go to both parties
 // so both apps refresh. Throws on publish/notify failure so callers can retry.
 export async function emitDepositPaidNotifications(args: {
   requestId?: string;
   order: { id: string; status: string; customerUserId: string; performerUserId: string | null };
   role: IntentRole;
+  part?: number;
   amount: unknown;
   currency: string;
   providerStatus: string | null;
@@ -530,30 +690,64 @@ export async function emitDepositPaidNotifications(args: {
     orderId: args.order.id,
     toStatus: args.order.status,
     role: args.role,
+    part: args.part,
     customerUserId: args.order.customerUserId,
     performerUserId: args.order.performerUserId,
     providerStatus: args.providerStatus,
   })) {
     await publishDomainEvent({ ...e, requestId: args.requestId });
   }
-  if (args.role === "performer") {
+  if (args.role === "customer" && args.part === 2) {
+    if (args.order.performerUserId) {
+      await notifyUser({
+        userId: args.order.performerUserId,
+        type: "deposit",
+        title: "Замовник вніс другу частину гарантійної суми",
+        message: `Замовлення ${shortRef}. Гарантійна сума замовника внесена повністю (частини 30/70). Роботу розблоковано — можна продовжувати.`,
+        data: { orderId: args.order.id, type: "order_payment_resumed", role: "performer", action: "view_order" },
+      });
+    }
+    await notifyUser({
+      userId: args.order.customerUserId,
+      type: "deposit",
+      title: "Другу частину гарантійної суми внесено",
+      message: `Замовлення ${shortRef}. Ви внесли другу частину гарантійної суми (70% від неї) — ${sum}. Гарантійна сума внесена повністю, роботу розблоковано.`,
+      data: { orderId: args.order.id, type: "order_payment_resumed", role: "customer", action: "view_order" },
+    });
+  } else if (args.role === "performer") {
     await notifyUser({
       userId: args.order.customerUserId,
       type: "deposit",
       title: "Виконавець вніс гарантійну суму",
-      message: `Замовлення ${shortRef}. Внесіть свою гарантійну суму протягом 12 годин.`,
-      data: { orderId: args.order.id, type: "deposit_customer_required", role: "customer" },
+      message: `Замовлення ${shortRef}. Внесіть першу частину своєї гарантійної суми (30% від неї) протягом ${DEPOSIT_DEADLINE_HOURS} годин.`,
+      data: { orderId: args.order.id, type: "deposit_customer_required", role: "customer", action: "pay_deposit" },
     });
+    if (args.order.performerUserId) {
+      await notifyUser({
+        userId: args.order.performerUserId,
+        type: "deposit",
+        title: "Гарантійну суму внесено",
+        message: `Замовлення ${shortRef}. Ви внесли гарантійну суму — ${sum}. Очікуємо внесення замовником першої частини його гарантійної суми.`,
+        data: { orderId: args.order.id, type: "deposit_performer_paid", role: "performer", action: "view_order" },
+      });
+    }
   } else {
     if (args.order.performerUserId) {
       await notifyUser({
         userId: args.order.performerUserId,
         type: "deposit",
-        title: "Замовник вніс гарантійну суму",
-        message: `Замовлення ${shortRef} підтверджено. Можна починати роботу.`,
-        data: { orderId: args.order.id, type: "order_confirmed", role: "performer" },
+        title: "Замовник вніс першу частину гарантійної суми",
+        message: `Замовлення ${shortRef} підтверджено. Другу частину (70% від гарантійної суми) замовник внесе, коли роботи досягнуть 30% прогресу. Можна починати роботу.`,
+        data: { orderId: args.order.id, type: "order_confirmed", role: "performer", action: "view_order" },
       });
     }
+    await notifyUser({
+      userId: args.order.customerUserId,
+      type: "deposit",
+      title: "Першу частину гарантійної суми внесено",
+      message: `Замовлення ${shortRef} підтверджено. Ви внесли першу частину (30% від гарантійної суми) — ${sum}. Другу частину (70%) потрібно буде внести, коли роботи досягнуть 30% прогресу.`,
+      data: { orderId: args.order.id, type: "order_confirmed", role: "customer", action: "view_order" },
+    });
   }
   process.stdout.write(
     JSON.stringify({

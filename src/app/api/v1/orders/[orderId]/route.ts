@@ -5,7 +5,11 @@ import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { enqueueMatchNewOrder } from "@/shared";
 import { publishDomainEvent } from "@/shared";
-import { safeDepositAmount, ESCROW_OPEN_STATUSES } from "@/shared";
+import {
+  ESCROW_OPEN_STATUSES,
+  buildOrderDetailPayload,
+  resolveOrderDetailViewerRole,
+} from "@/shared";
 
 const patchSchema = z
   .object({
@@ -56,15 +60,24 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       order.customerUserId === user.id || order.performerUserId === user.id;
     if (!canRead) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
+    // Escrow is strictly role-scoped: fetch only the caller's own lock/intents
+    // so the counterparty's frozen amount never reaches the payload.
+    const viewerRole = resolveOrderDetailViewerRole(order, user.id);
+
     const timeline = await prisma.orderStatusEvent.findMany({
       where: { orderId },
       orderBy: { createdAt: "asc" },
       select: { status: true, createdAt: true, note: true },
     });
 
-    const heldLocks = await prisma.escrowLock.findMany({
-      where: { orderId, status: { in: [...ESCROW_OPEN_STATUSES] } },
-      select: { amount: true },
+    const ownLock = await prisma.escrowLock.findFirst({
+      where: { orderId, role: viewerRole, status: { in: [...ESCROW_OPEN_STATUSES] } },
+      select: { amount: true, status: true },
+    });
+
+    const ownIntents = await prisma.paymentIntent.findMany({
+      where: { orderId, role: viewerRole },
+      select: { part: true, status: true },
     });
 
     const confirmationReview = await prisma.review.findFirst({
@@ -74,35 +87,14 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     });
 
     return ok(req, {
-      order: {
-        id: order.id,
-        orderNumber: order.orderNumber,
-        status: order.status,
-        serviceCategoryId: order.serviceCategoryId,
-        serviceSubCategoryId: order.serviceSubCategoryId,
-        serviceTypeId: order.serviceTypeId,
-        areaHa: Number(order.areaHa),
-        location: {
-          lat: Number(order.lat),
-          lng: Number(order.lng),
-          locationLabel: order.locationLabel,
-          addressLabel: order.locationLabel,
-          regionName: order.regionName,
-        },
-        dateFrom: order.dateFrom,
-        dateTo: order.dateTo,
-        budget: Number(order.budget),
-        acceptedAt: order.acceptedAt,
-        depositDeadline: order.depositDeadline,
-        depositAmount: Number(safeDepositAmount(order.budget)),
-        escrowAmount: heldLocks.reduce((sum, l) => sum + Number(l.amount), 0),
-        performerUserId: order.performerUserId,
-        comment: order.comment,
-        completionConfirmedAt: confirmationReview?.createdAt ?? null,
-        rating: confirmationReview?.rating ?? null,
-        completionComment: confirmationReview?.text ?? null,
-        timeline: timeline.map((t) => ({ status: t.status, at: t.createdAt, note: t.note })),
-      },
+      order: buildOrderDetailPayload({
+        order,
+        viewerRole,
+        lock: ownLock,
+        intents: ownIntents,
+        timeline,
+        confirmationReview,
+      }),
     });
   } catch (err) {
     return fail(req, err);

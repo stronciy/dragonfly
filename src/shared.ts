@@ -1,6 +1,7 @@
 export * from "./lib/prisma";
 export * from "./lib/errors";
 export * from "./lib/deposit";
+export * from "./lib/orderDetail";
 export * from "./lib/orderStatus";
 export * from "./lib/matching";
 
@@ -14,6 +15,7 @@ export * from "./realtime/publishDomainEvent";
 export * from "./realtime/redisBus";
 
 export * from "./services/arbitration.service";
+export * from "./services/billing.service";
 export * from "./services/deposit.service";
 export * from "./services/earlyStart.service";
 export * from "./services/expoPush.service";

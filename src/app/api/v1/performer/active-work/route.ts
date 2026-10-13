@@ -48,7 +48,7 @@ export async function GET(req: Request) {
       });
     }
 
-    // Отримуємо інформацію про заказчиків
+    // Отримуємо інформацію про замовників
     const customerIds = Array.from(new Set(orders.map(o => o.customerUserId)));
     const customers = await prisma.user.findMany({
       where: { id: { in: customerIds } },

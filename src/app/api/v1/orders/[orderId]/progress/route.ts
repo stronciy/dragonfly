@@ -5,6 +5,9 @@ import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
 import { notifyUser } from "@/shared";
 import { readFormFilesAsDataUrl } from "@/lib/uploads";
+import { canSubmitProgress } from "@/shared";
+import { buildDepositCallbackUrl, openPart2DepositStage, PART2_DEADLINE_HOURS } from "@/shared";
+import type { PaymentIntent } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -52,6 +55,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     }
     if (order.status !== "started") {
       throw new ApiError(409, "CONFLICT", "Про прогрес можна звітувати лише після старту робіт");
+    }
+    if (!canSubmitProgress(order)) {
+      throw new ApiError(409, "CONFLICT", "Прогрес призупинено: замовник не внес другу частину гарантійної суми");
     }
 
     const form = await req.formData();
@@ -104,6 +110,44 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       targets: { userIds: [order.customerUserId] },
       data: { orderId, progressId: created.id },
     });
+
+    // ≥30% milestone: idempotently open the customer's part-2 deposit stage
+    // (deadline + intent in one transaction; the deadline update is the latch).
+    let part2Intent: PaymentIntent | null = null;
+    if (percent != null && percent >= 30) {
+      const intentId = crypto.randomUUID();
+      part2Intent = await prisma.$transaction((tx) =>
+        openPart2DepositStage(tx, {
+          orderId,
+          intentId,
+          serverUrl: buildDepositCallbackUrl(intentId, req),
+        })
+      );
+    }
+    if (part2Intent) {
+      const shortRef = await orderRef(orderId);
+      const sum = `${Number(part2Intent.amount)} ${part2Intent.currency}`;
+      await publishDomainEvent({
+        type: "deposit.customer_part2_required",
+        requestId,
+        targets: { userIds: [order.customerUserId] },
+        data: { orderId, role: "customer", part: 2 },
+      });
+      await notifyUser({
+        userId: order.customerUserId,
+        type: "deposit",
+        title: "Потрібна друга частина гарантійної суми",
+        message: `Замовлення ${shortRef}. Роботи досягли 30% — внесіть другу частину гарантійної суми (70% від неї, ${sum}) протягом ${PART2_DEADLINE_HOURS} годин.`,
+        data: { orderId, type: "deposit_customer_part2_required", role: "customer", action: "pay_deposit" },
+      });
+      await notifyUser({
+        userId: user.id,
+        type: "deposit",
+        title: "Чекаємо другу частину застави замовника",
+        message: `Замовлення ${shortRef}. Замовник має внести другу частину гарантійної суми (70% від неї) протягом ${PART2_DEADLINE_HOURS} годин. Роботу можна продовжувати.`,
+        data: { orderId, type: "deposit_customer_part2_required", role: "performer", action: "view_order" },
+      });
+    }
 
     return ok(req, { progress: { id: created.id } }, { status: 201, message: "Про прогрес повідомлено" });
   } catch (err) {
