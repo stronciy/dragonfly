@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   MASKED_LOCATION_LABEL_FALLBACK,
   PERFORMER_LOCATION_REVEAL_STATUSES,
+  coarseLocationLabel,
   haversineKm,
   isPerformerLocationRevealed,
   marketplaceDistanceKm,
@@ -45,7 +46,7 @@ test("isPerformerLocationRevealed gates exactly the post-confirm statuses", () =
   ]);
 });
 
-test("pre-confirm masking drops addressLabel and coordinates from the JSON", () => {
+test("pre-confirm masking drops addressLabel, coordinates and region from the JSON", () => {
   for (const status of PRE_CONFIRM_STATUSES) {
     const view = maskOrderLocationForMarketplace({ ...ORDER, status });
     const parsed = JSON.parse(JSON.stringify(view));
@@ -55,11 +56,10 @@ test("pre-confirm masking drops addressLabel and coordinates from the JSON", () 
     assert.equal("lng" in parsed.location, false, status);
     assert.equal("addressLabel" in parsed.location, false, status);
 
-    // Coarse label only — never the exact `locationLabel` (which IS the address).
-    assert.equal(parsed.locationLabel, ORDER.regionName);
-    assert.equal(parsed.regionName, ORDER.regionName);
-    assert.equal(parsed.location.locationLabel, ORDER.regionName);
-    assert.equal(parsed.location.regionName, ORDER.regionName);
+    assert.equal("regionName" in parsed, false, status);
+    assert.equal("regionName" in parsed.location, false, status);
+    assert.equal(parsed.locationLabel, MASKED_LOCATION_LABEL_FALLBACK, status);
+    assert.equal(parsed.location.locationLabel, MASKED_LOCATION_LABEL_FALLBACK, status);
   }
 });
 
@@ -121,15 +121,18 @@ test("pre-confirm mask never leaks the exact address substring", () => {
   }
 });
 
-test("coarse label composes region + settlement, falls back when both missing", () => {
-  const composed = maskOrderLocationForMarketplace(ADDRESS_ORDER, { assigned: false });
-  assert.equal(composed.locationLabel, "Полтавська область, Полтава");
-
-  const fallback = maskOrderLocationForMarketplace(
-    { ...ADDRESS_ORDER, regionName: null, settlementName: null },
-    { assigned: false }
+test("coarseLocationLabel composes region + settlement but the masked view never exposes it", () => {
+  assert.equal(
+    coarseLocationLabel({ regionName: "Полтавська область", settlementName: "Полтава" }),
+    "Полтавська область, Полтава"
   );
-  assert.equal(fallback.locationLabel, MASKED_LOCATION_LABEL_FALLBACK);
+  assert.equal(
+    coarseLocationLabel({ regionName: null, settlementName: null }),
+    MASKED_LOCATION_LABEL_FALLBACK
+  );
+
+  const masked = maskOrderLocationForMarketplace(ADDRESS_ORDER, { assigned: false });
+  assert.equal(masked.locationLabel, MASKED_LOCATION_LABEL_FALLBACK);
 });
 
 test("raw marketplace detail payload: published has no geo, confirmed does", () => {
@@ -152,7 +155,8 @@ test("raw marketplace detail payload: published has no geo, confirmed does", () 
   assert.equal("addressLabel" in published.location, false);
   assert.equal("phone" in published, false);
   assert.equal("customerPhone" in published, false);
-  assert.equal(published.locationLabel, ORDER.regionName);
+  assert.equal(published.locationLabel, MASKED_LOCATION_LABEL_FALLBACK);
+  assert.equal("regionName" in published, false);
   assert.equal(published.distanceKm, 12.5);
 
   const confirmed = JSON.parse(JSON.stringify(buildPayload("confirmed"))).order;
@@ -174,18 +178,18 @@ test("raw marketplace list payload: published row has coarse fields + distance o
   assert.equal(keys(parsed.location).includes("lat"), false);
   assert.equal(keys(parsed.location).includes("lng"), false);
   assert.equal(keys(parsed).includes("addressLabel"), false);
-  assert.equal(parsed.locationLabel, ORDER.regionName);
+  assert.equal(parsed.locationLabel, MASKED_LOCATION_LABEL_FALLBACK);
   assert.equal(parsed.distanceKm, 4.2);
 });
 
-test("regionName null is preserved as null and never resurrects coordinates", () => {
+test("masked view omits regionName and never resurrects coordinates", () => {
   const view = maskOrderLocationForMarketplace({
     ...ORDER,
     status: "published",
     regionName: null,
   });
-  assert.equal(view.regionName, null);
-  assert.equal(view.location.regionName, null);
+  assert.equal("regionName" in view, false);
+  assert.equal("regionName" in view.location, false);
   assert.equal("lat" in view.location, false);
 });
 

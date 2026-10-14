@@ -1,6 +1,6 @@
 import { Prisma, type PaymentIntent } from "@prisma/client";
 import { ApiError } from "../lib/errors";
-import { DEPOSIT_DEADLINE_HOURS, customerPartAmounts, performerDepositAmount, nextDepositDeadline, nextPart2Deadline } from "../lib/deposit";
+import { DEPOSIT_DEADLINE_HOURS, customerPartAmounts, performerDepositAmount, nextDepositDeadline, nextPart2Deadline, nextCustomerCounterDepositDeadline } from "../lib/deposit";
 import { canTransition, type OrderStatus } from "../lib/orderStatus";
 import { createLiqPayCheckout, getLiqPayCheckoutUrl, liqpayDecodeData, liqpayVerifySignature, captureHold, refundCaptured, reverseHold } from "./liqpay.service";
 import { publishDomainEvent } from "../realtime/publishDomainEvent";
@@ -334,7 +334,7 @@ export async function confirmDeposit(
   }
   const now = new Date();
   const deadlineReset =
-    intent.role === "performer" ? nextDepositDeadline(now) : null;
+    intent.role === "performer" ? nextCustomerCounterDepositDeadline(now) : null;
   const moved = await tx.order.updateMany({
     where: { id: order.id, status: order.status },
     data: isPart2

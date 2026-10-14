@@ -10,6 +10,7 @@ import {
   performerDepositAmount,
   type OrderDetailOrderInput,
 } from "../../src/shared";
+import { MASKED_LOCATION_LABEL_FALLBACK } from "../../src/lib/marketplaceVisibility";
 
 const BUDGET = new Prisma.Decimal("100000");
 const PART = customerPartAmounts(BUDGET);
@@ -115,7 +116,7 @@ test("buildOrderDetailEscrow: performer held=false when lock missing", () => {
   assert.equal(view.escrowAmount, 0);
 });
 
-test("performer pre-confirm (accepted/requires_confirmation): no lat/lng/addressLabel", () => {
+test("performer pre-confirm (accepted/requires_confirmation): no lat/lng/addressLabel/region", () => {
   for (const status of ["accepted", "requires_confirmation"]) {
     const payload = build({
       viewerRole: "performer",
@@ -126,8 +127,8 @@ test("performer pre-confirm (accepted/requires_confirmation): no lat/lng/address
     assert.equal("lng" in payload.location, false, `${status} lng`);
     assert.equal("addressLabel" in payload.location, false, `${status} addressLabel`);
     assert.equal("addressLabel" in payload, false, `${status} top-level addressLabel`);
-    assert.equal(payload.location.locationLabel, "Полтавська");
-    assert.equal(payload.location.regionName, "Полтавська");
+    assert.equal("regionName" in payload.location, false, `${status} regionName`);
+    assert.equal(payload.location.locationLabel, MASKED_LOCATION_LABEL_FALLBACK);
   }
 });
 

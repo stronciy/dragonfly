@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { safeDepositAmount } from "./deposit";
-import { coarseLocationLabel } from "./marketplaceVisibility";
+import { MASKED_LOCATION_LABEL_FALLBACK } from "./marketplaceVisibility";
 
 /**
  * Order-detail read model (T12). Security invariants of the
@@ -138,11 +138,8 @@ function buildLocation(
   masked: boolean
 ): Record<string, unknown> {
   if (masked) {
-    // Coarse only: no lat/lng/addressLabel, and `locationLabel` is the coarse
-    // label (NOT the exact address, which lives in locationLabel).
     return {
-      locationLabel: coarseLocationLabel(order),
-      regionName: order.regionName,
+      locationLabel: MASKED_LOCATION_LABEL_FALLBACK,
     };
   }
   return {

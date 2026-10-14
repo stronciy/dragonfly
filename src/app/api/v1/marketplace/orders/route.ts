@@ -79,6 +79,7 @@ export async function GET(req: Request) {
               lat: true,
               lng: true,
               createdAt: true,
+              _count: { select: { applications: { where: { status: "pending" } } } },
             },
           },
         },
@@ -95,9 +96,20 @@ export async function GET(req: Request) {
       baseLongitude: profile?.baseLongitude ?? null,
     };
 
+    const orderIds = matches.map((m) => m.order.id);
+    const myApplications = orderIds.length
+      ? await prisma.orderApplication.findMany({
+          where: { performerUserId: user.id, orderId: { in: orderIds } },
+          select: { id: true, orderId: true, status: true },
+        })
+      : [];
+    const myApplicationByOrder = new Map(
+      myApplications.map((a) => [a.orderId, { id: a.id, status: a.status }])
+    );
+
     const items = matches.map((m) => {
-        // Coarse location only — the marketplace is discovery, never the
-        // assigned performer's view. `title` reuses the masked coarse label so
+        // Masked location only — the marketplace is discovery, never the
+        // assigned performer's view. `title` reuses the masked placeholder so
         // the exact address is not smuggled in via the title field.
         const locationMask = maskOrderLocationForMarketplace(m.order, { assigned: false });
         return {
@@ -121,6 +133,8 @@ export async function GET(req: Request) {
             lat: Number(m.order.lat),
             lng: Number(m.order.lng),
           }),
+          applicationsCount: m.order._count.applications,
+          myApplication: myApplicationByOrder.get(m.order.id) ?? null,
           ...locationMask,
         };
       });

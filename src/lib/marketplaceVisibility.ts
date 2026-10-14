@@ -83,11 +83,11 @@ export function coarseLocationLabel(source: CoarseLocationSource): string {
 
 export interface MarketplaceLocationView {
   locationLabel: string;
-  regionName: string | null;
+  regionName?: string | null;
   addressLabel?: string;
   location: {
     locationLabel: string;
-    regionName: string | null;
+    regionName?: string | null;
     addressLabel?: string;
     lat?: number;
     lng?: number;
@@ -106,12 +106,17 @@ export interface MaskOrderLocationOptions {
 /**
  * Build the marketplace-visible location block for an order.
  *
- * - Not revealed (status pre-confirm, or `assigned: false`): only the COARSE
- *   label (`coarseLocationLabel`) + `regionName` — no `addressLabel`, no
- *   `lat`/`lng` (the keys are omitted entirely, so they never appear in the
- *   JSON), and `locationLabel` is the coarse label, NOT the exact address.
+ * R5 PRIVACY: pre-confirm the performer (including a matched-but-unassigned
+ * discovery caller) sees NO location at all — neither the exact address NOR the
+ * coarse region/settlement. The masked branch therefore emits only the
+ * placeholder label, and omits `regionName` and every geo/address key entirely
+ * so they can never appear in the JSON. `distanceKm` is supplied separately by
+ * the caller (coarse, non-identifying) and is intentionally kept.
+ *
+ * - Not revealed (status pre-confirm, or `assigned: false`): placeholder label
+ *   only. No `regionName`, no `addressLabel`, no `lat`/`lng`.
  * - Revealed (assigned performer AND status ∈ reveal set): full block incl.
- *   `addressLabel` + coordinates; `locationLabel` is the exact address.
+ *   exact `locationLabel`, `regionName`, `addressLabel` + coordinates.
  *
  * `addressLabel` is derived from `locationLabel` (the schema has no separate
  * exact-address column); pre-confirm it is dropped regardless.
@@ -125,13 +130,10 @@ export function maskOrderLocationForMarketplace(
     (options.assigned ?? true) && isPerformerLocationRevealed(order.status);
 
   if (!revealed) {
-    const locationLabel = coarseLocationLabel(order);
     return {
-      locationLabel,
-      regionName,
+      locationLabel: MASKED_LOCATION_LABEL_FALLBACK,
       location: {
-        locationLabel,
-        regionName,
+        locationLabel: MASKED_LOCATION_LABEL_FALLBACK,
       },
     };
   }

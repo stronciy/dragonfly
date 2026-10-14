@@ -5,6 +5,10 @@ import { Prisma } from "@prisma/client";
 export const DEPOSIT_RATE = 0.3;
 export const DEPOSIT_DEADLINE_HOURS = 12;
 
+// The customer's counter-deposit of the performer's paid deposit must be paid
+// within 24h of the performer paying (accepted → requires_confirmation).
+export const CUSTOMER_COUNTER_DEPOSIT_DEADLINE_HOURS = 24;
+
 // The customer's per-side deposit is staged: part1 at confirmation, part2 once
 // work reaches 30% progress. Rates are fractions of a side's full deposit.
 export const DEPOSIT_PART1_RATE = 0.3;
@@ -41,6 +45,10 @@ export function customerPartAmounts(budget: Prisma.Decimal.Value): {
 
 export function nextDepositDeadline(now: Date = new Date()): Date {
   return new Date(now.getTime() + DEPOSIT_DEADLINE_HOURS * 60 * 60 * 1000);
+}
+
+export function nextCustomerCounterDepositDeadline(now: Date = new Date()): Date {
+  return new Date(now.getTime() + CUSTOMER_COUNTER_DEPOSIT_DEADLINE_HOURS * 60 * 60 * 1000);
 }
 
 export function nextPart2Deadline(now: Date = new Date()): Date {

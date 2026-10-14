@@ -1,10 +1,9 @@
 import { z } from "zod";
-import { ok, fail, getRequestId } from "@/lib/apiResponse";
+import { ok, fail } from "@/lib/apiResponse";
 import { ApiError } from "@/shared";
 import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
-import { publishDomainEvent } from "@/shared";
-import { claimOrderForPerformer, createDepositIntent, ensureIntentServerUrl, findPendingIntent, serializePaymentIntent, buildDepositCallbackUrl } from "@/shared";
+import { createDepositIntent, ensureIntentServerUrl, findPendingIntent, serializePaymentIntent, buildDepositCallbackUrl } from "@/shared";
 
 const schema = z.object({
   method: z.enum(["card", "apple-pay", "google-pay", "bank-transfer"]).optional(),
@@ -14,19 +13,26 @@ const schema = z.object({
 
 export async function POST(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
-    const requestId = getRequestId(req);
     const user = await requireUser(req);
     if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
-    const { order, freshClaim, intent } = await prisma.$transaction(async (tx) => {
-      const claim = await claimOrderForPerformer(tx, {
-        orderId,
-        performerUserId: user.id,
-      });
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, status: true, performerUserId: true },
+    });
+    if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+    if (order.performerUserId !== user.id) {
+      throw new ApiError(403, "FORBIDDEN", "Ви не призначені виконавцем для цього замовлення");
+    }
+    if (order.status !== "accepted") {
+      throw new ApiError(409, "CONFLICT", "Замовлення ще не прийнято замовником");
+    }
+
+    const intent = await prisma.$transaction(async (tx) => {
       const pending = await findPendingIntent(tx, { orderId, role: "performer" });
-      if (pending) return { intent: await ensureIntentServerUrl(tx, pending, req), checkout: null as null, amount: pending.amount };
+      if (pending) return ensureIntentServerUrl(tx, pending, req);
       const intentId = crypto.randomUUID();
       const created = await createDepositIntent(tx, {
         orderId,
@@ -37,36 +43,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         serverUrl: buildDepositCallbackUrl(intentId, req),
         intentId,
       });
-      return { order: claim.order, freshClaim: claim.freshClaim, intent: created.intent };
+      return created.intent;
     });
-
-    if (freshClaim) {
-      const targets = { userIds: [order.customerUserId, user.id] };
-      await publishDomainEvent({
-        type: "agreement.assigned",
-        requestId,
-        targets,
-        data: { orderId: order.id, performerId: user.id },
-      });
-      await publishDomainEvent({
-        type: "order.status_changed",
-        requestId,
-        targets,
-        data: { orderId: order.id, fromStatus: "published", toStatus: "accepted" },
-      });
-      await publishDomainEvent({
-        type: "order.accepted",
-        requestId,
-        targets,
-        data: { orderId: order.id, performerId: user.id },
-      });
-      await publishDomainEvent({
-        type: "order:accepted",
-        requestId,
-        targets,
-        data: { orderId: order.id, performerId: user.id },
-      });
-    }
 
     return ok(req, { paymentIntent: serializePaymentIntent(intent) });
   } catch (err) {
