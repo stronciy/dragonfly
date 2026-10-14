@@ -51,7 +51,6 @@ model User {
   performerReviews Review[] @relation("PerformerReviews")
   customerReviews Review[] @relation("CustomerReviews")
   orders         Order[]
-  orderApplications OrderApplication[] @relation("PerformerApplications")
   devices        Device[]
   notifications  Notification[]
   orderMedia     OrderMedia[]
@@ -278,7 +277,6 @@ model Order {
   earlyStartRequests EarlyStartRequest[]
   progressUpdates WorkProgressUpdate[]
   arbitrationResolutions ArbitrationResolution[]
-  applications OrderApplication[]
 
   @@index([customerUserId, status, createdAt])
   @@index([performerUserId, status, createdAt])
@@ -564,23 +562,3 @@ model OrderNumberCounter {
   @@map("order_number_counters")
 }
 
-model OrderApplication {
-  id               String    @id @default(cuid())
-  orderId          String    @map("order_id")
-  performerUserId  String    @map("performer_user_id")
-  type             String    @default("apply")
-  message          String?   @db.Text
-  proposedPriceUah Decimal?  @map("proposed_price_uah") @db.Decimal(12, 2)
-  status           String    @default("pending")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-  decidedAt        DateTime? @map("decided_at")
-
-  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  performer User  @relation("PerformerApplications", fields: [performerUserId], references: [id], onDelete: Cascade)
-
-  @@unique([orderId, performerUserId], name: "uniq_order_performer_application")
-  @@index([orderId, status, createdAt])
-  @@index([performerUserId, status, createdAt])
-  @@map("order_applications")
-}
