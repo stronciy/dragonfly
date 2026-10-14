@@ -128,7 +128,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
         requestId,
         order,
         role: paidIntent.role,
-        part: paidIntent.part,
         amount: paidIntent.amount,
         currency: paidIntent.currency,
         providerStatus,

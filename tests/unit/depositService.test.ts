@@ -115,8 +115,6 @@ type FakeOrder = {
   customerUserId: string;
   performerUserId: string | null;
   depositDeadline: Date | null;
-  customerPart2Deadline: Date | null;
-  paymentPaused: boolean;
   orderNumber: string | null;
 };
 
@@ -226,7 +224,7 @@ function makeFakeTx(order: FakeOrder) {
   return { tx, locks, statusEvents };
 }
 
-test("customer part1 confirm: intent amount = part1, deadline cleared, escrow held", async () => {
+test("customer confirm: full deposit intent, deadline cleared, escrow held", async () => {
   process.env.LIQPAY_PUBLIC_KEY = "test_public";
   process.env.LIQPAY_PRIVATE_KEY = "test_private";
   const order: FakeOrder = {
@@ -237,8 +235,6 @@ test("customer part1 confirm: intent amount = part1, deadline cleared, escrow he
     customerUserId: "c1",
     performerUserId: "p1",
     depositDeadline: new Date("2026-10-13T22:00:00.000Z"),
-    customerPart2Deadline: null,
-    paymentPaused: false,
     orderNumber: null,
   };
   const { tx, locks } = makeFakeTx(order);
@@ -249,8 +245,8 @@ test("customer part1 confirm: intent amount = part1, deadline cleared, escrow he
     role: "customer",
     intentId: "ci1",
   });
-  assert.equal(created.amount.toString(), "9000");
-  assert.equal(created.intent.amount.toString(), "9000");
+  assert.equal(created.amount.toString(), "30000");
+  assert.equal(created.intent.amount.toString(), "30000");
   assert.equal(created.intent.part, 1);
   assert.ok(created.intent.data);
   assert.ok(created.intent.signature);
@@ -266,10 +262,10 @@ test("customer part1 confirm: intent amount = part1, deadline cleared, escrow he
   assert.equal(locks.length, 1);
   assert.equal(locks[0].role, "customer");
   assert.equal(locks[0].status, "held");
-  assert.equal(locks[0].amount.toString(), "9000");
+  assert.equal(locks[0].amount.toString(), "30000");
 });
 
-test("customer part1 confirm is idempotent when intent already paid", async () => {
+test("customer confirm is idempotent when intent already paid", async () => {
   process.env.LIQPAY_PUBLIC_KEY = "test_public";
   process.env.LIQPAY_PRIVATE_KEY = "test_private";
   const order: FakeOrder = {
@@ -280,8 +276,6 @@ test("customer part1 confirm is idempotent when intent already paid", async () =
     customerUserId: "c1",
     performerUserId: "p1",
     depositDeadline: new Date("2026-10-13T22:00:00.000Z"),
-    customerPart2Deadline: null,
-    paymentPaused: false,
     orderNumber: null,
   };
   const { tx } = makeFakeTx(order);
@@ -304,145 +298,71 @@ test("customer part1 confirm is idempotent when intent already paid", async () =
   assert.equal(replay.order.status, "confirmed");
 });
 
-test("buildDepositPaidEvents customer part2: part2_paid + resumed to both parties", () => {
-  const events = buildDepositPaidEvents({
-    orderId: "o1",
-    toStatus: "started",
-    role: "customer",
-    part: 2,
-    customerUserId: "c1",
-    performerUserId: "p1",
-    providerStatus: "success",
-  });
-  assert.deepEqual(
-    events.map((e) => e.type),
-    ["deposit.customer_part2_paid", "escrow.changed", "order.payment_resumed"]
-  );
-  for (const e of events) {
-    assert.deepEqual(e.targets, { userIds: ["c1", "p1"] });
-  }
-});
-
-function seedPart2Order(id: string): FakeOrder {
-  return {
-    id,
-    budget: new Prisma.Decimal("100000"),
-    currency: "UAH",
-    status: "started",
-    customerUserId: "c1",
-    performerUserId: "p1",
-    depositDeadline: null,
-    customerPart2Deadline: new Date("2026-10-14T00:00:00.000Z"),
-    paymentPaused: true,
-    orderNumber: null,
-  };
-}
-
-test("customer part2 confirm completes escrow to full 30%, clears deadline, unpauses", async () => {
-  process.env.LIQPAY_PUBLIC_KEY = "test_public";
-  process.env.LIQPAY_PRIVATE_KEY = "test_private";
-  const order = seedPart2Order("o3");
-  const { tx, locks, statusEvents } = makeFakeTx(order);
-  const client = tx as unknown as Prisma.TransactionClient;
-
-  const part1 = await createDepositIntent(client, { orderId: "o3", role: "customer", intentId: "ci1" });
-  await client.paymentIntent.update({ where: { id: part1.intent.id }, data: { status: "paid" } });
-  const part2 = await createDepositIntent(client, {
-    orderId: "o3",
-    role: "customer",
-    part: 2,
-    intentId: "ci2",
-  });
-  assert.equal(part2.intent.amount.toString(), "21000");
-  assert.ok(part2.intent.data);
-  assert.ok(part2.intent.signature);
-
-  const result = await confirmDeposit(client, {
-    paymentIntentId: part2.intent.id,
-    data: part2.intent.data,
-    signature: part2.intent.signature,
-  });
-
-  assert.equal(result.duplicate, false);
-  assert.equal(result.order.status, "started");
-  assert.equal(result.order.customerPart2Deadline, null);
-  assert.equal(result.order.paymentPaused, false);
-  assert.equal(locks.length, 1);
-  assert.equal(locks[0].role, "customer");
-  assert.equal(locks[0].status, "held");
-  assert.equal(locks[0].amount.toString(), "30000");
-  assert.equal(statusEvents.length, 0);
-});
-
-test("customer part2 double-confirm is a no-op (escrow unchanged, duplicate)", async () => {
-  process.env.LIQPAY_PUBLIC_KEY = "test_public";
-  process.env.LIQPAY_PRIVATE_KEY = "test_private";
-  const order = seedPart2Order("o4");
-  const { tx, locks } = makeFakeTx(order);
-  const client = tx as unknown as Prisma.TransactionClient;
-
-  const part1 = await createDepositIntent(client, { orderId: "o4", role: "customer", intentId: "d1" });
-  await client.paymentIntent.update({ where: { id: part1.intent.id }, data: { status: "paid" } });
-  const part2 = await createDepositIntent(client, {
-    orderId: "o4",
-    role: "customer",
-    part: 2,
-    intentId: "d2",
-  });
-  assert.ok(part2.intent.data);
-  assert.ok(part2.intent.signature);
-
-  const first = await confirmDeposit(client, {
-    paymentIntentId: part2.intent.id,
-    data: part2.intent.data,
-    signature: part2.intent.signature,
-  });
-  assert.equal(first.duplicate, false);
-  assert.equal(locks[0].amount.toString(), "30000");
-
-  const replay = await confirmDeposit(client, {
-    paymentIntentId: part2.intent.id,
-    data: part2.intent.data,
-    signature: part2.intent.signature,
-  });
-  assert.equal(replay.duplicate, true);
-  assert.equal(locks.length, 1);
-  assert.equal(locks[0].amount.toString(), "30000");
-  assert.equal(order.customerPart2Deadline, null);
-  assert.equal(order.paymentPaused, false);
-});
-
-test("customer part2 confirm rejected once work is no longer in progress (stale checkout)", async () => {
+test("performer confirm: requires_confirmation + 24h counter-deposit deadline", async () => {
   process.env.LIQPAY_PUBLIC_KEY = "test_public";
   process.env.LIQPAY_PRIVATE_KEY = "test_private";
   const order: FakeOrder = {
-    id: "o5",
+    id: "o3",
+    budget: new Prisma.Decimal("100000"),
+    currency: "UAH",
+    status: "accepted",
+    customerUserId: "c1",
+    performerUserId: "p1",
+    depositDeadline: null,
+    orderNumber: null,
+  };
+  const { tx, locks } = makeFakeTx(order);
+  const client = tx as unknown as Prisma.TransactionClient;
+
+  const created = await createDepositIntent(client, {
+    orderId: "o3",
+    role: "performer",
+    intentId: "pi1",
+  });
+  assert.equal(created.amount.toString(), "30000");
+  assert.ok(created.intent.data);
+  assert.ok(created.intent.signature);
+
+  const before = Date.now();
+  const result = await confirmDeposit(client, {
+    paymentIntentId: created.intent.id,
+    data: created.intent.data,
+    signature: created.intent.signature,
+  });
+
+  assert.equal(result.order.status, "requires_confirmation");
+  assert.ok(result.order.depositDeadline);
+  const hours = (result.order.depositDeadline.getTime() - before) / 3_600_000;
+  assert.ok(hours > 23.9 && hours < 24.1, `deadline delta ${hours}h`);
+  assert.equal(locks.length, 1);
+  assert.equal(locks[0].role, "performer");
+  assert.equal(locks[0].amount.toString(), "30000");
+});
+
+test("confirm rejects an intent whose order status forbids the transition", async () => {
+  process.env.LIQPAY_PUBLIC_KEY = "test_public";
+  process.env.LIQPAY_PRIVATE_KEY = "test_private";
+  const order: FakeOrder = {
+    id: "o4",
     budget: new Prisma.Decimal("100000"),
     currency: "UAH",
     status: "completed",
     customerUserId: "c1",
     performerUserId: "p1",
     depositDeadline: null,
-    customerPart2Deadline: null,
-    paymentPaused: false,
     orderNumber: null,
   };
   const { tx, locks } = makeFakeTx(order);
   const client = tx as unknown as Prisma.TransactionClient;
 
-  const part2 = await createDepositIntent(client, {
-    orderId: "o5",
-    role: "customer",
-    part: 2,
-    intentId: "ci5",
-  });
-  assert.ok(part2.intent.data);
-  assert.ok(part2.intent.signature);
+  const created = await createDepositIntent(client, { orderId: "o4", role: "customer", intentId: "ci4" });
+  assert.ok(created.intent.data);
+  assert.ok(created.intent.signature);
   await assert.rejects(
     confirmDeposit(client, {
-      paymentIntentId: part2.intent.id,
-      data: part2.intent.data,
-      signature: part2.intent.signature,
+      paymentIntentId: created.intent.id,
+      data: created.intent.data,
+      signature: created.intent.signature,
     }),
     (err: unknown) => err instanceof ApiError && err.status === 409
   );

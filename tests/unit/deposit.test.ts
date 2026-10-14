@@ -4,8 +4,6 @@ import { Prisma } from "@prisma/client";
 import {
   DEPOSIT_RATE,
   DEPOSIT_DEADLINE_HOURS,
-  DEPOSIT_PART1_RATE,
-  customerPartAmounts,
   depositAmountFor,
   performerDepositAmount,
   nextDepositDeadline,
@@ -31,25 +29,6 @@ test("performerDepositAmount equals the full per-side deposit", () => {
 test("depositAmountFor should use DEPOSIT_RATE", () => {
   const result = depositAmountFor("2500");
   assert.equal(result.toString(), String(2500 * DEPOSIT_RATE));
-});
-
-test("customerPartAmounts stages the customer deposit 30/70", () => {
-  const { part1, part2 } = customerPartAmounts("100000");
-  assert.equal(part1.toString(), "9000");
-  assert.equal(part2.toString(), "21000");
-  assert.equal(part1.toString(), depositAmountFor("100000").mul(DEPOSIT_PART1_RATE).toString());
-});
-
-test("customerPartAmounts preserves part1 + part2 === deposit (no cent drift)", () => {
-  for (const budget of ["1000", "1234.56", "999.99", "0.01", "777.77", "333333.33"]) {
-    const { part1, part2 } = customerPartAmounts(budget);
-    assert.equal(part1.add(part2).toString(), depositAmountFor(budget).toString());
-  }
-});
-
-test("customerPartAmounts throws on non-positive budget", () => {
-  assert.throws(() => customerPartAmounts("0"), RangeError);
-  assert.throws(() => customerPartAmounts("-100"), RangeError);
 });
 
 test("depositAmountFor should return a Decimal instance", () => {

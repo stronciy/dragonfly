@@ -6,14 +6,13 @@ import {
   buildOrderDetailPayload,
   isOrderDetailGeoMasked,
   resolveOrderDetailViewerRole,
-  customerPartAmounts,
   performerDepositAmount,
   type OrderDetailOrderInput,
 } from "../../src/shared";
 import { MASKED_LOCATION_LABEL_FALLBACK } from "../../src/lib/marketplaceVisibility";
 
 const BUDGET = new Prisma.Decimal("100000");
-const PART = customerPartAmounts(BUDGET);
+const FULL_DEPOSIT = performerDepositAmount(BUDGET);
 const PERFORMER_AMOUNT = performerDepositAmount(BUDGET);
 
 function makeOrder(status: string): OrderDetailOrderInput {
@@ -76,19 +75,16 @@ test("customer payload exposes depositCustomer and NO performer escrow field", (
   const payload = build({
     viewerRole: "customer",
     status: "confirmed",
-    lock: { amount: PART.part1, status: "held" },
-    intents: [
-      { part: 1, status: "paid" },
-      { part: 2, status: "pending" },
-    ],
+    lock: { amount: FULL_DEPOSIT, status: "held" },
+    intents: [{ part: 1, status: "paid" }],
   });
 
   assert.equal("depositPerformer" in payload, false);
   assert.ok(payload.depositCustomer);
   assert.equal(payload.depositCustomer.part1Paid, true);
   assert.equal(payload.depositCustomer.part2Paid, false);
-  assert.equal(payload.depositCustomer.amount, Number(PART.part1));
-  assert.equal(payload.escrowAmount, Number(PART.part1));
+  assert.equal(payload.depositCustomer.amount, Number(FULL_DEPOSIT));
+  assert.equal(payload.escrowAmount, Number(FULL_DEPOSIT));
 });
 
 test("performer payload exposes depositPerformer and NO customer escrow field", () => {
@@ -105,8 +101,7 @@ test("performer payload exposes depositPerformer and NO customer escrow field", 
   assert.equal(payload.depositPerformer.held, true);
 
   const serialized = JSON.stringify(payload);
-  assert.equal(serialized.includes(PART.part1.toString()), false);
-  assert.equal(serialized.includes(PART.part2.toString()), false);
+  assert.equal(serialized.includes("depositCustomer"), false);
 });
 
 test("buildOrderDetailEscrow: performer held=false when lock missing", () => {

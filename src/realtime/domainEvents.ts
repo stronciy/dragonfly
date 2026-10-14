@@ -29,10 +29,6 @@ export type DomainEventType =
   | "order.progress_updated"
   | "order.payment_paused"
   | "order.payment_resumed"
-  | "order.application_created"
-  | "order.application_withdrawn"
-  | "order.application_accepted"
-  | "order.application_rejected"
   | "order.customer_counter_deposit_expired"
   | "arbitration.resolve_requested"
   | "arbitration.resolved";

@@ -29,6 +29,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
           },
         });
     if (!isAssigned && !match) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+    if (!isAssigned && order.status !== "published")
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
     const deposit = safeDepositAmount(order.budget);
 
@@ -43,16 +45,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       },
       { lat: Number(order.lat), lng: Number(order.lng) }
     );
-
-    const [applicationsCount, myApplication] = await Promise.all([
-      prisma.orderApplication.count({ where: { orderId, status: "pending" } }),
-      prisma.orderApplication.findUnique({
-        where: {
-          uniq_order_performer_application: { orderId, performerUserId: user.id },
-        },
-        select: { id: true, status: true },
-      }),
-    ]);
 
     return ok(req, {
         order: {
@@ -81,8 +73,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
           performerUserId: order.performerUserId,
           createdAt: order.createdAt,
           distanceKm,
-          applicationsCount,
-          myApplication: myApplication ?? null,
           // Full address/geo only for the assigned performer once confirmed.
           ...maskOrderLocationForMarketplace(order, { assigned: isAssigned }),
         },
