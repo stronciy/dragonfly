@@ -23,6 +23,9 @@ const schema = z.object({
  * Push идёт через общий `notifyUser`, поэтому сообщение появляется и в списке
  * уведомлений приложения — администратор не может «выстрелить в пустоту»,
  * даже если у пользователя сейчас нет активных устройств.
+ *
+ * Каналы независимы: сбой пуша или почты не отменяет второй канал и не мешает
+ * записать действие в журнал. В ответе — счётчики доставки по каждому каналу.
  */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -32,9 +35,22 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
     const user = await prisma.user.findUnique({
       where: { id },
-      select: { id: true, email: true, name: true, role: true, blockedAt: true },
+      select: { id: true, email: true, name: true, role: true },
     });
     if (!user) throw new ApiError(404, "NOT_FOUND", "Користувача не знайдено");
+
+    // Пуш с orderId открывает заказ в приложении. Чужой/несуществующий заказ
+    // отправил бы пользователя не туда, поэтому проверяем принадлежность.
+    if (body.orderId) {
+      const order = await prisma.order.findUnique({
+        where: { id: body.orderId },
+        select: { customerUserId: true, performerUserId: true },
+      });
+      if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+      if (order.customerUserId !== user.id && order.performerUserId !== user.id) {
+        throw new ApiError(400, "VALIDATION_ERROR", "Замовлення не належить цьому користувачу");
+      }
+    }
 
     const title = body.title ?? "Повідомлення від Dragonfly";
     const emailAvailable = isEmailConfigured();
@@ -49,15 +65,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const delivery = {
       push: false,
       devices: 0,
+      delivered: 0,
+      failed: 0,
+      pushError: null as string | null,
       email: false,
       emailError: null as string | null,
     };
 
     if (body.channel !== "email") {
-      delivery.devices = await prisma.device.count({
-        where: { userId: user.id, revokedAt: null },
-      });
-      await notifyUser({
+      const push = await notifyUser({
         userId: user.id,
         type: "admin_message",
         title,
@@ -69,15 +85,27 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
           ...(body.orderId ? { orderId: body.orderId } : {}),
         },
       });
-      delivery.push = true;
+      delivery.devices = push.devices;
+      delivery.delivered = push.delivered;
+      delivery.failed = push.failed;
+      delivery.pushError = push.error;
+      // In-app уведомление создано в любом случае; push — только если транспорт
+      // принял все отправки.
+      delivery.push = push.failed === 0;
     }
 
-    if (body.channel !== "push" && emailAvailable) {
-      try {
-        await sendAdminMessageEmail({ to: user.email, title, message: body.message });
-        delivery.email = true;
-      } catch (err) {
-        delivery.emailError = err instanceof Error ? err.message : "Невідома помилка";
+    if (body.channel !== "push") {
+      if (!emailAvailable) {
+        // Канал «обидва»: пуш уходит, письмо — нет. Молча терять email нельзя:
+        // админ должен видеть, что получателю ушло не всё.
+        delivery.emailError = "SMTP не налаштовано — лист не надіслано";
+      } else {
+        try {
+          await sendAdminMessageEmail({ to: user.email, title, message: body.message });
+          delivery.email = true;
+        } catch (err) {
+          delivery.emailError = err instanceof Error ? err.message : "Невідома помилка";
+        }
       }
     }
 
@@ -96,18 +124,27 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
           orderId: body.orderId ?? null,
           push: delivery.push,
           devices: delivery.devices,
+          delivered: delivery.delivered,
+          failed: delivery.failed,
+          pushError: delivery.pushError,
           email: delivery.email,
           emailError: delivery.emailError,
         },
       });
     });
 
+    const pushMessage = delivery.push
+      ? delivery.devices > 0
+        ? `Push: надіслано на ${delivery.devices} пристр.`
+        : "Push: додано в застосунок (активних пристроїв немає)"
+      : body.channel === "email"
+        ? null
+        : delivery.delivered > 0
+          ? `Push: доставлено на ${delivery.delivered} з ${delivery.devices} пристр.`
+          : "Push: не доставлено (у застосунку повідомлення є)";
+
     const message = [
-      delivery.push
-        ? delivery.devices > 0
-          ? `Push: надіслано на ${delivery.devices} пристр.`
-          : "Push: додано в застосунок (активних пристроїв немає)"
-        : null,
+      pushMessage,
       delivery.email ? "Email: надіслано" : null,
       delivery.emailError ? `Email: ${delivery.emailError}` : null,
     ]
