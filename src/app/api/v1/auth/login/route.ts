@@ -20,13 +20,20 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email: body.email },
-      select: { id: true, name: true, email: true, role: true, passwordHash: true, sessionVersion: true },
+      select: { id: true, name: true, email: true, role: true, passwordHash: true, sessionVersion: true, blockedAt: true, blockedReason: true },
     });
 
     if (!user) throw new ApiError(401, "UNAUTHORIZED", "Невірний логін або пароль");
 
     const okPassword = await bcrypt.compare(body.password, user.passwordHash);
     if (!okPassword) throw new ApiError(401, "UNAUTHORIZED", "Невірний логін або пароль");
+
+    // USR-4: заблокированный пользователь не может войти вовсе.
+    if (user.blockedAt) {
+      throw new ApiError(403, "FORBIDDEN", "Акаунт заблоковано адміністратором", {
+        reason: user.blockedReason ?? null,
+      });
+    }
 
     // Single active session: bump the version (kicks older access tokens) and
     // revoke every other refresh token, so other devices are logged out.

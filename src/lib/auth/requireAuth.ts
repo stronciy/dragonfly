@@ -18,10 +18,16 @@ export async function requireUser(req: Request) {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
-    select: { id: true, name: true, email: true, role: true, phone: true, avatarUrl: true, createdAt: true, sessionVersion: true },
+    select: { id: true, name: true, email: true, role: true, phone: true, avatarUrl: true, createdAt: true, sessionVersion: true, blockedAt: true },
   });
 
   if (!user) throw new ApiError(401, "UNAUTHORIZED", "Користувача не знайдено");
+
+  // USR-4: заблокированный администратором пользователь теряет доступ сразу,
+  // даже если токен ещё не истёк.
+  if (user.blockedAt) {
+    throw new ApiError(403, "FORBIDDEN", "Акаунт заблоковано адміністратором");
+  }
 
   // Single active session: a newer login bumped sessionVersion, so this
   // token (from an older device) is no longer valid.

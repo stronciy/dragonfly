@@ -58,7 +58,52 @@ model User {
   authoredResolutions ArbitrationResolution[] @relation("ProposedResolutions")
   progressUpdates WorkProgressUpdate[]
 
+  /// USR-4: блокировка администратором (см. admin_audit_logs).
+  blockedAt      DateTime? @map("blocked_at")
+  blockedReason  String?   @map("blocked_reason")
+
   @@map("users")
+}
+
+/// Администратор админ-панели: вход у панели свой, в маркетплейсе эти записи
+/// не участвуют (в отличие от User с ролью admin).
+model Admin {
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  passwordHash       String    @map("password_hash")
+  role               String    @default("admin")
+  active             Boolean   @default(true)
+  mustChangePassword Boolean   @default(true) @map("must_change_password")
+  lastLoginAt        DateTime? @map("last_login_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@map("admins")
+}
+
+/// AUD-1: журнал действий администраторов. Одна запись на мутирующий запрос.
+/// Без FK на admins — удаление администратора не должно стирать его действия.
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String?  @map("admin_id")
+  adminEmail String   @map("admin_email")
+  /// `<entity>.<verb>`: user.block, user.update, user.revoke_sessions…
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  reason     String?
+  /// Только затронутые поля, без секретов.
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  requestId  String?  @map("request_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([adminId, createdAt])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
 }
 
 model RefreshToken {
