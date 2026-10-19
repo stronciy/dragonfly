@@ -25,9 +25,22 @@ function specValuesEqual(a: unknown, b: unknown): boolean {
 }
 
 /**
+ * Значение исполнителя может быть набором: он вправе указать несколько ширин или
+ * клиренсов своей техники. Тогда совпадением считается вхождение значения заказа в
+ * набор. Скаляр (записи, созданные до появления мультивыбора) сравнивается как раньше.
+ */
+function performerValueMatches(performerValue: unknown, orderValue: unknown): boolean {
+  if (Array.isArray(performerValue)) {
+    return performerValue.some((value) => specValuesEqual(value, orderValue));
+  }
+  return specValuesEqual(performerValue, orderValue);
+}
+
+/**
  * Coverage rule: a performer matches an order's specs when, on the most
  * specific service of theirs covering the order (type > subcategory >
- * category), every spec the order requires is present with an equal value.
+ * category), every spec the order requires is present with a matching value
+ * (equal for a scalar, contained for a set).
  * No specs on any covering service = wildcard (matches anything, keeps
  * pre-specs performers working). A missing order spec value never blocks.
  */
@@ -53,6 +66,8 @@ export function performerCoversOrderSpecs(args: {
     if (orderValue === undefined || orderValue === null || orderValue === "") return true;
     const performerValue = covering[spec.name];
     if (performerValue === undefined || performerValue === null || performerValue === "") return false;
-    return specValuesEqual(performerValue, orderValue);
+    // Пустой набор не покрывает ничего.
+    if (Array.isArray(performerValue) && performerValue.length === 0) return false;
+    return performerValueMatches(performerValue, orderValue);
   });
 }

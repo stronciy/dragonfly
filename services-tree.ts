@@ -330,10 +330,18 @@ export function validateSpecs(
       }
     } else if (spec.type === 'select') {
       const options = spec.options || [];
-      const numValue = typeof value === 'number' ? value : Number(value);
-      
-      const isInOptions = options.some((opt) => opt === numValue || opt === value);
-      if (!isInOptions) {
+      // Значение может быть скаляром (заказ указывает одно требуемое значение) или
+      // набором — исполнитель вправе перечислить несколько значений своей техники.
+      const values = Array.isArray(value) ? value : [value];
+      if (values.length === 0) {
+        errors.push(`Поле "${spec.name}" має містити хоча б одне значення`);
+        continue;
+      }
+      const matchesOption = (candidate: unknown): boolean => {
+        const numCandidate = typeof candidate === 'number' ? candidate : Number(candidate);
+        return options.some((opt) => opt === numCandidate || opt === candidate);
+      };
+      if (!values.every(matchesOption)) {
         errors.push(`Поле "${spec.name}" має бути одним з: ${(options as number[]).join(', ')}`);
       }
     }
