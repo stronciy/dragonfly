@@ -15,6 +15,11 @@ function buildTransport() {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    // Дефолты nodemailer — 2 мин на соединение и 10 мин на простаивающий сокет.
+    // Для запроса из админки/восстановления пароля это выглядит как зависание.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
   });
 }
 

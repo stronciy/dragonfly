@@ -22,6 +22,29 @@ function warnOnce(msg: string) {
   process.stdout.write(JSON.stringify({ level: "warn", msg }) + "\n");
 }
 
+// Пуш — побочный канал: его сбой не должен держать HTTP-запрос пользователя.
+// Expo SDK ходит через fetch без AbortSignal, поэтому ограничиваем ожидание сами.
+const DEFAULT_PUSH_TIMEOUT_MS = 8_000;
+
+function pushTimeoutMs(): number {
+  const raw = Number(process.env.EXPO_PUSH_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_PUSH_TIMEOUT_MS;
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label}_timeout_${ms}ms`)), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export class ExpoPushService {
   private expo = new Expo({ accessToken: this.getAccessToken() });
 
@@ -93,7 +116,11 @@ export class ExpoPushService {
     const ticketsByIndex: ExpoTicket[] = [];
     try {
       for (const chunk of chunks) {
-        const tickets = (await this.expo.sendPushNotificationsAsync(chunk)) as ExpoTicket[];
+        const tickets = (await withTimeout(
+          this.expo.sendPushNotificationsAsync(chunk),
+          pushTimeoutMs(),
+          "expo_push_send"
+        )) as ExpoTicket[];
         ticketsByIndex.push(...tickets);
       }
     } catch (err) {
@@ -135,7 +162,25 @@ export class ExpoPushService {
 
     const chunks = this.expo.chunkPushNotificationReceiptIds(receiptIds);
     for (const chunk of chunks) {
-      const receipts = await this.expo.getPushNotificationReceiptsAsync(chunk);
+      let receipts: Awaited<ReturnType<typeof this.expo.getPushNotificationReceiptsAsync>>;
+      try {
+        // Квитанции — вспомогательная проверка (ревокация мёртвых токенов).
+        // Её сбой или зависание не должны валить уже отправленный пуш.
+        receipts = await withTimeout(
+          this.expo.getPushNotificationReceiptsAsync(chunk),
+          pushTimeoutMs(),
+          "expo_push_receipts"
+        );
+      } catch (err) {
+        process.stdout.write(
+          JSON.stringify({
+            level: "warn",
+            msg: "expo_push_receipts_error",
+            error: err instanceof Error ? err.message : String(err),
+          }) + "\n"
+        );
+        continue;
+      }
       for (const receiptId of chunk) {
         const receipt = receipts[receiptId];
         if (!receipt || receipt.status !== "error") continue;
