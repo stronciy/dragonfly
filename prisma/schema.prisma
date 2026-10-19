@@ -546,6 +546,8 @@ model LegalProfile {
   iban           String?  @map("iban")
   legalAddress   String?  @map("legal_address")
   vatPayer       Boolean  @default(false) @map("vat_payer")
+  verifiedAt       DateTime? @map("verified_at")
+  verifiedByUserId String?   @map("verified_by_user_id")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
