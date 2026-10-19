@@ -65,3 +65,52 @@ export async function sendPasswordResetCode(email: string, code: string): Promis
     );
   }
 }
+
+/** Настроен ли SMTP (панель показывает это администратору до отправки). */
+export function isEmailConfigured(): boolean {
+  return isSmtpConfigured();
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Письмо от администратора пользователю (связаться по заказу).
+ * В отличие от кода восстановления, ошибку не глотаем: администратор должен
+ * видеть, что письмо не ушло.
+ */
+export async function sendAdminMessageEmail(args: {
+  to: string;
+  title: string;
+  message: string;
+}): Promise<void> {
+  if (!isSmtpConfigured()) {
+    throw new Error("SMTP не налаштовано");
+  }
+
+  const text = [args.title, "", args.message, "", "— Dragonfly"].join("\n");
+  const html = `<!doctype html>
+<html lang="uk">
+  <body style="margin:0;background:#fafafa;font-family:Arial,Helvetica,sans-serif;color:#18181b">
+    <div style="max-width:520px;margin:0 auto;padding:32px 24px">
+      <h1 style="margin:0 0 16px;font-size:20px;font-weight:700">${escapeHtml(args.title)}</h1>
+      <p style="margin:0 0 16px;font-size:15px;white-space:pre-line">${escapeHtml(args.message)}</p>
+      <p style="margin:0;font-size:14px;color:#52525b">— Dragonfly</p>
+    </div>
+  </body>
+</html>`;
+
+  await buildTransport().sendMail({
+    from: process.env.MAIL_FROM,
+    to: args.to,
+    subject: args.title,
+    text,
+    html,
+  });
+}
