@@ -8,7 +8,14 @@ function getPublisher() {
   if (publisher) return publisher;
   const url = process.env.REDIS_URL;
   if (!url) return null;
-  publisher = new Redis(url, { enableReadyCheck: true, maxRetriesPerRequest: null });
+  // Realtime — побочный канал. Без commandTimeout/ограничения ретраев ioredis
+  // копит команды в offline-очереди и ждёт переподключения бесконечно: HTTP-запрос,
+  // который ждёт publish (смена статуса, депозит), висит вместе с Redis.
+  publisher = new Redis(url, {
+    enableReadyCheck: true,
+    maxRetriesPerRequest: 2,
+    commandTimeout: 2_000,
+  });
   return publisher;
 }
 
@@ -20,7 +27,19 @@ export async function publishRaw(message: string) {
     }
     return;
   }
-  await pub.publish(CHANNEL, message);
+  try {
+    await pub.publish(CHANNEL, message);
+  } catch (err) {
+    // Недоступный Redis не должен ронять бизнес-действие: запись в БД уже
+    // зафиксирована, а realtime-событие — best effort.
+    process.stdout.write(
+      JSON.stringify({
+        level: "warn",
+        msg: "realtime_publish_failed",
+        error: err instanceof Error ? err.message : String(err),
+      }) + "\n"
+    );
+  }
 }
 
 export function getDomainEventsChannel() {
