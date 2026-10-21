@@ -3,6 +3,7 @@ import { ApiError, prisma } from "@/shared";
 import { fail, ok } from "@/lib/apiResponse";
 import { requirePanelAdmin } from "@/lib/adminAuth";
 import { writeAuditLog } from "@/lib/adminAudit";
+import { clearQueues } from "@/shared";
 import {
   RESET_PRESERVED_TABLES,
   buildResetTruncateSql,
@@ -90,6 +91,16 @@ export async function POST(req: Request) {
     };
 
     const startedAt = Date.now();
+
+    // Remove queued jobs before touching the DB. A stale `order-*` or
+    // `performer-*` job keeps its deterministic id in the failed set and would
+    // silently block every future rematch after the reset.
+    const queuesBefore = await clearQueues().catch((err) => ({
+      ok: false,
+      cleared: [],
+      errors: [{ name: "all", error: err instanceof Error ? err.message : String(err) }],
+    }));
+
     const result = await prisma.$transaction(
       async (tx) => {
         await tx.$executeRawUnsafe(buildResetTruncateSql(tables));
@@ -106,6 +117,8 @@ export async function POST(req: Request) {
             resetAt,
             truncatedTables: tables.length,
             preservedTables: [...RESET_PRESERVED_TABLES],
+            queuesBeforeCleared: queuesBefore.cleared,
+            queueErrors: queuesBefore.errors,
           },
         });
 
@@ -121,18 +134,43 @@ export async function POST(req: Request) {
       { maxWait: 10_000, timeout: 45_000 }
     );
 
+    // A request that was in flight while TRUNCATE ran could have enqueued a
+    // job after the first drain. Clear once more so the fresh flow starts with
+    // an empty queue. This is best-effort: the DB reset has already committed
+    // and must not be reported as failed because Redis hiccuped.
+    const queuesAfter = await clearQueues().catch((err) => ({
+      ok: false,
+      cleared: [],
+      errors: [{ name: "all", error: err instanceof Error ? err.message : String(err) }],
+    }));
+
     console.info(
       "[admin-reset] system reset completed",
       JSON.stringify({
         durationMs: Date.now() - startedAt,
         truncatedTables: tables.length,
         deleted,
+        queuesBefore: queuesBefore.cleared,
+        queuesAfter: queuesAfter.cleared,
+        queueErrors: [...queuesBefore.errors, ...queuesAfter.errors],
       })
     );
 
-    return ok(req, result, {
-      message: "Усі бізнес-дані скинуто. Можна починати тестовий флоу з нуля.",
-    });
+    return ok(
+      req,
+      {
+        ...result,
+        queues: {
+          ok: queuesBefore.ok && queuesAfter.ok,
+          before: queuesBefore.cleared,
+          after: queuesAfter.cleared,
+          errors: [...queuesBefore.errors, ...queuesAfter.errors],
+        },
+      },
+      {
+        message: "Усі бізнес-дані скинуто. Можна починати тестовий флоу з нуля.",
+      }
+    );
   } catch (err) {
     if (err instanceof z.ZodError) {
       return fail(
