@@ -11,6 +11,9 @@ function buildTransport() {
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT ?? 587),
     secure: process.env.SMTP_SECURE === "true",
+    // HELO/EHLO name. Defaults to the local container hostname, which often
+    // fails SPF/PTR checks; use the public mail hostname instead.
+    name: process.env.SMTP_HELO_NAME ?? process.env.SMTP_HOST,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
@@ -185,6 +188,7 @@ export async function sendAdminPasswordResetCode(
       smtpHost: process.env.SMTP_HOST,
       smtpPort: Number(process.env.SMTP_PORT ?? 587),
       smtpSecure: process.env.SMTP_SECURE === "true",
+      smtpHeloName: process.env.SMTP_HELO_NAME ?? process.env.SMTP_HOST,
     })
   );
 
