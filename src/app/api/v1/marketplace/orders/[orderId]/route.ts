@@ -7,6 +7,7 @@ import {
   maskOrderLocationForMarketplace,
   marketplaceDistanceKm,
 } from "@/lib/marketplaceVisibility";
+import { performerBlockingEscrowWhere } from "@/lib/marketplaceEligibility";
 
 export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
@@ -21,6 +22,21 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     // Your own orders are never performer work (open them as customer).
     if (order.customerUserId === user.id && !isAssigned)
       throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+
+    // Once any performer has committed escrow, the order is theirs until the
+    // deposit is settled. Hide it from every other performer even if a stale
+    // status still says `published`.
+    if (!isAssigned) {
+      const escrowCommitment = order.performerUserId
+        ? { id: "assigned" }
+        : await prisma.escrowLock.findFirst({
+            where: performerBlockingEscrowWhere(orderId),
+            select: { id: true },
+          });
+      if (escrowCommitment)
+        throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+    }
+
     const match = isAssigned
       ? null
       : await prisma.orderMatch.findUnique({

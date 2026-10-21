@@ -8,6 +8,7 @@ import {
   maskOrderLocationForMarketplace,
   marketplaceDistanceKm,
 } from "@/lib/marketplaceVisibility";
+import { performerMarketplaceOrderWhere } from "@/lib/marketplaceEligibility";
 
 const querySchema = z.object({
   serviceCategoryId: z.string().optional(),
@@ -44,14 +45,11 @@ export async function GET(req: Request) {
           ? [{ order: { createdAt: "desc" as const } }]
           : [{ createdAt: "asc" as const }];
 
-    const orderWhere = {
-      status: "published" as const,
-      // Never show your own orders as performer work, even if a stray
-      // orderMatch row links them (matching SQL also excludes self).
-      customerUserId: { not: user.id },
-      ...(q.serviceCategoryId ? { serviceCategoryId: q.serviceCategoryId } : {}),
-      ...(q.serviceSubCategoryId ? { serviceSubCategoryId: q.serviceSubCategoryId } : {}),
-    };
+    const orderWhere = performerMarketplaceOrderWhere({
+      userId: user.id,
+      serviceCategoryId: q.serviceCategoryId,
+      serviceSubCategoryId: q.serviceSubCategoryId,
+    });
 
     const [matches, totalCount] = await prisma.$transaction([
       prisma.orderMatch.findMany({
