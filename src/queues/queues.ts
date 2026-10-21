@@ -79,8 +79,20 @@ export type QueueClearResult = {
   errors: Array<{ name: string; error: string }>;
 };
 
+const QUEUE_OP_TIMEOUT_MS = 5_000;
+
+function withTimeout<T>(promise: Promise<T>, label: string, ms = QUEUE_OP_TIMEOUT_MS): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
 async function readCounts(queue: Queue): Promise<QueueCounts> {
-  const raw = await queue.getJobCounts(...COUNT_KEYS);
+  const raw = await withTimeout(queue.getJobCounts(...COUNT_KEYS), `${queue.name} counts`);
   return COUNT_KEYS.reduce((acc, key) => {
     acc[key] = Number(raw[key] ?? 0);
     return acc;
@@ -119,10 +131,18 @@ export async function clearQueues(): Promise<QueueClearResult> {
 
   for (const queue of allQueues()) {
     try {
-      await queue.drain(true);
-      await queue.clean(0, 10_000, "failed");
-      await queue.clean(0, 10_000, "completed");
-      cleared.push({ name: queue.name, counts: await readCounts(queue) });
+      // Bound the whole queue operation: a dead Redis must not hold the reset
+      // HTTP request (and its 60s budget) hostage.
+      const counts = await withTimeout(
+        (async () => {
+          await queue.drain(true);
+          await queue.clean(0, 10_000, "failed");
+          await queue.clean(0, 10_000, "completed");
+          return readCounts(queue);
+        })(),
+        `${queue.name} clear`
+      );
+      cleared.push({ name: queue.name, counts });
     } catch (err) {
       errors.push({
         name: queue.name,
