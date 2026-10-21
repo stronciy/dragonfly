@@ -127,8 +127,26 @@ export async function sendAdminMessageEmail(args: {
  * не настроен или письмо не ушло, восстановление войти не поможет — панель
  * должна показать понятную ошибку администратору.
  */
-export async function sendAdminPasswordResetCode(email: string, code: string): Promise<void> {
+export type EmailSendResult = {
+  messageId?: string;
+  accepted?: string[];
+  rejected?: string[];
+  response?: string;
+};
+
+export async function sendAdminPasswordResetCode(
+  email: string,
+  code: string
+): Promise<EmailSendResult> {
   if (!isSmtpConfigured()) {
+    console.error(
+      "[email] admin-reset: SMTP is not configured; refusing to send code",
+      JSON.stringify({
+        to: email,
+        requiredKeys: REQUIRED_SMTP_KEYS,
+        missingKeys: REQUIRED_SMTP_KEYS.filter((key) => !process.env[key]),
+      })
+    );
     throw new Error("SMTP не налаштовано");
   }
 
@@ -154,11 +172,64 @@ export async function sendAdminPasswordResetCode(email: string, code: string): P
   </body>
 </html>`;
 
-  await buildTransport().sendMail({
-    from: process.env.MAIL_FROM,
-    to: email,
-    subject: "Dragonfly Admin — код відновлення пароля",
-    text,
-    html,
-  });
+  const transport = buildTransport();
+  const from = process.env.MAIL_FROM;
+  const subject = "Dragonfly Admin — код відновлення пароля";
+
+  console.info(
+    "[email] admin-reset: sending code email",
+    JSON.stringify({
+      to: email,
+      from,
+      subject,
+      smtpHost: process.env.SMTP_HOST,
+      smtpPort: Number(process.env.SMTP_PORT ?? 587),
+      smtpSecure: process.env.SMTP_SECURE === "true",
+    })
+  );
+
+  try {
+    const info = await transport.sendMail({
+      from,
+      to: email,
+      subject,
+      text,
+      html,
+    });
+
+    const result: EmailSendResult = {
+      messageId: info.messageId,
+      accepted: info.accepted as string[] | undefined,
+      rejected: info.rejected as string[] | undefined,
+      response: info.response,
+    };
+
+    console.info(
+      "[email] admin-reset: code email accepted by SMTP",
+      JSON.stringify({ to: email, ...result })
+    );
+
+    if (result.rejected && result.rejected.length > 0) {
+      console.error(
+        "[email] admin-reset: SMTP rejected recipient",
+        JSON.stringify({ to: email, rejected: result.rejected, response: result.response })
+      );
+    }
+
+    return result;
+  } catch (err) {
+    console.error(
+      "[email] admin-reset: code email failed",
+      JSON.stringify({
+        to: email,
+        name: err instanceof Error ? err.name : "UnknownError",
+        message: err instanceof Error ? err.message : String(err),
+        code: (err as { code?: string } | null)?.code,
+        command: (err as { command?: string } | null)?.command,
+        responseCode: (err as { responseCode?: number } | null)?.responseCode,
+        response: (err as { response?: string } | null)?.response,
+      })
+    );
+    throw err;
+  }
 }

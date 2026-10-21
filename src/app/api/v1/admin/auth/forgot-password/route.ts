@@ -1,4 +1,4 @@
-import { randomInt } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { ok, fail } from "@/lib/apiResponse";
 import { ApiError, prisma } from "@/shared";
@@ -32,21 +32,46 @@ function genericResponse(req: Request) {
  * shared with the app's password reset in spirit but uses its own Redis bucket.
  */
 export async function POST(req: Request) {
+  const requestId = req.headers.get("x-request-id") ?? randomUUID();
   try {
     const body = schema.parse(await req.json());
+    const ip = getClientIp(req);
 
-    const allowed = await checkAdminPasswordResetRateLimit(getClientIp(req), body.email);
-    if (!allowed) return genericResponse(req);
+    console.info(
+      "[admin-reset] request received",
+      JSON.stringify({ requestId, email: body.email, ip })
+    );
+
+    const allowed = await checkAdminPasswordResetRateLimit(ip, body.email);
+    if (!allowed) {
+      console.warn(
+        "[admin-reset] rate limited; no email sent",
+        JSON.stringify({ requestId, email: body.email, ip })
+      );
+      return genericResponse(req);
+    }
 
     const admin = await prisma.admin.findUnique({
       where: { email: body.email },
       select: { id: true, email: true, active: true },
     });
-    if (!admin || !admin.active) return genericResponse(req);
+    if (!admin || !admin.active) {
+      console.warn(
+        "[admin-reset] active admin not found; no email sent",
+        JSON.stringify({
+          requestId,
+          email: body.email,
+          found: Boolean(admin),
+          active: admin?.active ?? false,
+        })
+      );
+      return genericResponse(req);
+    }
 
     const code = randomInt(0, 1000000).toString().padStart(6, "0");
     const codeHash = await sha256(code);
 
+    const expiresAt = new Date(Date.now() + CODE_TTL_MS);
     await prisma.$transaction([
       prisma.adminPasswordResetToken.updateMany({
         where: { adminId: admin.id, usedAt: null },
@@ -56,17 +81,44 @@ export async function POST(req: Request) {
         data: {
           adminId: admin.id,
           codeHash,
-          expiresAt: new Date(Date.now() + CODE_TTL_MS),
+          expiresAt,
         },
       }),
     ]);
 
+    console.info(
+      "[admin-reset] code generated; sending email",
+      JSON.stringify({
+        requestId,
+        adminId: admin.id,
+        to: admin.email,
+        expiresAt: expiresAt.toISOString(),
+      })
+    );
+
     try {
-      await sendAdminPasswordResetCode(admin.email, code);
+      const info = await sendAdminPasswordResetCode(admin.email, code);
+      console.info(
+        "[admin-reset] code email sent",
+        JSON.stringify({
+          requestId,
+          adminId: admin.id,
+          to: admin.email,
+          messageId: info.messageId,
+          accepted: info.accepted,
+          rejected: info.rejected,
+          response: info.response,
+        })
+      );
     } catch (err) {
       console.error(
-        "[admin-reset] Не вдалося надіслати код:",
-        err instanceof Error ? err.message : err
+        "[admin-reset] code email failed",
+        JSON.stringify({
+          requestId,
+          adminId: admin.id,
+          to: admin.email,
+          message: err instanceof Error ? err.message : String(err),
+        })
       );
       throw new ApiError(
         503,
@@ -80,11 +132,22 @@ export async function POST(req: Request) {
     return genericResponse(req);
   } catch (err) {
     if (err instanceof z.ZodError) {
+      console.warn(
+        "[admin-reset] validation failed",
+        JSON.stringify({ requestId, issues: err.issues })
+      );
       return fail(
         req,
         new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten())
       );
     }
+    console.error(
+      "[admin-reset] request failed",
+      JSON.stringify({
+        requestId,
+        message: err instanceof Error ? err.message : String(err),
+      })
+    );
     return fail(req, err);
   }
 }
