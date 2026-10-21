@@ -61,11 +61,20 @@ async function consume(key: string, limit: number): Promise<boolean> {
   }
 }
 
-export async function checkPasswordResetRateLimit(ip: string, email: string): Promise<boolean> {
-  const ipAllowed = await consume(`${RESET_LIMIT_PREFIX}ip:${ip}`, MAX_PER_IP);
+async function checkResetRateLimit(prefix: string, ip: string, email: string): Promise<boolean> {
+  const ipAllowed = await consume(`${prefix}ip:${ip}`, MAX_PER_IP);
   const emailAllowed = await consume(
-    `${RESET_LIMIT_PREFIX}email:${email.trim().toLowerCase()}`,
+    `${prefix}email:${email.trim().toLowerCase()}`,
     MAX_PER_EMAIL
   );
   return ipAllowed && emailAllowed;
+}
+
+export async function checkPasswordResetRateLimit(ip: string, email: string): Promise<boolean> {
+  return checkResetRateLimit(RESET_LIMIT_PREFIX, ip, email);
+}
+
+/** Separate bucket so an admin reset cannot be blocked by app-user attempts (and vice versa). */
+export async function checkAdminPasswordResetRateLimit(ip: string, email: string): Promise<boolean> {
+  return checkResetRateLimit("ratelimit:admin-password-reset:", ip, email);
 }

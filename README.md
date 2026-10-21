@@ -16,6 +16,23 @@ npm run dev               # = node server.js (Next.js + WebSocket + Redis presen
 
 Потрібні запущені сервіси: PostgreSQL (за замовчуванням `localhost:5432`) та Redis (`REDIS_URL`).
 
+## Email / SMTP
+
+Листи (код відновлення пароля адміністратора, повідомлення адміністратора користувачу) ідуть через SMTP:
+
+```bash
+SMTP_HOST=mail.dragonfly.ua
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=noreply@dragonfly.ua
+SMTP_PASS="..."                       # пароль поштового ящика
+MAIL_FROM="Dragonfly <noreply@dragonfly.ua>"
+```
+
+Для порту `465` обов'язково `SMTP_SECURE=true` (implicit TLS). Для `587` — `false` + STARTTLS.
+Якщо SMTP не задано, відновлення пароля адміністратора повертає помилку, а листи
+адміністратора користувачам не надсилаються.
+
 ## Commands
 
 ```bash

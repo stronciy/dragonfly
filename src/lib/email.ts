@@ -119,3 +119,46 @@ export async function sendAdminMessageEmail(args: {
     html,
   });
 }
+
+/**
+ * Код восстановления пароля именно для админ-панели.
+ *
+ * В отличие от пользовательского кода, ошибку отправки не глотаем: если SMTP
+ * не настроен или письмо не ушло, восстановление войти не поможет — панель
+ * должна показать понятную ошибку администратору.
+ */
+export async function sendAdminPasswordResetCode(email: string, code: string): Promise<void> {
+  if (!isSmtpConfigured()) {
+    throw new Error("SMTP не налаштовано");
+  }
+
+  const text = [
+    "Dragonfly Admin — код відновлення пароля",
+    "",
+    `Ваш код для входу в адмін-панель: ${code}`,
+    "Код дійсний 15 хвилин.",
+    "",
+    "Якщо ви не запитували відновлення пароля, просто проігноруйте цей лист.",
+  ].join("\n");
+
+  const html = `<!doctype html>
+<html lang="uk">
+  <body style="margin:0;background:#fafafa;font-family:Arial,Helvetica,sans-serif;color:#18181b">
+    <div style="max-width:480px;margin:0 auto;padding:32px 24px">
+      <h1 style="margin:0 0 16px;font-size:20px;font-weight:700">Dragonfly Admin</h1>
+      <p style="margin:0 0 8px;font-size:15px">Код для входу в адмін-панель:</p>
+      <p style="margin:0 0 16px;font-size:32px;font-weight:700;letter-spacing:6px">${code}</p>
+      <p style="margin:0 0 8px;font-size:14px;color:#52525b">Код дійсний 15 хвилин.</p>
+      <p style="margin:0;font-size:14px;color:#52525b">Якщо ви не запитували відновлення пароля, просто проігноруйте цей лист.</p>
+    </div>
+  </body>
+</html>`;
+
+  await buildTransport().sendMail({
+    from: process.env.MAIL_FROM,
+    to: email,
+    subject: "Dragonfly Admin — код відновлення пароля",
+    text,
+    html,
+  });
+}

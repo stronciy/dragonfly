@@ -74,11 +74,33 @@ model Admin {
   role               String    @default("admin")
   active             Boolean   @default(true)
   mustChangePassword Boolean   @default(true) @map("must_change_password")
+  /// Bumped on password reset/password change so old panel sessions die.
+  sessionVersion     Int       @default(0) @map("session_version")
   lastLoginAt        DateTime? @map("last_login_at")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
+  passwordResetTokens AdminPasswordResetToken[]
+
   @@map("admins")
+}
+
+/// Одноразовые коды восстановления пароля администратора панели.
+/// Хранится только SHA-256 от кода; сам код уходит письмом.
+model AdminPasswordResetToken {
+  id        String    @id @default(cuid())
+  adminId   String    @map("admin_id")
+  codeHash  String    @map("code_hash")
+  attempts  Int       @default(0)
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, usedAt, expiresAt])
+  @@index([expiresAt])
+  @@map("admin_password_reset_tokens")
 }
 
 /// AUD-1: журнал действий администраторов. Одна запись на мутирующий запрос.
