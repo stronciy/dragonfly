@@ -8,10 +8,7 @@ import { isSecureRequest } from "@/lib/cookies";
 
 const schema = z.object({
   name: z.string().min(1).transform((s) => s.trim()),
-  email: z
-    .string()
-    .email()
-    .transform((s) => s.trim().toLowerCase()),
+  email: z.string().trim().toLowerCase().email(),
   password: z
     .string()
     .min(8, "Пароль має містити щонайменше 8 символів")

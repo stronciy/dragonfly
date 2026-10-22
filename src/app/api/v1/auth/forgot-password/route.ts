@@ -8,10 +8,9 @@ import { sendPasswordResetCode } from "@/lib/email";
 import { checkPasswordResetRateLimit, getClientIp } from "@/lib/middleware/resetRateLimit";
 
 const schema = z.object({
-  email: z
-    .string()
-    .email()
-    .transform((s) => s.trim().toLowerCase()),
+  // trim/lowercase ДО .email(), інакше "  User@Example.com " відхиляється
+  // як невалідний email, хоча контракт обіцяє нормалізацію.
+  email: z.string().trim().toLowerCase().email(),
 });
 
 const CODE_TTL_MS = 15 * 60 * 1000;
@@ -24,8 +23,17 @@ export async function POST(req: Request) {
   try {
     const body = schema.parse(await req.json());
 
-    const allowed = await checkPasswordResetRateLimit(getClientIp(req), body.email);
-    if (!allowed) return genericResponse(req);
+    const ip = getClientIp(req);
+    const allowed = await checkPasswordResetRateLimit(ip, body.email);
+    if (!allowed) {
+      // Відповідь навмисно така сама, але для підтримки видно, що лист
+      // не пішов саме через ліміт, а не через збій SMTP.
+      console.warn("[password-reset] rate limited; no email sent", {
+        email: body.email,
+        ip,
+      });
+      return genericResponse(req);
+    }
 
     const user = await prisma.user.findUnique({
       where: { email: body.email },
@@ -46,7 +54,13 @@ export async function POST(req: Request) {
       }),
     ]);
 
-    await sendPasswordResetCode(user.email, code);
+    // Відповідаємо одразу після збереження коду: SMTP може відповідати до
+    // 10-20 с (таймаути nodemailer), а мобільний клієнт чекає лише 5 с і
+    // показував би "timeout" на успішно створеному коді. sendPasswordResetCode
+    // самостійно ловить помилки доставки й пише їх у лог.
+    void sendPasswordResetCode(user.email, code).catch((err) => {
+      console.error("[email] Не вдалося відправити код відновлення пароля:", err);
+    });
 
     return genericResponse(req);
   } catch (err) {

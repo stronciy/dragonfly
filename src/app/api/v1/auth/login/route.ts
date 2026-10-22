@@ -7,10 +7,7 @@ import { sha256, signAccessToken, signRefreshToken } from "@/lib/auth/tokens";
 import { isSecureRequest } from "@/lib/cookies";
 
 const schema = z.object({
-  email: z
-    .string()
-    .email()
-    .transform((s) => s.trim().toLowerCase()),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
 });
 

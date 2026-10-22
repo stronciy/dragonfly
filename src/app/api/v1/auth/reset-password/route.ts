@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { ok, fail } from "@/lib/apiResponse";
@@ -6,11 +7,8 @@ import { prisma } from "@/shared";
 import { sha256 } from "@/lib/auth/tokens";
 
 const schema = z.object({
-  email: z
-    .string()
-    .email()
-    .transform((s) => s.trim().toLowerCase()),
-  code: z.string().regex(/^\d{6}$/, "Код має містити 6 цифр"),
+  email: z.string().trim().toLowerCase().email(),
+  code: z.string().trim().regex(/^\d{6}$/, "Код має містити 6 цифр"),
   newPassword: z
     .string()
     .min(8, "Пароль має містити щонайменше 8 символів")
@@ -42,7 +40,9 @@ export async function POST(req: Request) {
 
     const codeHash = await sha256(body.code);
     const attemptsExceeded = token.attempts >= MAX_ATTEMPTS;
-    const codeMatches = codeHash === token.codeHash;
+    const codeMatches =
+      codeHash.length === token.codeHash.length &&
+      timingSafeEqual(Buffer.from(codeHash), Buffer.from(token.codeHash));
 
     if (attemptsExceeded || !codeMatches) {
       await prisma.passwordResetToken.update({

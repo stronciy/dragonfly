@@ -9,11 +9,8 @@ import { writeAuditLog } from "@/lib/adminAudit";
 export const runtime = "nodejs";
 
 const schema = z.object({
-  email: z
-    .string()
-    .email("Некоректний email")
-    .transform((s) => s.trim().toLowerCase()),
-  code: z.string().regex(/^\d{6}$/, "Код має містити 6 цифр"),
+  email: z.string().trim().toLowerCase().email("Некоректний email"),
+  code: z.string().trim().regex(/^\d{6}$/, "Код має містити 6 цифр"),
   newPassword: z
     .string()
     .min(8, "Пароль має містити щонайменше 8 символів")

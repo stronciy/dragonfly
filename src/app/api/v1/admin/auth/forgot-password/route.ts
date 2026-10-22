@@ -12,10 +12,7 @@ import {
 export const runtime = "nodejs";
 
 const schema = z.object({
-  email: z
-    .string()
-    .email("Некоректний email")
-    .transform((s) => s.trim().toLowerCase()),
+  email: z.string().trim().toLowerCase().email("Некоректний email"),
 });
 
 const CODE_TTL_MS = 15 * 60 * 1000;
