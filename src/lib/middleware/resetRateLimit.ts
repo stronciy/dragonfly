@@ -1,9 +1,26 @@
 import Redis from "ioredis";
 
 const RESET_LIMIT_PREFIX = "ratelimit:password-reset:";
+const ADMIN_RESET_LIMIT_PREFIX = "ratelimit:admin-password-reset:";
 const WINDOW_SECONDS = 15 * 60;
-const MAX_PER_IP = 5;
-const MAX_PER_EMAIL = 3;
+
+// IP-ліміт — єдиний захист для користувацького відновлення пароля.
+// Мобільні оператори й корпоративні мережі ділять одну IP між багатьма
+// клієнтами (CGNAT), тому попередні 5 запитів / 15 хв блокували реальних
+// людей. 20 — запас, який не дає кільком користувачам за однією IP
+// вичерпати квоту, але не заважає нормальним користувачам.
+const MAX_PER_IP = 20;
+
+// Email-ліміт для користувацького скидання ПРИБРАНО. Він блокував реальних
+// людей, які кілька разів повторили запит через повільний SMTP (див. лог
+// "[password-reset] rate limited; no email sent"). Захист від спам-бомб і
+// перебору кодів тримається на трьох рівнях: (1) IP-ліміт вище,
+// (2) код чинний лише 15 хв, (3) у БД живе тільки ОДИН активний токен на
+// користувача — новий запит інвалідує попередній, тож перебрати 6-значний
+// код через повторні запити не виходить.
+// Адмін-панель нижче зберігає обидві корзини: там перебір кодів критичніший,
+// а обсяг запитів малий.
+const MAX_PER_ADMIN_EMAIL = 3;
 
 let redisClient: Redis | null = null;
 let redisInitAttempted = false;
@@ -65,16 +82,22 @@ async function checkResetRateLimit(prefix: string, ip: string, email: string): P
   const ipAllowed = await consume(`${prefix}ip:${ip}`, MAX_PER_IP);
   const emailAllowed = await consume(
     `${prefix}email:${email.trim().toLowerCase()}`,
-    MAX_PER_EMAIL
+    MAX_PER_ADMIN_EMAIL
   );
   return ipAllowed && emailAllowed;
 }
 
-export async function checkPasswordResetRateLimit(ip: string, email: string): Promise<boolean> {
-  return checkResetRateLimit(RESET_LIMIT_PREFIX, ip, email);
+/**
+ * Користувацьке відновлення пароля: лімітуємо ТІЛЬКИ по IP.
+ * Email-ліміт прибрано, бо він блокував реальних людей під час повторних
+ * спроб (повільний SMTP). Захист від перебору — один активний токен
+ * на користувача + TTL 15 хв (див. коментар до MAX_PER_ADMIN_EMAIL).
+ */
+export async function checkPasswordResetRateLimit(ip: string): Promise<boolean> {
+  return consume(`${RESET_LIMIT_PREFIX}ip:${ip}`, MAX_PER_IP);
 }
 
-/** Separate bucket so an admin reset cannot be blocked by app-user attempts (and vice versa). */
+/** Адмін-скидання: обмеження по IP і по email (перебір кодів критичніший). */
 export async function checkAdminPasswordResetRateLimit(ip: string, email: string): Promise<boolean> {
-  return checkResetRateLimit("ratelimit:admin-password-reset:", ip, email);
+  return checkResetRateLimit(ADMIN_RESET_LIMIT_PREFIX, ip, email);
 }

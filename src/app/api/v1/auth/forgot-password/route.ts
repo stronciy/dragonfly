@@ -24,10 +24,14 @@ export async function POST(req: Request) {
     const body = schema.parse(await req.json());
 
     const ip = getClientIp(req);
-    const allowed = await checkPasswordResetRateLimit(ip, body.email);
+    // Ліміт ТІЛЬКИ по IP (email-ліміт прибрано — він блокував реальних
+    // користувачів під час повторних спроб). Див. resetRateLimit.ts.
+    const allowed = await checkPasswordResetRateLimit(ip);
     if (!allowed) {
       // Відповідь навмисно така сама, але для підтримки видно, що лист
-      // не пішов саме через ліміт, а не через збій SMTP.
+      // не пішов саме через IP-ліміт, а не через збій SMTP. Email-ліміту
+      // більше немає — блокувати може лише перевищення 20 запитів з однієї
+      // IP за 15 хв (захист від спам-бомб/перебору).
       console.warn("[password-reset] rate limited; no email sent", {
         email: body.email,
         ip,
