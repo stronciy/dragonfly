@@ -15,10 +15,20 @@ const schema = z.object({
 
 const CODE_TTL_MS = 15 * 60 * 1000;
 
-function genericResponse(req: Request) {
-  return ok(req, {}, { status: 200, message: "Якщо email існує, код надіслано" });
+function successResponse(req: Request) {
+  return ok(req, {}, { status: 200, message: "Код надіслано на email" });
 }
 
+/**
+ * AUTH: forgot password.
+ *
+ * Свідомо розкриваємо існування акаунта (`404 EMAIL_NOT_FOUND`): користувач,
+ * який ввів пошту без акаунта, інакше чекає листа, якого не буде, і не розуміє,
+ * що сталося. Ціна — можливість перевіряти, чи зареєстрована пошта (email
+ * enumeration). Захист: IP-ліміт (20 запитів / 15 хв) у resetRateLimit.ts,
+ * тож масовий перебір з однієї адреси дорогий; коди все одно живуть 15 хв і
+ * на користувача існує лише один активний токен.
+ */
 export async function POST(req: Request) {
   try {
     const body = schema.parse(await req.json());
@@ -28,22 +38,44 @@ export async function POST(req: Request) {
     // користувачів під час повторних спроб). Див. resetRateLimit.ts.
     const allowed = await checkPasswordResetRateLimit(ip);
     if (!allowed) {
-      // Відповідь навмисно така сама, але для підтримки видно, що лист
-      // не пішов саме через IP-ліміт, а не через збій SMTP. Email-ліміту
-      // більше немає — блокувати може лише перевищення 20 запитів з однієї
-      // IP за 15 хв (захист від спам-бомб/перебору).
+      // Тепер, коли ми відкрито відповідаємо про існування акаунта, мовчазний
+      // 200 на ліміті виглядав би як «лист надіслано». Кажемо прямо.
       console.warn("[password-reset] rate limited; no email sent", {
         email: body.email,
         ip,
       });
-      return genericResponse(req);
+      throw new ApiError(
+        429,
+        "TOO_MANY_REQUESTS",
+        "Забагато спроб відновлення пароля. Спробуйте через 15 хвилин."
+      );
     }
 
     const user = await prisma.user.findUnique({
       where: { email: body.email },
-      select: { id: true, email: true },
+      select: { id: true, email: true, blockedAt: true, blockedReason: true },
     });
-    if (!user) return genericResponse(req);
+
+    if (!user) {
+      console.info("[password-reset] account not found", { email: body.email, ip });
+      throw new ApiError(
+        404,
+        "EMAIL_NOT_FOUND",
+        "Акаунта з такою поштою не знайдено. Перевірте email або створіть новий акаунт.",
+        { email: body.email }
+      );
+    }
+
+    // Заблокований акаунт не має отримувати код: інакше людина скине пароль,
+    // а вхід усе одно впаде з 403. Кажемо причину одразу.
+    if (user.blockedAt) {
+      throw new ApiError(
+        403,
+        "FORBIDDEN",
+        "Акаунт заблоковано адміністратором. Зверніться до підтримки.",
+        { reason: user.blockedReason ?? null }
+      );
+    }
 
     const code = randomInt(0, 1000000).toString().padStart(6, "0");
     const codeHash = await sha256(code);
@@ -66,7 +98,7 @@ export async function POST(req: Request) {
       console.error("[email] Не вдалося відправити код відновлення пароля:", err);
     });
 
-    return genericResponse(req);
+    return successResponse(req);
   } catch (err) {
     if (err instanceof z.ZodError) {
       return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));

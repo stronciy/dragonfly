@@ -5,6 +5,8 @@ export type ApiErrorCode =
   | "UNAUTHORIZED"
   | "FORBIDDEN"
   | "NOT_FOUND"
+  | "EMAIL_NOT_FOUND"
+  | "TOO_MANY_REQUESTS"
   | "CONFLICT"
   | "SERVICE_UNAVAILABLE"
   | "GATEWAY_TIMEOUT"
