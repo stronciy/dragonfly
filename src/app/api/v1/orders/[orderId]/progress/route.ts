@@ -1,112 +1,115 @@
+import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError, orderRef } from "@/shared";
-import { requireUser } from "@/lib/auth/requireAuth";
+import { ApiError } from "@/shared";
 import { prisma } from "@/shared";
+import { requireUser } from "@/lib/auth/requireAuth";
+import { notifyUser } from "@/services/notify";
 import { publishDomainEvent } from "@/shared";
-import { notifyUser } from "@/shared";
-import { readFormFilesAsDataUrl } from "@/lib/uploads";
 
-export const runtime = "nodejs";
-
-export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
-  try {
-    const user = await requireUser(req);
-    const { orderId } = await ctx.params;
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order || (order.customerUserId !== user.id && order.performerUserId !== user.id)) {
-      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
-    }
-    const items = await prisma.workProgressUpdate.findMany({
-      where: { orderId },
-      orderBy: { createdAt: "asc" },
-      include: {
-        media: { select: { id: true, url: true, mimeType: true, name: true, createdAt: true } },
-      },
-    });
-    return ok(req, {
-      progress: items.map((p) => ({
-        id: p.id,
-        percent: p.percent,
-        comment: p.comment,
-        createdAt: p.createdAt,
-        media: p.media,
-      })),
-    });
-  } catch (err) {
-    return fail(req, err);
-  }
-}
-
-const MAX_FILES = 5;
+const progressSchema = z.object({
+  percent: z.number().min(0).max(100),
+  note: z.string().max(500).optional(),
+});
 
 export async function POST(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
+    
+    if (user.role !== "performer") {
+      throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
+    }
 
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order || order.performerUserId !== user.id) {
+    const body = progressSchema.parse(await req.json());
+    const { percent, note } = body;
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        customer: { select: { id: true, name: true, phone: true, expoPushToken: true } },
+      },
+    });
+
+    if (!order) {
       throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
-    if (order.status !== "started") {
-      throw new ApiError(409, "CONFLICT", "Про прогрес можна звітувати лише після старту робіт");
+
+    if (order.performerUserId !== user.id) {
+      throw new ApiError(403, "FORBIDDEN", "Ви не є виконавцем цього замовлення");
     }
 
-    const form = await req.formData();
-    const percentRaw = form.get("percent");
-    const commentRaw = form.get("comment");
-    const percent =
-      percentRaw == null || percentRaw === ""
-        ? null
-        : (() => {
-            const n = Number(percentRaw);
-            if (!Number.isInteger(n) || n < 0 || n > 100) {
-              throw new ApiError(400, "VALIDATION_ERROR", "Відсоток має бути цілим числом 0–100");
-            }
-            return n;
-          })();
-    const comment = typeof commentRaw === "string" && commentRaw.trim() ? commentRaw.trim().slice(0, 2000) : null;
-    const files = await readFormFilesAsDataUrl(form, "files", MAX_FILES);
-    if (!comment && files.length === 0) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Додайте коментар або хоча б одне фото");
+    if (!["started", "en_route"].includes(order.status)) {
+      throw new ApiError(400, "BAD_REQUEST", "Роботу ще не розпочато");
     }
 
-    const created = await prisma.workProgressUpdate.create({
-      data: { orderId, authorId: user.id, percent, comment },
+    // Create progress update
+    await prisma.workProgressUpdate.create({
+      data: {
+        orderId,
+        userId: user.id,
+        percent,
+        note: note || null,
+      },
     });
-    if (files.length > 0) {
-      await prisma.orderMedia.createMany({
-        data: files.map((f) => ({
-          orderId,
-          userId: user.id,
-          kind: "progress" as const,
-          name: f.name,
-          mimeType: f.mimeType,
-          size: f.size,
-          url: f.dataUrl,
-          progressId: created.id,
-        })),
-      });
+
+    // Check if this is the first time reaching 30%
+    const previousUpdates = await prisma.workProgressUpdate.count({
+      where: { orderId, percent: { lt: 30 } },
+    });
+
+    const hasReached30 = percent >= 30;
+    const wasBelow30 = previousUpdates > 0 || percent === 30;
+    
+    // Get previous max progress
+    const previousMax = await prisma.workProgressUpdate.findFirst({
+      where: { orderId },
+      orderBy: { percent: "desc" },
+      select: { percent: true },
+    });
+
+    const firstTime30 = hasReached30 && (!previousMax || previousMax.percent < 30);
+
+    // Notify performer that they can request payment if first time 30%
+    if (firstTime30) {
+      notifyUser({
+        userId: user.id,
+        type: "progress.30_percent_reached",
+        title: "Досягнуто 30% виконання",
+        message: `Робота досягла 30% готовності. Ви можете запросити у замовника внесення оставшейся суми (70%).`,
+        data: { orderId, orderNumber: order.orderNumber, percent },
+      }).catch(() => {});
     }
 
-    await notifyUser({
-      userId: order.customerUserId,
-      type: "order",
-      title: `Прогрес робіт${percent != null ? ` ${percent}%` : ""}`.trim(),
-      message: `Замовлення ${await orderRef(orderId)}. ${comment ?? "Виконавець додав фото прогресу."}`.slice(0, 500),
-      data: { orderId, type: "order_progress_updated", role: "customer", progressId: created.id },
-    });
+    // Notify customer about progress
+    if (percent >= 30) {
+      notifyUser({
+        userId: order.customerUserId,
+        type: "order.progress_updated",
+        title: "Оновлення прогресу",
+        message: `Виконавець повідомив про ${percent}% готовності роботи за замовленням #${order.orderNumber || orderId.substring(0,8)}`,
+        data: { orderId, orderNumber: order.orderNumber, percent },
+      }).catch(() => {});
+    }
+
+    // Publish domain event
     await publishDomainEvent({
       type: "order.progress_updated",
       requestId,
-      targets: { userIds: [order.customerUserId] },
-      data: { orderId, progressId: created.id },
+      targets: { userIds: [order.customerUserId, user.id] },
+      data: { orderId, percent, note },
     });
 
-    return ok(req, { progress: { id: created.id } }, { status: 201, message: "Про прогрес повідомлено" });
+    return ok(req, { 
+      progress: percent,
+      canRequestPayment: hasReached30 && !order.customerPart2Deadline,
+      message: hasReached30 ? "Досягнуто 30%! Ви можете запросити оплату оставшейся суми" : "Прогрес оновлено" 
+    });
+
   } catch (err) {
+    if (err instanceof z.ZodError) {
+      return fail(req, new ApiError(400, "VALIDATION_ERROR", "Невірні дані", err.flatten()));
+    }
     return fail(req, err);
   }
 }

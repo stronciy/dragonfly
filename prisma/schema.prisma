@@ -59,6 +59,7 @@ model User {
   openedArbitrationCases ArbitrationCase[] @relation("OpenedArbitrationCases")
   arbitrationMessagesUser ArbitrationMessage[] @relation("UserArbitrationMessages")
   progressUpdates WorkProgressUpdate[]
+  wallet        Wallet?
 
   /// USR-4: блокировка администратором (см. admin_audit_logs).
   blockedAt      DateTime? @map("blocked_at")
@@ -350,6 +351,8 @@ model Order {
   progressUpdates WorkProgressUpdate[]
   arbitrationResolutions ArbitrationResolution[]
   arbitrationCases ArbitrationCase[]
+  transactions Transaction[]
+  paymentRequests PaymentRequest[]
 
   @@index([customerUserId, status, createdAt])
   @@index([performerUserId, status, createdAt])
@@ -702,5 +705,61 @@ model OrderNumberCounter {
 
   @@id([serviceCode, yy])
   @@map("order_number_counters")
+}
+
+// Wallet model for user balances
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  balance   Float    @default(0)
+  currency  String   @default("UAH")
+  holdAmount Float   @default(0) @map("hold_amount") // Temporarily held funds
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("wallets")
+}
+
+// Transaction history for wallet operations
+model Transaction {
+  id          String   @id @default(cuid())
+  walletId    String   @map("wallet_id")
+  orderId     String?  @map("order_id")
+  type        String   // deposit, withdrawal, payment_received, payment_sent, refund, fee, hold, release
+  amount      Float
+  currency    String   @default("UAH")
+  description String?
+  status      String   @default("completed") // pending, completed, failed
+  metadata    Json?    @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  order  Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([walletId, createdAt])
+  @@index([orderId])
+  @@map("transactions")
+}
+
+// Payment request for remaining order amount
+model PaymentRequest {
+  id              String    @id @default(cuid())
+  orderId         String    @map("order_id")
+  requestedBy     String    @map("requested_by") // userId of performer
+  status          String    @default("pending") // pending, paid, cancelled
+  requestedAmount Float     @map("requested_amount")
+  paidAmount      Float?    @map("paid_amount")
+  paidAt          DateTime? @map("paid_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([requestedBy])
+  @@map("payment_requests")
 }
 
