@@ -1,10 +1,10 @@
 -- Create table arbitration_cases
 CREATE TABLE arbitration_cases (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  opened_by_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  opened_by_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status VARCHAR NOT NULL DEFAULT 'open',
-  assignee_admin_id UUID REFERENCES admins(id) ON DELETE SET NULL,
+  assignee_admin_id TEXT REFERENCES admins(id) ON DELETE SET NULL,
   created_at TIMESTAMP NOT NULL DEFAULT now(),
   resolved_at TIMESTAMP,
   closed_at TIMESTAMP
@@ -14,8 +14,8 @@ CREATE TABLE arbitration_cases (
 CREATE TABLE arbitration_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   arbitration_case_id UUID NOT NULL REFERENCES arbitration_cases(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-  admin_id UUID REFERENCES admins(id) ON DELETE SET NULL,
+  user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  admin_id TEXT REFERENCES admins(id) ON DELETE SET NULL,
   text TEXT NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT now()
 );
@@ -24,7 +24,7 @@ CREATE TABLE arbitration_messages (
 CREATE TABLE arbitration_rulings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   arbitration_case_id UUID NOT NULL UNIQUE REFERENCES arbitration_cases(id) ON DELETE CASCADE,
-  admin_id UUID NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+  admin_id TEXT NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
   decision VARCHAR NOT NULL,
   reason TEXT,
   rating INTEGER,
