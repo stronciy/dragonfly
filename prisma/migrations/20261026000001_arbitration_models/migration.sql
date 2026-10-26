@@ -47,21 +47,3 @@ CREATE INDEX idx_arbitration_messages_admin ON arbitration_messages(admin_id, cr
 CREATE INDEX idx_arbitration_rulings_admin ON arbitration_rulings(admin_id, created_at);
 
 CREATE INDEX idx_order_media_arbitration_message ON order_media(arbitration_message_id, created_at);
-
--- Drop indexes
-DROP INDEX IF EXISTS idx_order_media_arbitration_message;
-DROP INDEX IF EXISTS idx_arbitration_rulings_admin;
-DROP INDEX IF EXISTS idx_arbitration_messages_admin;
-DROP INDEX IF EXISTS idx_arbitration_messages_user;
-DROP INDEX IF EXISTS idx_arbitration_messages_case;
-DROP INDEX IF EXISTS idx_arbitration_cases_assignee_status;
-DROP INDEX IF EXISTS idx_arbitration_cases_status;
-DROP INDEX IF EXISTS idx_arbitration_cases_order_created;
-
--- Remove arbitration_message_id field from order_media
-ALTER TABLE order_media DROP COLUMN IF EXISTS arbitration_message_id;
-
--- Drop tables
-DROP TABLE IF EXISTS arbitration_rulings;
-DROP TABLE IF EXISTS arbitration_messages;
-DROP TABLE IF EXISTS arbitration_cases;
