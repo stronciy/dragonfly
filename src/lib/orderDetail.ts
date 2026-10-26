@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { safeDepositAmount } from "./deposit";
+import { SERVICE_FEE_RATE, serviceFeeAmount } from "./fees";
 import { MASKED_LOCATION_LABEL_FALLBACK } from "./marketplaceVisibility";
 
 /**
@@ -151,6 +152,12 @@ function buildLocation(
   };
 }
 
+export interface OrderDetailCounterpartyContact {
+  name: string;
+  phone: string | null;
+  companyName: string | null;
+}
+
 export function buildOrderDetailPayload(args: {
   order: OrderDetailOrderInput;
   viewerRole: OrderDetailViewerRole;
@@ -158,6 +165,7 @@ export function buildOrderDetailPayload(args: {
   intents: OrderDetailIntent[];
   timeline: OrderDetailTimelineItem[];
   confirmationReview: OrderDetailReviewInput | null;
+  counterpartyContact?: OrderDetailCounterpartyContact | null;
 }) {
   const { order, viewerRole } = args;
   const masked = isOrderDetailGeoMasked(order.status, viewerRole);
@@ -167,7 +175,7 @@ export function buildOrderDetailPayload(args: {
     intents: args.intents,
   });
 
-  return {
+  const payload: Record<string, unknown> = {
     id: order.id,
     orderNumber: order.orderNumber,
     status: order.status,
@@ -190,4 +198,23 @@ export function buildOrderDetailPayload(args: {
     completionComment: args.confirmationReview?.text ?? null,
     timeline: args.timeline.map((t) => ({ status: t.status, at: t.createdAt, note: t.note })),
   };
+
+  // Customer-only fields: fee breakdown
+  if (viewerRole === "customer") {
+    payload.serviceFeeRate = SERVICE_FEE_RATE;
+    payload.serviceFeeAmount = serviceFeeAmount(order.budget.toNumber());
+    payload.customerPayableNow =
+      Number(safeDepositAmount(order.budget)) + serviceFeeAmount(order.budget.toNumber());
+  }
+
+  // Add counterparty contact info if both deposits are confirmed and user is the customer
+  if (args.counterpartyContact && viewerRole === "customer") {
+    payload.performerContact = args.counterpartyContact;
+  }
+  // If performer is viewing, show customer contact
+  if (args.counterpartyContact && viewerRole === "performer") {
+    payload.customerContact = args.counterpartyContact;
+  }
+
+  return payload;
 }

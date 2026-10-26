@@ -179,6 +179,11 @@ export async function GET(req: Request) {
         acceptedAt: o.acceptedAt,
         depositDeadline: o.depositDeadline,
         depositAmount: Number(safeDepositAmount(o.budget)),
+        serviceFeeRate: 0.085,
+        serviceFeeAmount: Math.round(Number(o.budget) * 0.085 * 100) / 100,
+        customerPayableNow:
+          Number(safeDepositAmount(o.budget)) +
+          Math.round(Number(o.budget) * 0.085 * 100) / 100,
         escrowAmount: o.escrowLocks.reduce((sum, l) => sum + Number(l.amount), 0),
         specs: o.specs,
         createdAt: o.createdAt,

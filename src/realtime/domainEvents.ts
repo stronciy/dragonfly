@@ -31,7 +31,9 @@ export type DomainEventType =
   | "order.payment_resumed"
   | "order.customer_counter_deposit_expired"
   | "arbitration.resolve_requested"
-  | "arbitration.resolved";
+  | "arbitration.resolved"
+  | "arbitration.created"
+  | "arbitration.message.created";
 
 export type DomainEvent<T extends DomainEventType = DomainEventType, D = unknown> = {
   eventId: string;

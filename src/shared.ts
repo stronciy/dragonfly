@@ -1,6 +1,7 @@
 export * from "./lib/prisma";
 export * from "./lib/errors";
 export * from "./lib/deposit";
+export * from "./lib/fees";
 export * from "./lib/orderDetail";
 export * from "./lib/orderStatus";
 export * from "./lib/matching";

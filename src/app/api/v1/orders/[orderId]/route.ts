@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { enqueueMatchNewOrder } from "@/shared";
 import { publishDomainEvent } from "@/shared";
+import { notifyUser } from "@/services/notify";
 import {
   ESCROW_OPEN_STATUSES,
   buildOrderDetailPayload,
@@ -70,10 +71,55 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       select: { status: true, createdAt: true, note: true },
     });
 
-    const ownLock = await prisma.escrowLock.findFirst({
-      where: { orderId, role: viewerRole, status: { in: [...ESCROW_OPEN_STATUSES] } },
-      select: { amount: true, status: true },
-    });
+    // Fetch both escrow locks to check if contacts should be revealed
+    const [customerLock, performerLock] = await Promise.all([
+      prisma.escrowLock.findFirst({
+        where: { orderId, role: "customer", status: { in: [...ESCROW_OPEN_STATUSES] } },
+        select: { amount: true, status: true },
+      }),
+      prisma.escrowLock.findFirst({
+        where: { orderId, role: "performer", status: { in: [...ESCROW_OPEN_STATUSES] } },
+        select: { amount: true, status: true },
+      }),
+    ]);
+
+    // Check if contacts should be revealed: order is confirmed AND both have "held" status
+    const bothDepositsConfirmed =
+      order.status === "confirmed" &&
+      customerLock?.status === "held" &&
+      performerLock?.status === "held";
+
+    // Fetch counterparty contact info if deposits confirmed
+    let counterpartyContact: {
+      name: string;
+      phone: string | null;
+      companyName: string | null;
+    } | null = null;
+
+    if (bothDepositsConfirmed) {
+      const counterpartyUserId = viewerRole === "customer" ? order.performerUserId : order.customerUserId;
+      if (counterpartyUserId) {
+        const counterpartyUser = await prisma.user.findUnique({
+          where: { id: counterpartyUserId },
+          select: { name: true, phone: true },
+        });
+        // Try to get company name from LegalProfile first, then CustomerProfile/PerformerProfile
+        const legalProfile = await prisma.legalProfile.findUnique({
+          where: { userId: counterpartyUserId },
+          select: { companyName: true },
+        });
+        const companyName = legalProfile?.companyName ?? null;
+        if (counterpartyUser) {
+          counterpartyContact = {
+            name: counterpartyUser.name,
+            phone: counterpartyUser.phone,
+            companyName,
+          };
+        }
+      }
+    }
+
+    const ownLock = viewerRole === "customer" ? customerLock : performerLock;
 
     const ownIntents = await prisma.paymentIntent.findMany({
       where: { orderId, role: viewerRole },
@@ -94,6 +140,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
         intents: ownIntents,
         timeline,
         confirmationReview,
+        counterpartyContact,
       }),
     });
   } catch (err) {
@@ -185,6 +232,38 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         targets,
         data: { orderId, fromStatus: order.status, toStatus: updated.status },
       });
+    }
+
+    // Send push notifications for order changes
+    // Notify assigned performer about order updates (if they exist)
+    if (order.performerUserId) {
+      const statusChanged = order.status !== updated.status;
+      const fieldsChanged = changedFields.filter(f => f !== 'status').join(', ');
+      
+      const title = 'Замовлення оновлено';
+      const message = statusChanged 
+        ? `Статус змінено: ${order.status} → ${updated.status}`
+        : `Деталі замовлення змінено${fieldsChanged ? `: ${fieldsChanged}` : ''}`;
+      
+      // Ignore catch - push is best-effort
+      notifyUser({
+        userId: order.performerUserId,
+        type: 'order.updated',
+        title,
+        message,
+        data: { orderId, changedFields, fromStatus: order.status, toStatus: updated.status },
+      }).catch(() => {});
+    }
+
+    // Notify performers who were removed from marketplace
+    for (const removedId of removedIds) {
+      notifyUser({
+        userId: removedId,
+        type: 'order.removed_from_marketplace',
+        title: 'Замовлення видалено з біржі',
+        message: `Замовлення #${order.orderNumber || orderId.substring(0,8)} більше не доступне на біржі`,
+        data: { orderId },
+      }).catch(() => {});
     }
 
     return ok(req, { order: updated }, { message: "Оновлено" });

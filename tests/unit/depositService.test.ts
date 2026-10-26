@@ -245,8 +245,10 @@ test("customer confirm: full deposit intent, deadline cleared, escrow held", asy
     role: "customer",
     intentId: "ci1",
   });
-  assert.equal(created.amount.toString(), "30000");
-  assert.equal(created.intent.amount.toString(), "30000");
+  assert.equal(created.amount.toString(), "38500"); // deposit 30000 + fee 8500
+  assert.equal(created.intent.amount.toString(), "38500");
+  assert.equal((created.intent as any).depositAmount?.toString(), "30000"); // escrow lock amount
+  assert.equal(created.intent.feeAmount.toString(), "8500");
   assert.equal(created.intent.part, 1);
   assert.ok(created.intent.data);
   assert.ok(created.intent.signature);
@@ -262,7 +264,7 @@ test("customer confirm: full deposit intent, deadline cleared, escrow held", asy
   assert.equal(locks.length, 1);
   assert.equal(locks[0].role, "customer");
   assert.equal(locks[0].status, "held");
-  assert.equal(locks[0].amount.toString(), "30000");
+  assert.equal(locks[0].amount.toString(), "30000"); // escrow is deposit only
 });
 
 test("customer confirm is idempotent when intent already paid", async () => {

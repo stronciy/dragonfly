@@ -1,6 +1,7 @@
 import { Prisma, type PaymentIntent } from "@prisma/client";
 import { ApiError } from "../lib/errors";
 import { CUSTOMER_COUNTER_DEPOSIT_DEADLINE_HOURS, depositAmountFor, nextDepositDeadline, nextCustomerCounterDepositDeadline } from "../lib/deposit";
+import { SERVICE_FEE_RATE, serviceFeeAmount } from "../lib/fees";
 import { canTransition, type OrderStatus } from "../lib/orderStatus";
 import { createLiqPayCheckout, getLiqPayCheckoutUrl, liqpayDecodeData, liqpayVerifySignature, captureHold, refundCaptured, reverseHold } from "./liqpay.service";
 import { publishDomainEvent } from "../realtime/publishDomainEvent";
@@ -74,15 +75,22 @@ export async function createDepositIntent(
 ) {
   const order = await tx.order.findUnique({ where: { id: args.orderId } });
   if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
-  // Both sides lock the same full per-side deposit (30% of budget) in a single
-  // payment: the performer at claim, the customer within
-  // CUSTOMER_COUNTER_DEPOSIT_DEADLINE_HOURS of the performer paying. No staging.
-  const amount = depositAmountFor(order.budget);
+
+  // Customer pays deposit (30%) + service fee (8.5% of budget) in one payment.
+  // Performer pays only deposit (30%).
+  const depositAmount = depositAmountFor(order.budget);
+  const feeAmount =
+    args.role === "customer" ? new Prisma.Decimal(serviceFeeAmount(order.budget.toNumber())) : new Prisma.Decimal(0);
+  const amount = depositAmount.add(feeAmount);
+
+  // Description shows deposit only (fee is not a deposit)
+  const description = `Гарантійна сума за замовлення ${formatOrderNumber(order.orderNumber) ?? ""}`.trim();
+
   const checkout = createLiqPayCheckout({
     orderId: `${order.id}:${args.role}:${Date.now()}`,
     amount: amount.toNumber(),
     currency: order.currency,
-    description: `Гарантійна сума за замовлення ${formatOrderNumber(order.orderNumber) ?? ""}`.trim(),
+    description,
     method: args.method,
     serverUrl: args.serverUrl,
     resultUrl: args.resultUrl,
@@ -94,6 +102,9 @@ export async function createDepositIntent(
       role: args.role,
       part: 1,
       amount,
+      depositAmount: args.role === "customer" ? depositAmount : null,
+      feeAmount,
+      feeRate: SERVICE_FEE_RATE,
       currency: order.currency,
       provider: "liqpay",
       status: "pending",
@@ -115,7 +126,7 @@ export async function createDepositIntent(
       resultUrl: args.resultUrl ?? null,
     }) + "\n"
   );
-  return { intent, checkout, amount };
+  return { intent, checkout, amount, depositAmount, feeAmount };
 }
 
 const LIVE_CHECKOUT_MS = 15 * 60 * 1000;
@@ -260,7 +271,7 @@ export async function confirmDeposit(
       } as unknown as Prisma.InputJsonValue,
     },
   });
-  const lockAmount = paidIntent.amount;
+  const lockAmount = (paidIntent as PaymentIntent & { depositAmount?: Prisma.Decimal | null }).depositAmount ?? paidIntent.amount;
   const lockUserId =
     intent.role === "performer" ? order.performerUserId! : order.customerUserId;
   await tx.escrowLock.upsert({

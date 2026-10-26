@@ -56,6 +56,8 @@ model User {
   orderMedia     OrderMedia[]
   earlyStartRequests EarlyStartRequest[] @relation("RequestedEarlyStarts")
   authoredResolutions ArbitrationResolution[] @relation("ProposedResolutions")
+  openedArbitrationCases ArbitrationCase[] @relation("OpenedArbitrationCases")
+  arbitrationMessagesUser ArbitrationMessage[] @relation("UserArbitrationMessages")
   progressUpdates WorkProgressUpdate[]
 
   /// USR-4: блокировка администратором (см. admin_audit_logs).
@@ -81,6 +83,9 @@ model Admin {
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
   passwordResetTokens AdminPasswordResetToken[]
+  assignedArbitrationCases ArbitrationCase[] @relation("AssignedArbitrationCases")
+  authoredRulings     ArbitrationRuling[]
+  authoredArbitrationMessages ArbitrationMessage[] @relation("AdminArbitrationMessages")
 
   @@map("admins")
 }
@@ -344,6 +349,7 @@ model Order {
   earlyStartRequests EarlyStartRequest[]
   progressUpdates WorkProgressUpdate[]
   arbitrationResolutions ArbitrationResolution[]
+  arbitrationCases ArbitrationCase[]
 
   @@index([customerUserId, status, createdAt])
   @@index([performerUserId, status, createdAt])
@@ -497,15 +503,18 @@ model OrderMedia {
   url       String        @db.Text
   caption   String?       @db.Text
   progressId String?      @map("progress_id")
+  arbitrationMessageId String? @map("arbitration_message_id")
   createdAt DateTime      @default(now()) @map("created_at")
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   progress WorkProgressUpdate? @relation(fields: [progressId], references: [id], onDelete: Cascade)
+  arbitrationMessage ArbitrationMessage? @relation("ArbitrationMessageMedia", fields: [arbitrationMessageId], references: [id], onDelete: SetNull)
 
   @@index([orderId, createdAt])
   @@index([userId, kind, createdAt])
   @@index([progressId])
+  @@index([arbitrationMessageId, createdAt])
   @@map("order_media")
 }
 
@@ -560,6 +569,65 @@ model ArbitrationResolution {
   @@map("arbitration_resolutions")
 }
 
+model ArbitrationCase {
+  id           String   @id @default(cuid())
+  orderId      String   @map("order_id")
+  openedByUserId String @map("opened_by_user_id")
+  status       String   @default("open") // open, admin_assigned, resolved, closed
+  assigneeAdminId String? @map("assignee_admin_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  resolvedAt   DateTime? @map("resolved_at")
+  closedAt     DateTime? @map("closed_at")
+
+  order          Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  openedBy       User  @relation("OpenedArbitrationCases", fields: [openedByUserId], references: [id], onDelete: Cascade)
+  assigneeAdmin  Admin? @relation("AssignedArbitrationCases", fields: [assigneeAdminId], references: [id], onDelete: SetNull)
+  messages       ArbitrationMessage[] @relation("ArbitrationCaseMessages")
+  ruling         ArbitrationRuling?
+
+  @@index([orderId, createdAt])
+  @@index([status, createdAt])
+  @@index([assigneeAdminId, status])
+  @@map("arbitration_cases")
+}
+
+model ArbitrationMessage {
+  id            String   @id @default(cuid())
+  arbitrationCaseId String @map("arbitration_case_id")
+  userId        String?  @map("user_id")
+  adminId       String?  @map("admin_id")
+  text          String   @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  arbitrationCase ArbitrationCase @relation("ArbitrationCaseMessages", fields: [arbitrationCaseId], references: [id], onDelete: Cascade)
+  user            User?  @relation("UserArbitrationMessages", fields: [userId], references: [id], onDelete: SetNull)
+  admin           Admin? @relation("AdminArbitrationMessages", fields: [adminId], references: [id], onDelete: SetNull)
+  media           OrderMedia[] @relation("ArbitrationMessageMedia")
+
+  @@index([arbitrationCaseId, createdAt])
+  @@index([userId, createdAt])
+  @@index([adminId, createdAt])
+  @@map("arbitration_messages")
+}
+
+model ArbitrationRuling {
+  id                String   @id @default(cuid())
+  arbitrationCaseId String   @map("arbitration_case_id")
+  adminId           String   @map("admin_id")
+  decision          String   // close_plain, close_fine
+  reason            String?  @db.Text
+  rating            Int?
+  comment           String?  @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  arbitrationCase ArbitrationCase @relation(fields: [arbitrationCaseId], references: [id], onDelete: Cascade)
+  admin           Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@unique([arbitrationCaseId], name: "uniq_arbitration_case_ruling")
+  @@index([adminId, createdAt])
+  @@map("arbitration_rulings")
+}
+
 model LegalProfile {
   id             String   @id @default(cuid())
   userId         String   @unique @map("user_id")
@@ -596,6 +664,11 @@ model PaymentIntent {
   paidAt          DateTime? @map("paid_at")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Fee tracking (customer deposit + 8.5% fee)
+  depositAmount   Decimal? @db.Decimal(12, 2) @map("deposit_amount")
+  feeAmount       Decimal  @default(0) @db.Decimal(12, 2) @map("fee_amount")
+  feeRate         Float?   @map("fee_rate")
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
