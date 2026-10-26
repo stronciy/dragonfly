@@ -235,23 +235,37 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
     }
 
     // Send push notifications for order changes
+    // Send push notifications for order changes
+    const statusChanged = order.status !== updated.status;
+    const fieldsChanged = changedFields.filter(f => f !== 'status').join(', ');
+    
+    const title = 'Замовлення оновлено';
+    const message = statusChanged 
+      ? `Статус змінено: ${order.status} → ${updated.status}`
+      : `Деталі замовлення змінено${fieldsChanged ? `: ${fieldsChanged}` : ''}`;
+    
     // Notify assigned performer about order updates (if they exist)
     if (order.performerUserId) {
-      const statusChanged = order.status !== updated.status;
-      const fieldsChanged = changedFields.filter(f => f !== 'status').join(', ');
-      
-      const title = 'Замовлення оновлено';
-      const message = statusChanged 
-        ? `Статус змінено: ${order.status} → ${updated.status}`
-        : `Деталі замовлення змінено${fieldsChanged ? `: ${fieldsChanged}` : ''}`;
-      
-      // Ignore catch - push is best-effort
       notifyUser({
         userId: order.performerUserId,
         type: 'order.updated',
         title,
         message,
         data: { orderId, changedFields, fromStatus: order.status, toStatus: updated.status },
+      }).catch(() => {});
+    }
+
+    // Notify all matchers (watchers) about order updates for published orders
+    for (const watcherId of watcherIds) {
+      // Skip if this is the assigned performer (already notified above)
+      if (watcherId === order.performerUserId) continue;
+      
+      notifyUser({
+        userId: watcherId,
+        type: 'order.updated',
+        title: 'Замовлення оновлено',
+        message: `Замовлення #${order.orderNumber || orderId.substring(0,8)} було змінене. Перевірте, чи вас досі цікавить ця робота.`,
+        data: { orderId, changedFields, screen: 'marketplace' },
       }).catch(() => {});
     }
 
