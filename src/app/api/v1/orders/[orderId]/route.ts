@@ -93,6 +93,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     let counterpartyContact: {
       name: string;
       phone: string | null;
+      email: string | null;
       companyName: string | null;
     } | null = null;
 
@@ -101,7 +102,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       if (counterpartyUserId) {
         const counterpartyUser = await prisma.user.findUnique({
           where: { id: counterpartyUserId },
-          select: { name: true, phone: true },
+          select: { name: true, phone: true, email: true },
         });
         // Try to get company name from LegalProfile first, then CustomerProfile/PerformerProfile
         const legalProfile = await prisma.legalProfile.findUnique({
@@ -113,6 +114,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
           counterpartyContact = {
             name: counterpartyUser.name,
             phone: counterpartyUser.phone,
+            email: counterpartyUser.email,
             companyName,
           };
         }

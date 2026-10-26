@@ -155,6 +155,7 @@ function buildLocation(
 export interface OrderDetailCounterpartyContact {
   name: string;
   phone: string | null;
+  email: string | null;
   companyName: string | null;
 }
 
