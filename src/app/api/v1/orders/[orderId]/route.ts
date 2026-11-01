@@ -8,6 +8,7 @@ import { publishDomainEvent } from "@/shared";
 import { notifyUser } from "@/services/notify";
 import {
   ESCROW_OPEN_STATUSES,
+  ORDER_DETAIL_GEO_REVEALED_STATUSES,
   buildOrderDetailPayload,
   resolveOrderDetailViewerRole,
 } from "@/shared";
@@ -83,9 +84,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       }),
     ]);
 
-    // Check if contacts should be revealed: order is confirmed AND both have "held" status
+    // Contacts are revealed once BOTH deposits are held. The reveal persists
+    // through every work status from `confirmed` onward (en_route/started/
+    // completed/arbitration) — the counterparty stays reachable while the
+    // order is being executed, not just on the exact `confirmed` frame.
     const bothDepositsConfirmed =
-      order.status === "confirmed" &&
+      (ORDER_DETAIL_GEO_REVEALED_STATUSES as readonly string[]).includes(order.status) &&
       customerLock?.status === "held" &&
       performerLock?.status === "held";
 

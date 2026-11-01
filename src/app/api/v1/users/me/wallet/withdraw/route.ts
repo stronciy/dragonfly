@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     });
 
     if (!legalProfile) {
-      throw new ApiError(400, "BAD_REQUEST", "Необхідно заповнити юридичний профіль з платіжними реквізитами");
+      throw new ApiError(400, "VALIDATION_ERROR", "Необхідно заповнити юридичний профіль з платіжними реквізитами");
     }
 
     // Verify IBAN matches legal profile
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     const normalizedLegalIban = (legalProfile.iban || '').replace(/\s/g, '').toUpperCase();
     
     if (normalizedIban !== normalizedLegalIban) {
-      throw new ApiError(400, "BAD_REQUEST", "IBAN не відповідає юридичному профілю");
+      throw new ApiError(400, "VALIDATION_ERROR", "IBAN не відповідає юридичному профілю");
     }
 
     // Get wallet
@@ -40,12 +40,12 @@ export async function POST(req: Request) {
     });
 
     if (!wallet || wallet.balance < body.amount) {
-      throw new ApiError(400, "BAD_REQUEST", "Недостатньо коштів на балансі");
+      throw new ApiError(400, "VALIDATION_ERROR", "Недостатньо коштів на балансі");
     }
 
     // Check if amount is above minimum (e.g., 100 UAH)
     if (body.amount < 100) {
-      throw new ApiError(400, "BAD_REQUEST", "Мінімальна сума для виведення - 100₴");
+      throw new ApiError(400, "VALIDATION_ERROR", "Мінімальна сума для виведення - 100₴");
     }
 
     // Process withdrawal

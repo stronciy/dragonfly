@@ -27,7 +27,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        customer: { select: { id: true, name: true, phone: true, expoPushToken: true } },
+        customer: { select: { id: true, name: true, phone: true } },
       },
     });
 
@@ -40,16 +40,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     }
 
     if (!["started", "en_route"].includes(order.status)) {
-      throw new ApiError(400, "BAD_REQUEST", "Роботу ще не розпочато");
+      throw new ApiError(400, "VALIDATION_ERROR", "Роботу ще не розпочато");
     }
 
     // Create progress update
     await prisma.workProgressUpdate.create({
       data: {
         orderId,
-        userId: user.id,
+        authorId: user.id,
         percent,
-        note: note || null,
+        comment: note || null,
       },
     });
 
@@ -68,7 +68,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       select: { percent: true },
     });
 
-    const firstTime30 = hasReached30 && (!previousMax || previousMax.percent < 30);
+    const firstTime30 = hasReached30 && (!previousMax || previousMax.percent === null || previousMax.percent < 30);
 
     // Notify performer that they can request payment if first time 30%
     if (firstTime30) {

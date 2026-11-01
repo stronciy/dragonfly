@@ -22,8 +22,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        customer: { select: { id: true, name: true, expoPushToken: true } },
-        performer: { select: { id: true, expoPushToken: true } },
         escrowLocks: true,
       },
     });
@@ -33,7 +31,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     }
 
     if (order.status !== "started" && order.status !== "en_route") {
-      throw new ApiError(400, "BAD_REQUEST", "Замовлення не в статусі виконання");
+      throw new ApiError(400, "VALIDATION_ERROR", "Замовлення не в статусі виконання");
     }
 
     // Check user permissions
@@ -49,7 +47,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const customerLock = order.escrowLocks.find(l => l.role === "customer");
 
     if (!performerLock || !customerLock) {
-      throw new ApiError(400, "BAD_REQUEST", "Не знайдено escrow locks");
+      throw new ApiError(400, "VALIDATION_ERROR", "Не знайдено escrow locks");
     }
 
     const budgetAmount = Number(order.budget);

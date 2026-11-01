@@ -15,6 +15,21 @@ const BUDGET = new Prisma.Decimal("100000");
 const FULL_DEPOSIT = performerDepositAmount(BUDGET);
 const PERFORMER_AMOUNT = performerDepositAmount(BUDGET);
 
+type OrderDetailLocation = {
+  lat?: number;
+  lng?: number;
+  locationLabel?: string;
+  addressLabel?: string;
+  regionName?: string | null;
+};
+
+type OrderDetailPayload = {
+  escrowAmount: number;
+  depositCustomer?: { part1Paid: boolean; part2Paid: boolean; amount: number };
+  depositPerformer?: { amount: number; held: boolean };
+  location: OrderDetailLocation;
+};
+
 function makeOrder(status: string): OrderDetailOrderInput {
   return {
     id: "o1",
@@ -44,7 +59,7 @@ function build(args: {
   status: string;
   lock: { amount: Prisma.Decimal | number | string; status: string } | null;
   intents?: { part: number; status: string }[];
-}) {
+}): OrderDetailPayload {
   return buildOrderDetailPayload({
     order: makeOrder(args.status),
     viewerRole: args.viewerRole,
@@ -52,7 +67,7 @@ function build(args: {
     intents: args.intents ?? [],
     timeline: [{ status: args.status, createdAt: new Date("2026-01-03T00:00:00Z"), note: null }],
     confirmationReview: null,
-  });
+  }) as unknown as OrderDetailPayload;
 }
 
 test("resolveOrderDetailViewerRole: owner is customer, otherwise performer", () => {
@@ -134,7 +149,7 @@ test("performer pre-confirm payload never leaks the exact address (T21)", () => 
     regionName: "Полтавська область",
     settlementName: "Полтава",
   };
-  const buildFor = (status: string) =>
+  const buildFor = (status: string): OrderDetailPayload =>
     buildOrderDetailPayload({
       order: { ...order, status },
       viewerRole: "performer",
@@ -142,7 +157,7 @@ test("performer pre-confirm payload never leaks the exact address (T21)", () => 
       intents: [],
       timeline: [],
       confirmationReview: null,
-    });
+    }) as unknown as OrderDetailPayload;
 
   for (const status of ["draft", "published", "accepted", "requires_confirmation", "cancelled"]) {
     const json = JSON.stringify(buildFor(status));

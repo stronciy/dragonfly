@@ -24,7 +24,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        customer: { select: { id: true, name: true, expoPushToken: true } },
+        customer: { select: { id: true, name: true } },
         progressUpdates: { orderBy: { createdAt: "desc" }, take: 1 },
       },
     });
@@ -48,7 +48,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
     // Check if customer already paid part 2
     if (order.customerPart2Deadline) {
-      throw new ApiError(400, "BAD_REQUEST", "Замовник вже має відкритий запит на доплату");
+      throw new ApiError(400, "VALIDATION_ERROR", "Замовник вже має відкритий запит на доплату");
     }
 
     // Create payment request
