@@ -83,3 +83,36 @@ export async function GET(req: Request) {
     return fail(req, err);
   }
 }
+
+/**
+ * PATCH /api/v1/notifications
+ * Позначає всі непрочитані сповіщення користувача як прочитані.
+ */
+export async function PATCH(req: Request) {
+  try {
+    const user = await requireUser(req);
+    const updated = await prisma.notification.updateMany({
+      where: { userId: user.id, readAt: null },
+      data: { readAt: new Date() },
+    });
+    return ok(req, { count: updated.count }, { message: "Всі сповіщення позначено як прочитані" });
+  } catch (err) {
+    return fail(req, err);
+  }
+}
+
+/**
+ * DELETE /api/v1/notifications
+ * Видаляє всі сповіщення користувача.
+ */
+export async function DELETE(req: Request) {
+  try {
+    const user = await requireUser(req);
+    const deleted = await prisma.notification.deleteMany({
+      where: { userId: user.id },
+    });
+    return ok(req, { count: deleted.count }, { message: "Всі сповіщення видалено" });
+  } catch (err) {
+    return fail(req, err);
+  }
+}

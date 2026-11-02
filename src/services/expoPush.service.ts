@@ -107,6 +107,8 @@ export class ExpoPushService {
     const messages: ExpoPushMessage[] = valid.map((v) => ({
       to: v.toExpoToken,
       sound: "default",
+      channelId: "default",
+      priority: "high",
       title: v.title,
       body: v.body,
       data: v.data,

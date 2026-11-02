@@ -4,7 +4,7 @@ import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
-import { ExpoPushService } from "@/shared";
+import { notifyUser } from "@/services/notify";
 import { Prisma } from "@prisma/client";
 
 const schema = z.object({
@@ -64,95 +64,49 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       return u;
     });
 
-    // Відправляємо Push сповіщення замовнику
-    const expo = new ExpoPushService(prisma);
-    
-    if (body.status === "started") {
-      // Створюємо запис в notifications
-      await prisma.notification.create({
+    // Відправляємо Push та In-App сповіщення замовнику через notifyUser
+    if (body.status === "en_route") {
+      await notifyUser({
+        userId: order.customerUserId,
+        type: "order",
+        title: "Виконавець виїхав до поля",
+        message: `Замовлення ${await orderRef(orderId)}. Виконавець вирушив до місця виконання робіт.`,
         data: {
-          userId: order.customerUserId,
-          type: "order",
-          title: "Виконавець почав роботу",
-          message: `Замовлення ${await orderRef(orderId)}. Виконавець розпочав виконання робіт.`,
-          data: {
-            orderId,
-            type: "order_started",
-            role: "customer",
-            newStatus: "started",
-          } as unknown as Prisma.InputJsonValue,
+          orderId,
+          type: "order_en_route",
+          role: "customer",
+          newStatus: "en_route",
+          action: "view_order",
         },
       });
-      
-      // Відправляємо Push
-      const customerDevices = await prisma.device.findMany({
-        where: { userId: order.customerUserId, revokedAt: null },
-        select: { expoPushToken: true },
+    } else if (body.status === "started") {
+      await notifyUser({
+        userId: order.customerUserId,
+        type: "order",
+        title: "Виконавець почав роботу",
+        message: `Замовлення ${await orderRef(orderId)}. Виконавець розпочав виконання робіт.`,
+        data: {
+          orderId,
+          type: "order_started",
+          role: "customer",
+          newStatus: "started",
+          action: "view_order",
+        },
       });
-      
-      for (const device of customerDevices) {
-        await expo.sendPush({
-          toUserId: order.customerUserId,
-          toExpoToken: device.expoPushToken,
-          title: "Виконавець почав роботу",
-          body: `Замовлення ${await orderRef(orderId)}. Виконавець розпочав виконання робіт.`,
-          data: {
-            orderId,
-            type: "order_started",
-            role: "customer",
-            newStatus: "started",
-          },
-        });
-      }
-      
-      console.log(
-        "\n🔔 [Status] Відправка Push order.started:",
-        `\n   OrderId: ${orderId}`,
-        `\n   CustomerUserId: ${order.customerUserId}\n`
-      );
     } else if (body.status === "completed") {
-      // Створюємо запис в notifications
-      await prisma.notification.create({
+      await notifyUser({
+        userId: order.customerUserId,
+        type: "order",
+        title: "Виконавець завершив роботу",
+        message: `Замовлення ${await orderRef(orderId)}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`,
         data: {
-          userId: order.customerUserId,
-          type: "order",
-          title: "Виконавець завершив роботу",
-          message: `Замовлення ${await orderRef(orderId)}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`,
-          data: {
-            orderId,
-            type: "order_completed",
-            role: "customer",
-            newStatus: "completed",
-          } as unknown as Prisma.InputJsonValue,
+          orderId,
+          type: "order_completed",
+          role: "customer",
+          newStatus: "completed",
+          action: "view_order",
         },
       });
-      
-      // Відправляємо Push
-      const customerDevices = await prisma.device.findMany({
-        where: { userId: order.customerUserId, revokedAt: null },
-        select: { expoPushToken: true },
-      });
-      
-      for (const device of customerDevices) {
-        await expo.sendPush({
-          toUserId: order.customerUserId,
-          toExpoToken: device.expoPushToken,
-          title: "Виконавець завершив роботу",
-          body: `Замовлення ${await orderRef(orderId)}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`,
-          data: {
-            orderId,
-            type: "order_completed",
-            role: "customer",
-            newStatus: "completed",
-          },
-        });
-      }
-      
-      console.log(
-        "\n🔔 [Status] Відправка Push order.completed:",
-        `\n   OrderId: ${orderId}`,
-        `\n   CustomerUserId: ${order.customerUserId}\n`
-      );
     }
 
     // WebSocket для оновлення екрану
