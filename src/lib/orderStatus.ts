@@ -22,7 +22,7 @@ const TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   en_route: ["started", "arbitration"],
   started: ["completed", "arbitration"],
   completed: ["arbitration"],
-  arbitration: [],
+  arbitration: ["completed"],
   cancelled: [],
 };
 

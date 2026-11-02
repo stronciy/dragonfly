@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError, prisma } from "@/shared";
+import { ApiError, prisma, notifyUser, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 
@@ -86,6 +86,17 @@ export async function POST(
           },
         },
       }),
+      prisma.order.update({
+        where: { id: orderId },
+        data: { status: "arbitration" },
+      }),
+      prisma.orderStatusEvent.create({
+        data: {
+          orderId,
+          status: "arbitration",
+          note: body.reason,
+        },
+      }),
     ]);
 
     // Update the message with proper caseId
@@ -94,17 +105,48 @@ export async function POST(
       data: { arbitrationCaseId: caseRecord.id },
     });
 
-    // Publish domain event for real-time updates
+    const requestId = getRequestId(req);
+
+    // Publish domain events for real-time updates
+    await publishDomainEvent({
+      type: "order.status_changed",
+      requestId,
+      targets: { userIds: [order.customerUserId, order.performerUserId!].filter(Boolean) as string[] },
+      data: {
+        orderId,
+        fromStatus: order.status,
+        toStatus: "arbitration",
+        actorId: user.id,
+      },
+    });
+
     await publishDomainEvent({
       type: "arbitration.created",
-      requestId: getRequestId(req),
-      targets: { userIds: [order.customerUserId, order.performerUserId!] },
+      requestId,
+      targets: { userIds: [order.customerUserId, order.performerUserId!].filter(Boolean) as string[] },
       data: {
         arbitrationCaseId: caseRecord.id,
         orderId,
         openedByUserId: user.id,
       },
     });
+
+    const otherUserId = user.id === order.customerUserId ? order.performerUserId : order.customerUserId;
+    if (otherUserId) {
+      const number = await orderRef(orderId);
+      await notifyUser({
+        userId: otherUserId,
+        type: "arbitration",
+        title: "Відкрито арбітраж",
+        message: `Замовлення ${number}. Відкрито арбітраж: ${body.reason}`,
+        data: {
+          orderId,
+          type: "arbitration_opened",
+          caseId: caseRecord.id,
+          actorId: user.id,
+        },
+      }).catch(() => {});
+    }
 
     return ok(req, { case: caseRecord, firstMessage }, { status: 201, message: "Арбітраж відкрито" });
   } catch (err) {
