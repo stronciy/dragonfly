@@ -12,6 +12,17 @@ export const runtime = "nodejs";
 const progressSchema = z.object({
   percent: z.number().min(0).max(100),
   note: z.string().max(500).optional(),
+  images: z
+    .array(
+      z.object({
+        dataUrl: z.string(),
+        name: z.string().optional(),
+        mimeType: z.string().optional(),
+        size: z.number().optional(),
+      })
+    )
+    .max(5)
+    .optional(),
 });
 
 export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
@@ -42,6 +53,22 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       },
     });
 
+    const unlinkedMedia = await prisma.orderMedia.findMany({
+      where: { orderId, kind: { in: ["progress", "report"] }, progressId: null },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, url: true },
+    });
+
+    if (unlinkedMedia.length > 0 && progress.length > 0) {
+      const last = progress[progress.length - 1];
+      const existingIds = new Set(last.media.map((m) => m.id));
+      for (const m of unlinkedMedia) {
+        if (!existingIds.has(m.id)) {
+          last.media.push(m);
+        }
+      }
+    }
+
     return ok(req, { progress });
   } catch (err) {
     return fail(req, err);
@@ -58,7 +85,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     }
 
-    const contentType = req.headers.get("content-type") || "";
+    const contentType = (req.headers.get("content-type") || "").toLowerCase();
     let percent = 0;
     let note: string | undefined = undefined;
     let uploadedFiles: { dataUrl: string; mimeType: string; size: number; name: string }[] = [];
@@ -75,9 +102,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       }
       uploadedFiles = await readFormFilesAsDataUrl(form, "files", 5);
     } else {
-      const body = progressSchema.parse(await req.json());
+      const rawJson = await req.json();
+      const body = progressSchema.parse(rawJson);
       percent = body.percent;
       note = body.note;
+      if (body.images && body.images.length > 0) {
+        uploadedFiles = body.images.map((img, idx) => ({
+          dataUrl: img.dataUrl,
+          name: img.name || `photo-${Date.now()}-${idx}.jpg`,
+          mimeType: img.mimeType || "image/jpeg",
+          size: img.size || 0,
+        }));
+      }
     }
 
     if (isNaN(percent) || percent < 0 || percent > 100) {
