@@ -5,6 +5,9 @@ import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { notifyUser } from "@/services/notify";
 import { publishDomainEvent } from "@/shared";
+import { readFormFilesAsDataUrl } from "@/lib/uploads";
+
+export const runtime = "nodejs";
 
 const progressSchema = z.object({
   percent: z.number().min(0).max(100),
@@ -55,8 +58,31 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     }
 
-    const body = progressSchema.parse(await req.json());
-    const { percent, note } = body;
+    const contentType = req.headers.get("content-type") || "";
+    let percent = 0;
+    let note: string | undefined = undefined;
+    let uploadedFiles: { dataUrl: string; mimeType: string; size: number; name: string }[] = [];
+
+    if (contentType.includes("multipart/form-data")) {
+      const form = await req.formData();
+      const percentVal = form.get("percent");
+      if (percentVal != null && String(percentVal).trim() !== "") {
+        percent = Number(percentVal);
+      }
+      const rawNote = form.get("comment") || form.get("note");
+      if (typeof rawNote === "string" && rawNote.trim()) {
+        note = rawNote.trim();
+      }
+      uploadedFiles = await readFormFilesAsDataUrl(form, "files", 5);
+    } else {
+      const body = progressSchema.parse(await req.json());
+      percent = body.percent;
+      note = body.note;
+    }
+
+    if (isNaN(percent) || percent < 0 || percent > 100) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Відсоток виконання має бути числом від 0 до 100");
+    }
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -77,13 +103,33 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       throw new ApiError(400, "VALIDATION_ERROR", "Роботу ще не розпочато");
     }
 
-    // Create progress update
-    await prisma.workProgressUpdate.create({
+    // Create progress update with media
+    const createdProgress = await prisma.workProgressUpdate.create({
       data: {
         orderId,
         authorId: user.id,
         percent,
         comment: note || null,
+        ...(uploadedFiles.length > 0
+          ? {
+              media: {
+                create: uploadedFiles.map((f) => ({
+                  orderId,
+                  userId: user.id,
+                  kind: "progress",
+                  name: f.name,
+                  mimeType: f.mimeType,
+                  size: f.size,
+                  url: f.dataUrl,
+                })),
+              },
+            }
+          : {}),
+      },
+      include: {
+        media: {
+          select: { id: true, url: true },
+        },
       },
     });
 

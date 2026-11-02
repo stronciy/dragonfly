@@ -1,13 +1,24 @@
 import { ApiError } from "@/shared";
 
+function isUploadFile(v: unknown): v is File {
+  return (
+    v instanceof File ||
+    (typeof v === "object" && v !== null && typeof (v as any).arrayBuffer === "function")
+  );
+}
+
 export async function readFormFileAsDataUrl(formData: FormData, fieldName: string) {
   const value = formData.get(fieldName);
-  if (!(value instanceof File)) throw new ApiError(400, "VALIDATION_ERROR", `${fieldName}: файл обов'язковий`);
+  if (!isUploadFile(value)) throw new ApiError(400, "VALIDATION_ERROR", `${fieldName}: файл обов'язковий`);
   return fileToDataUrl(value, fieldName);
 }
 
 export async function readFormFilesAsDataUrl(formData: FormData, fieldName: string, maxCount: number) {
-  const values = formData.getAll(fieldName).filter((v): v is File => v instanceof File);
+  const raw = [
+    ...formData.getAll(fieldName),
+    ...(fieldName === "files" ? formData.getAll("file") : []),
+  ];
+  const values = raw.filter(isUploadFile);
   if (values.length > maxCount) {
     throw new ApiError(400, "VALIDATION_ERROR", `Забагато файлів (макс. ${maxCount})`);
   }
@@ -31,6 +42,6 @@ async function fileToDataUrl(value: File, fieldName: string) {
     dataUrl,
     mimeType,
     size: buf.byteLength,
-    name: value.name,
+    name: (value as any).name || `photo-${Date.now()}.jpg`,
   };
 }
