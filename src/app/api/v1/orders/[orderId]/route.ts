@@ -61,9 +61,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     const { orderId } = await ctx.params;
     const order = await getOrderOr404(orderId);
 
-    const canRead =
+    const isOwner =
       order.customerUserId === user.id || order.performerUserId === user.id;
-    if (!canRead) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+    const isPerformerMarketplace =
+      user.role === "performer" && order.status === "published";
+    if (!isOwner && !isPerformerMarketplace) {
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+    }
 
     // Escrow is strictly role-scoped: fetch only the caller's own lock/intents
     // so the counterparty's frozen amount never reaches the payload.

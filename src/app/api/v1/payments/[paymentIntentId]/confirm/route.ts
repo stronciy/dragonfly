@@ -47,6 +47,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
         amount: intent.amount,
         currency: intent.currency,
         providerStatus: null,
+        part: intent.part,
       });
     }
 

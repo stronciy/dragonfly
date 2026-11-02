@@ -16,7 +16,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     if (!canRead) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
     const rows = await prisma.orderMedia.findMany({
-      where: { orderId, userId: user.id, kind: "report" },
+      where: { orderId, kind: "report" },
       orderBy: { createdAt: "asc" },
       select: { id: true, url: true, mimeType: true, size: true, name: true, caption: true, createdAt: true },
     });

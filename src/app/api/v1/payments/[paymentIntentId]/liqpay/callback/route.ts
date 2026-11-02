@@ -150,6 +150,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ paymentIntentI
         amount: intent.amount,
         currency: intent.currency,
         providerStatus: typeof decoded.status === "string" ? decoded.status : null,
+        part: intent.part,
       });
     }
 

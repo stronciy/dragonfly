@@ -13,6 +13,7 @@ import {
 } from "@/shared";
 
 const schema = z.object({
+  part: z.number().int().min(1).max(2).optional(),
   method: z.enum(["card", "apple-pay", "google-pay", "bank-transfer"]).optional(),
   wallet: z.string().max(256).optional(),
   resultUrl: z.string().max(2048).optional(),
@@ -30,23 +31,34 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (!order || order.customerUserId !== user.id) {
       throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     }
-    if (order.status !== "requires_confirmation" && order.status !== "accepted") {
+
+    const isPart2 = body.part === 2 || (order.status === "started" && !!order.customerPart2Deadline);
+    const targetPart = isPart2 ? 2 : 1;
+
+    if (!isPart2 && order.status !== "requires_confirmation" && order.status !== "accepted") {
       throw new ApiError(400, "VALIDATION_ERROR", "Замовлення не потребує застави замовника");
+    }
+    if (isPart2 && order.status !== "started") {
+      throw new ApiError(400, "VALIDATION_ERROR", "Доплата 70% доступна лише для розпочатих робіт");
     }
     if (!order.performerUserId) {
       throw new ApiError(400, "VALIDATION_ERROR", "Виконавця ще не призначено");
     }
-    if (order.depositDeadline && order.depositDeadline.getTime() <= Date.now()) {
+    if (!isPart2 && order.depositDeadline && order.depositDeadline.getTime() <= Date.now()) {
       throw new ApiError(400, "VALIDATION_ERROR", "Строк внесення застави минув");
+    }
+    if (isPart2 && order.customerPart2Deadline && order.customerPart2Deadline.getTime() <= Date.now()) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Строк внесення залишку (70%) минув");
     }
 
     const intent = await prisma.$transaction(async (tx) => {
-      const pending = await findPendingIntent(tx, { orderId, role: "customer" });
+      const pending = await findPendingIntent(tx, { orderId, role: "customer", part: targetPart });
       if (pending) return ensureIntentServerUrl(tx, pending, req);
       const intentId = crypto.randomUUID();
       const created = await createDepositIntent(tx, {
         orderId,
         role: "customer",
+        part: targetPart,
         method: body.method,
         wallet: body.wallet,
         resultUrl: body.resultUrl,
@@ -57,7 +69,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     });
 
     await publishDomainEvent({
-      type: "deposit.customer_required",
+      type: isPart2 ? "deposit.customer_part2_required" : "deposit.customer_required",
       requestId,
       targets: { userIds: [user.id] },
       data: { orderId: order.id, status: order.status },

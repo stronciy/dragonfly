@@ -66,6 +66,7 @@ export async function createDepositIntent(
   args: {
     orderId: string;
     role: IntentRole;
+    part?: number;
     method?: "card" | "apple-pay" | "google-pay" | "bank-transfer";
     wallet?: string;
     resultUrl?: string;
@@ -76,18 +77,28 @@ export async function createDepositIntent(
   const order = await tx.order.findUnique({ where: { id: args.orderId } });
   if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
-  // Customer pays deposit (30%) + service fee (8.5% of budget) in one payment.
+  const part = args.part ?? 1;
+  const isPart2 = args.role === "customer" && part === 2;
+
+  // Customer part 1 pays deposit (30%) + service fee (8.5% of budget) in one payment.
+  // Customer part 2 pays remaining balance (70% of budget) with no extra fee.
   // Performer pays only deposit (30%).
-  const depositAmount = depositAmountFor(order.budget);
+  const depositAmount = isPart2
+    ? order.budget.sub(depositAmountFor(order.budget))
+    : depositAmountFor(order.budget);
   const feeAmount =
-    args.role === "customer" ? new Prisma.Decimal(serviceFeeAmount(order.budget.toNumber())) : new Prisma.Decimal(0);
+    args.role === "customer" && !isPart2
+      ? new Prisma.Decimal(serviceFeeAmount(order.budget.toNumber()))
+      : new Prisma.Decimal(0);
   const amount = depositAmount.add(feeAmount);
 
-  // Description shows deposit only (fee is not a deposit)
-  const description = `Гарантійна сума за замовлення ${formatOrderNumber(order.orderNumber) ?? ""}`.trim();
+  // Description shows deposit or part 2
+  const description = isPart2
+    ? `Оплата залишку (70%) за замовлення ${formatOrderNumber(order.orderNumber) ?? ""}`.trim()
+    : `Гарантійна сума за замовлення ${formatOrderNumber(order.orderNumber) ?? ""}`.trim();
 
   const checkout = createLiqPayCheckout({
-    orderId: `${order.id}:${args.role}:${Date.now()}`,
+    orderId: `${order.id}:${args.role}:p${part}:${Date.now()}`,
     amount: amount.toNumber(),
     currency: order.currency,
     description,
@@ -100,11 +111,11 @@ export async function createDepositIntent(
       id: args.intentId ?? undefined,
       orderId: order.id,
       role: args.role,
-      part: 1,
+      part,
       amount,
       depositAmount: args.role === "customer" ? depositAmount : null,
       feeAmount,
-      feeRate: SERVICE_FEE_RATE,
+      feeRate: isPart2 ? null : SERVICE_FEE_RATE,
       currency: order.currency,
       provider: "liqpay",
       status: "pending",
@@ -122,6 +133,7 @@ export async function createDepositIntent(
       intentId: intent.id,
       orderId: order.id,
       role: args.role,
+      part,
       serverUrl: args.serverUrl ?? null,
       resultUrl: args.resultUrl ?? null,
     }) + "\n"
@@ -133,12 +145,13 @@ const LIVE_CHECKOUT_MS = 15 * 60 * 1000;
 
 export async function findPendingIntent(
   tx: Tx,
-  args: { orderId: string; role: IntentRole }
+  args: { orderId: string; role: IntentRole; part?: number }
 ) {
   return tx.paymentIntent.findFirst({
     where: {
       orderId: args.orderId,
       role: args.role,
+      part: args.part ?? 1,
       status: "pending",
       createdAt: { gt: new Date(Date.now() - LIVE_CHECKOUT_MS) },
     },
@@ -236,6 +249,54 @@ export async function confirmDeposit(
   }
   const order = await tx.order.findUnique({ where: { id: intent.orderId } });
   if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+
+  if (intent.part === 2) {
+    const now = new Date();
+    await tx.order.update({
+      where: { id: order.id },
+      data: { customerPart2Deadline: null },
+    });
+    const paidIntent = await tx.paymentIntent.update({
+      where: { id: intent.id },
+      data: {
+        status: "paid",
+        paidAt: now,
+        data: args.data,
+        signature: args.signature,
+        providerOrderId:
+          typeof decoded.order_id === "string" || typeof decoded.order_id === "number"
+            ? String(decoded.order_id)
+            : intent.providerOrderId,
+        providerRaw: {
+          action: decoded.action ?? null,
+          status: providerStatus,
+          payment_id: decoded.payment_id ?? null,
+          amount: decoded.amount ?? null,
+        } as unknown as Prisma.InputJsonValue,
+      },
+    });
+    await tx.paymentRequest.updateMany({
+      where: { orderId: order.id, status: "pending" },
+      data: { status: "paid" },
+    });
+    await tx.escrowLock.upsert({
+      where: { uniq_order_role_lock: { orderId: order.id, role: "customer" } },
+      create: {
+        orderId: order.id,
+        userId: order.customerUserId,
+        role: "customer",
+        amount: order.budget,
+        status: "held",
+      },
+      update: { status: "held", amount: order.budget },
+    });
+    await tx.orderStatusEvent.create({
+      data: { orderId: order.id, status: order.status, note: "Замовник сплатив 70% залишку замовлення" },
+    });
+    const updated = await tx.order.findUnique({ where: { id: order.id } });
+    return { order: updated!, intent: paidIntent, duplicate: false as const };
+  }
+
   const toStatus = transitionForConfirm(intent.role, order.status);
   if (!toStatus || !canTransition(order.status as OrderStatus, toStatus)) {
     throw new ApiError(409, "CONFLICT", "Статус замовлення не дозволяє внесення застави");
@@ -566,10 +627,43 @@ export async function emitDepositPaidNotifications(args: {
   amount: unknown;
   currency: string;
   providerStatus: string | null;
+  part?: number;
 }) {
   const shortRef = await orderRef(args.order.id);
   const sum = `${Number(args.amount)} ${args.currency}`;
   const actorUserId = args.role === "performer" ? args.order.performerUserId ?? undefined : args.order.customerUserId;
+
+  if (args.part === 2) {
+    await publishDomainEvent({
+      type: "deposit.customer_part2_paid",
+      requestId: args.requestId,
+      targets: {
+        userIds: [args.order.customerUserId, ...(args.order.performerUserId ? [args.order.performerUserId] : [])],
+      },
+      data: { orderId: args.order.id, status: args.order.status, amount: args.amount },
+    });
+
+    if (args.order.performerUserId) {
+      await notifyUser({
+        userId: args.order.performerUserId,
+        type: "deposit",
+        title: "Оплату 70% внесено",
+        message: `Замовлення ${shortRef}. Замовник вніс залишок оплати ${sum}. Вся сума робіт зарезервована в ескроу.`,
+        data: { orderId: args.order.id, type: "deposit_customer_part2_paid", role: "performer", action: "view_order", actorId: actorUserId },
+      });
+    }
+
+    await notifyUser({
+      userId: args.order.customerUserId,
+      type: "deposit",
+      title: "Оплату 70% успішно внесено",
+      message: `Замовлення ${shortRef}. Ви внесли залишок оплати ${sum}. Кошти надійно зарезервовані в ескроу.`,
+      data: { orderId: args.order.id, type: "deposit_customer_part2_paid", role: "customer", action: "view_order", actorId: actorUserId },
+    });
+
+    return;
+  }
+
   for (const e of buildDepositPaidEvents({
     orderId: args.order.id,
     toStatus: args.order.status,

@@ -59,6 +59,7 @@ export interface OrderDetailOrderInput extends OrderDetailLocationInput {
   depositDeadline: Date | null;
   performerUserId: string | null;
   comment: string | null;
+  customerPart2Deadline?: Date | null;
 }
 
 export interface OrderDetailTimelineItem {
@@ -191,6 +192,14 @@ export function buildOrderDetailPayload(args: {
     acceptedAt: order.acceptedAt,
     depositDeadline: order.depositDeadline,
     depositAmount: Number(safeDepositAmount(order.budget)),
+    customerPart2Deadline: order.customerPart2Deadline ?? null,
+    part2Amount: Math.round(Number(order.budget) * 0.7),
+    part2Paid: args.intents.some((i) => i.part === 2 && i.status === "paid"),
+    canPayPart2:
+      viewerRole === "customer" &&
+      order.status === "started" &&
+      !!order.customerPart2Deadline &&
+      !args.intents.some((i) => i.part === 2 && i.status === "paid"),
     ...escrow,
     performerUserId: order.performerUserId,
     comment: order.comment,

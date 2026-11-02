@@ -59,17 +59,30 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       select: { id: true, url: true },
     });
 
-    if (unlinkedMedia.length > 0 && progress.length > 0) {
-      const last = progress[progress.length - 1];
-      const existingIds = new Set(last.media.map((m) => m.id));
-      for (const m of unlinkedMedia) {
-        if (!existingIds.has(m.id)) {
-          last.media.push(m);
+    const progressList = [...progress];
+    if (unlinkedMedia.length > 0) {
+      if (progressList.length > 0) {
+        const last = progressList[progressList.length - 1];
+        const existingIds = new Set(last.media.map((m) => m.id));
+        for (const m of unlinkedMedia) {
+          if (!existingIds.has(m.id)) {
+            last.media.push(m);
+          }
         }
+      } else {
+        progressList.push({
+          id: "unlinked-media",
+          orderId,
+          authorId: order.performerUserId || order.customerUserId,
+          percent: 0,
+          comment: "Фотозвіт робіт",
+          createdAt: new Date(),
+          media: unlinkedMedia,
+        });
       }
     }
 
-    return ok(req, { progress });
+    return ok(req, { progress: progressList });
   } catch (err) {
     return fail(req, err);
   }

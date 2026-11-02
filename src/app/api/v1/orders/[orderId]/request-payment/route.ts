@@ -75,13 +75,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       userId: order.customerUserId,
       type: "payment.part2_requested",
       title: "Запит на доплату",
-      message: `Виконавець досяг 30% готовності та запросив внесення оставшейся суми ${body.amount}₴. У вас є 24 години для оплати.`,
+      message: `Виконавець досяг 30% готовності та запросив внесення залишку ${body.amount}₴. У вас є 24 години для оплати.`,
       data: { 
         orderId, 
         orderNumber: order.orderNumber,
         amount: body.amount,
         deadline: deadline.toISOString(),
-        screen: "order-payment",
+        role: "customer",
+        action: "pay_part2",
+        screen: "active-work",
       },
     }).catch(() => {});
 
@@ -91,7 +93,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       type: "payment.request_sent",
       title: "Запит надіслано",
       message: `Замовнику надіслано запит на оплату ${body.amount}₴. Чекаємо на оплату протягом 24 годин.`,
-      data: { orderId, amount: body.amount },
+      data: { 
+        orderId, 
+        amount: body.amount,
+        role: "performer",
+        action: "view_order",
+        screen: "active-work",
+      },
     }).catch(() => {});
 
     return ok(req, { 
