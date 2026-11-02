@@ -26,6 +26,8 @@ const progressSchema = z.object({
 });
 
 export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
+  const startedAt = Date.now();
+  const requestId = getRequestId(req);
   try {
     const user = await requireUser(req);
     const { orderId } = await ctx.params;
@@ -43,35 +45,60 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       throw new ApiError(403, "FORBIDDEN", "Немає доступу до цього замовлення");
     }
 
-    const progress = await prisma.workProgressUpdate.findMany({
-      where: { orderId },
-      orderBy: { createdAt: "asc" },
-      include: {
-        media: {
-          select: { id: true, url: true },
+    // Run both queries in parallel: the order page needs the full history and
+    // every attached photo in a single round trip.
+    const [progress, allOrderMedia] = await Promise.all([
+      prisma.workProgressUpdate.findMany({
+        where: { orderId },
+        orderBy: { createdAt: "asc" },
+        include: {
+          media: {
+            select: { id: true, url: true },
+          },
         },
-      },
-    });
+      }),
+      prisma.orderMedia.findMany({
+        where: { orderId, kind: { in: ["progress", "report"] } },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, url: true, progressId: true },
+      }),
+    ]);
 
-    const allOrderMedia = await prisma.orderMedia.findMany({
-      where: { orderId, kind: { in: ["progress", "report"] } },
-      orderBy: { createdAt: "asc" },
-      select: { id: true, url: true, progressId: true },
+    // Legacy clients uploaded the same photo twice (once as progress media and
+    // once as report media). Deduplicate by URL so the timeline and payload stay
+    // small and the customer doesn't see duplicated thumbnails.
+    const progressList = progress.map((p) => {
+      const seen = new Set<string>();
+      return {
+        ...p,
+        media: p.media.filter((m) => {
+          const key = m.url || m.id;
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }),
+      };
     });
-
-    const progressList = progress.map((p) => ({
-      ...p,
-      media: [...p.media],
-    }));
 
     const existingIds = new Set<string>();
+    const existingUrls = new Set<string>();
     for (const p of progressList) {
       for (const m of p.media) {
         existingIds.add(m.id);
+        if (m.url) existingUrls.add(m.url);
       }
     }
 
-    const missingMedia = allOrderMedia.filter((m) => !existingIds.has(m.id));
+    const missingMedia: { id: string; url: string; progressId: string | null }[] = [];
+    const seenMissing = new Set<string>();
+    for (const m of allOrderMedia) {
+      if (existingIds.has(m.id)) continue;
+      const key = m.url || m.id;
+      if (!key || existingUrls.has(key) || seenMissing.has(key)) continue;
+      seenMissing.add(key);
+      missingMedia.push(m);
+    }
+
     if (missingMedia.length > 0) {
       if (progressList.length > 0) {
         const last = progressList[progressList.length - 1];
@@ -92,6 +119,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       }
     }
 
+    const photoCount = progressList.reduce((sum, p) => sum + p.media.length, 0);
+    console.info(
+      `[api] GET /api/v1/orders/${orderId}/progress requestId=${requestId} userId=${user.id} role=${user.role} updates=${progressList.length} photos=${photoCount} durationMs=${Date.now() - startedAt}`
+    );
+
     return ok(req, { progress: progressList });
   } catch (err) {
     return fail(req, err);
@@ -99,10 +131,14 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
 }
 
 export async function POST(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
+  const startedAt = Date.now();
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
     const { orderId } = await ctx.params;
+    console.info(
+      `[api] POST /api/v1/orders/${orderId}/progress received requestId=${requestId} userId=${user.id} role=${user.role} contentType=${req.headers.get("content-type") || ""}`
+    );
     
     if (user.role !== "performer") {
       throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
@@ -210,6 +246,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     });
 
     const hasReached30 = percent >= 30;
+
+    console.info(
+      `[api] POST /api/v1/orders/${orderId}/progress created requestId=${requestId} progressId=${createdProgress.id} userId=${user.id} percent=${percent} photos=${createdProgress.media.length} first30=${firstTime30} durationMs=${Date.now() - startedAt}`
+    );
 
     // Notify performer that they can request payment if first time 30%
     if (firstTime30) {
