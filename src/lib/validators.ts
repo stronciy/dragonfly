@@ -27,3 +27,26 @@ export function validateUAIban(value: string) {
   return remainder === 1;
 }
 
+/**
+ * Межі України (в градусах). Координати материкової частини та Криму.
+ */
+export const UKRAINE_BOUNDS = {
+  north: 52.5,
+  south: 44.2,
+  west: 22.0,
+  east: 40.5,
+} as const;
+
+/**
+ * Перевіряє, чи знаходиться точка в межах України.
+ */
+export function isWithinUkraine(latitude: number, longitude: number): boolean {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
+  return (
+    latitude >= UKRAINE_BOUNDS.south &&
+    latitude <= UKRAINE_BOUNDS.north &&
+    longitude >= UKRAINE_BOUNDS.west &&
+    longitude <= UKRAINE_BOUNDS.east
+  );
+}
+

@@ -228,7 +228,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       type: "order.updated",
       requestId,
       targets,
-      data: { orderId, changedFields, status: updated.status },
+      data: {
+        orderId,
+        changedFields,
+        status: updated.status,
+        actorId: user.id,
+        customerId: order.customerUserId,
+        performerId: updated.performerUserId,
+      },
     });
 
     if (order.status !== updated.status) {
@@ -236,11 +243,17 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         type: "order.status_changed",
         requestId,
         targets,
-        data: { orderId, fromStatus: order.status, toStatus: updated.status },
+        data: {
+          orderId,
+          fromStatus: order.status,
+          toStatus: updated.status,
+          actorId: user.id,
+          customerId: order.customerUserId,
+          performerId: updated.performerUserId,
+        },
       });
     }
 
-    // Send push notifications for order changes
     // Send push notifications for order changes
     const statusChanged = order.status !== updated.status;
     const fieldsChanged = changedFields.filter(f => f !== 'status').join(', ');
@@ -250,8 +263,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       ? `Статус змінено: ${order.status} → ${updated.status}`
       : `Деталі замовлення змінено${fieldsChanged ? `: ${fieldsChanged}` : ''}`;
     
-    // Notify assigned performer about order updates (if they exist)
-    if (order.performerUserId) {
+    // Notify assigned performer about order updates (if they exist and are not the author)
+    if (order.performerUserId && order.performerUserId !== user.id) {
       notifyUser({
         userId: order.performerUserId,
         type: 'order.updated',
@@ -261,10 +274,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       }).catch(() => {});
     }
 
-    // Notify all matchers (watchers) about order updates for published orders
+    // Notify all matchers (watchers) about order updates for published orders (excluding author)
     for (const watcherId of watcherIds) {
-      // Skip if this is the assigned performer (already notified above)
-      if (watcherId === order.performerUserId) continue;
+      // Skip if this is the author or the assigned performer
+      if (watcherId === order.performerUserId || watcherId === user.id) continue;
       
       notifyUser({
         userId: watcherId,

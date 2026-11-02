@@ -82,13 +82,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     }
 
     // Notify customer about progress
-    if (percent >= 30) {
+    if (percent > 0) {
       notifyUser({
         userId: order.customerUserId,
         type: "order.progress_updated",
         title: "Оновлення прогресу",
         message: `Виконавець повідомив про ${percent}% готовності роботи за замовленням #${order.orderNumber || orderId.substring(0,8)}`,
-        data: { orderId, orderNumber: order.orderNumber, percent },
+        data: { orderId, orderNumber: order.orderNumber, percent, role: "customer", action: "view_order" },
       }).catch(() => {});
     }
 
@@ -97,7 +97,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       type: "order.progress_updated",
       requestId,
       targets: { userIds: [order.customerUserId, user.id] },
-      data: { orderId, percent, note },
+      data: { orderId, percent, note, actorId: user.id },
     });
 
     return ok(req, { 

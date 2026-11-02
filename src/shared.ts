@@ -25,3 +25,4 @@ export * from "./services/notify";
 export * from "./services/ratings.service";
 export * from "./services/stripe.service";
 export * from "./lib/orderNumber";
+export * from "./lib/validators";

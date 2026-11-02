@@ -10,7 +10,7 @@ import { notifyUser } from "@/shared";
 import { nextOrderNumber } from "@/shared";
 import { validateSpecs, isValidServiceId } from "@/../services-tree";
 import { Prisma } from "@prisma/client";
-import { safeDepositAmount, ESCROW_OPEN_STATUSES } from "@/shared";
+import { safeDepositAmount, ESCROW_OPEN_STATUSES, isWithinUkraine } from "@/shared";
 
 const postSchema = z.object({
   serviceCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
@@ -38,6 +38,8 @@ const postSchema = z.object({
       addressLabel: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
       regionName: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)).optional(),
       settlementName: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1).max(120)).nullable().optional(),
+    }).refine((loc) => isWithinUkraine(loc.lat, loc.lng), {
+      message: "Розміщення замовлень дозволено лише в межах України",
     })
   ),
   comment: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().max(5000)).optional(),
@@ -451,7 +453,7 @@ export async function POST(req: Request) {
       type: "order.created",
       requestId,
       targets: { userIds: [user.id] },
-      data: { orderId: order.id, status: order.status },
+      data: { orderId: order.id, status: order.status, actorId: user.id, customerId: user.id },
     });
 
 
