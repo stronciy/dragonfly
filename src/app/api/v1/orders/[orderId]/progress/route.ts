@@ -131,7 +131,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       type: "order.progress_updated",
       requestId,
       targets: { userIds: [order.customerUserId, user.id] },
-      data: { orderId, percent, note, actorId: user.id },
+      data: {
+        orderId,
+        percent,
+        note,
+        actorId: user.id,
+        title: "Оновлення прогресу",
+        message: `Виконавець повідомив про ${percent}% готовності роботи`,
+      },
     });
 
     return ok(req, { 

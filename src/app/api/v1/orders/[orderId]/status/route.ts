@@ -65,59 +65,46 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
     });
 
     // Відправляємо Push та In-App сповіщення замовнику через notifyUser
+    const statusTitles: Record<string, string> = {
+      en_route: "Виконавець виїхав до поля",
+      started: "Виконавець почав роботу",
+      completed: "Виконавець завершив роботу",
+    };
+    const title = statusTitles[body.status] || "Оновлення замовлення";
+    let message = "";
+    const ref = await orderRef(orderId);
     if (body.status === "en_route") {
-      await notifyUser({
-        userId: order.customerUserId,
-        type: "order",
-        title: "Виконавець виїхав до поля",
-        message: `Замовлення ${await orderRef(orderId)}. Виконавець вирушив до місця виконання робіт.`,
-        data: {
-          orderId,
-          type: "order_en_route",
-          role: "customer",
-          newStatus: "en_route",
-          action: "view_order",
-        },
-      });
+      message = `Замовлення ${ref}. Виконавець вирушив до місця виконання робіт.`;
     } else if (body.status === "started") {
-      await notifyUser({
-        userId: order.customerUserId,
-        type: "order",
-        title: "Виконавець почав роботу",
-        message: `Замовлення ${await orderRef(orderId)}. Виконавець розпочав виконання робіт.`,
-        data: {
-          orderId,
-          type: "order_started",
-          role: "customer",
-          newStatus: "started",
-          action: "view_order",
-        },
-      });
+      message = `Замовлення ${ref}. Виконавець розпочав виконання робіт.`;
     } else if (body.status === "completed") {
-      await notifyUser({
-        userId: order.customerUserId,
-        type: "order",
-        title: "Виконавець завершив роботу",
-        message: `Замовлення ${await orderRef(orderId)}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`,
-        data: {
-          orderId,
-          type: "order_completed",
-          role: "customer",
-          newStatus: "completed",
-          action: "view_order",
-        },
-      });
+      message = `Замовлення ${ref}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`;
     }
+
+    await notifyUser({
+      userId: order.customerUserId,
+      type: "order",
+      title,
+      message,
+      data: {
+        orderId,
+        type: `order_${body.status}`,
+        role: "customer",
+        newStatus: body.status,
+        action: "view_order",
+        actorId: user.id,
+      },
+    });
 
     // WebSocket для оновлення екрану
     await publishDomainEvent({
       type: "order.status_changed",
       requestId,
       targets: { userIds: [updated.customerUserId, updated.performerUserId!].filter(Boolean) as string[] },
-      data: { orderId: updated.id, fromStatus: order.status, toStatus: updated.status },
+      data: { orderId: updated.id, fromStatus: order.status, toStatus: updated.status, actorId: user.id },
     });
     
-    // Додаткове специфічне сповіщення
+    // Додаткове специфічне сповіщення для замовника
     await publishDomainEvent({
       type: statusEventType[body.status],
       requestId,
@@ -126,6 +113,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         orderId: updated.id, 
         status: updated.status,
         performerId: updated.performerUserId,
+        actorId: user.id,
+        title,
+        message,
       },
     });
 

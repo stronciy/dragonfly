@@ -191,6 +191,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         orderId, 
         performerPayout: result.performerPayout,
         performerDepositRefund: result.performerDepositRefund,
+        actorId: user.id,
       },
     });
 

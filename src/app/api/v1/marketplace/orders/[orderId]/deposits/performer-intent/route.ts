@@ -59,25 +59,25 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         type: "agreement.assigned",
         requestId,
         targets,
-        data: { orderId: order.id, performerId: user.id },
+        data: { orderId: order.id, performerId: user.id, actorId: user.id },
       });
       await publishDomainEvent({
         type: "order.status_changed",
         requestId,
         targets,
-        data: { orderId: order.id, fromStatus: "published", toStatus: "accepted" },
+        data: { orderId: order.id, fromStatus: "published", toStatus: "accepted", actorId: user.id },
       });
       await publishDomainEvent({
         type: "order.accepted",
         requestId,
         targets,
-        data: { orderId: order.id, performerId: user.id },
+        data: { orderId: order.id, performerId: user.id, actorId: user.id },
       });
       await publishDomainEvent({
         type: "order:accepted",
         requestId,
         targets,
-        data: { orderId: order.id, performerId: user.id },
+        data: { orderId: order.id, performerId: user.id, actorId: user.id },
       });
     }
 

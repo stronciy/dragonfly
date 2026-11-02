@@ -502,24 +502,26 @@ export function buildDepositPaidEvents(args: {
   customerUserId: string;
   performerUserId: string | null;
   providerStatus: string | null;
+  actorUserId?: string;
 }): DepositPaidEvent[] {
   const both = [args.customerUserId, args.performerUserId].filter((v): v is string => !!v);
   const fromStatus = args.role === "performer" ? "accepted" : "requires_confirmation";
+  const actorId = args.actorUserId ?? (args.role === "performer" ? args.performerUserId : args.customerUserId) ?? undefined;
   const events: DepositPaidEvent[] = [
     {
       type: args.role === "performer" ? "deposit.performer_paid" : "deposit.customer_paid",
       targets: { userIds: both },
-      data: { orderId: args.orderId, status: args.toStatus, providerStatus: args.providerStatus },
+      data: { orderId: args.orderId, status: args.toStatus, providerStatus: args.providerStatus, actorId },
     },
     {
       type: "escrow.changed",
       targets: { userIds: both },
-      data: { orderId: args.orderId, role: args.role, status: args.toStatus },
+      data: { orderId: args.orderId, role: args.role, status: args.toStatus, actorId },
     },
     {
       type: "order.status_changed",
       targets: { userIds: both },
-      data: { orderId: args.orderId, fromStatus, toStatus: args.toStatus },
+      data: { orderId: args.orderId, fromStatus, toStatus: args.toStatus, actorId },
     },
   ];
   if (args.role === "performer") {
@@ -527,12 +529,12 @@ export function buildDepositPaidEvents(args: {
       {
         type: "deposit.customer_required",
         targets: { userIds: [args.customerUserId] },
-        data: { orderId: args.orderId, status: args.toStatus },
+        data: { orderId: args.orderId, status: args.toStatus, actorId },
       },
       {
         type: "payment:required",
         targets: { userIds: [args.customerUserId] },
-        data: { orderId: args.orderId, status: args.toStatus },
+        data: { orderId: args.orderId, status: args.toStatus, actorId },
       }
     );
   } else {
@@ -540,12 +542,12 @@ export function buildDepositPaidEvents(args: {
       {
         type: "order.confirmed",
         targets: { userIds: both },
-        data: { orderId: args.orderId },
+        data: { orderId: args.orderId, actorId },
       },
       {
         type: "order:confirmed",
         targets: { userIds: both },
-        data: { orderId: args.orderId },
+        data: { orderId: args.orderId, actorId },
       }
     );
   }
@@ -567,6 +569,7 @@ export async function emitDepositPaidNotifications(args: {
 }) {
   const shortRef = await orderRef(args.order.id);
   const sum = `${Number(args.amount)} ${args.currency}`;
+  const actorUserId = args.role === "performer" ? args.order.performerUserId ?? undefined : args.order.customerUserId;
   for (const e of buildDepositPaidEvents({
     orderId: args.order.id,
     toStatus: args.order.status,
@@ -574,6 +577,7 @@ export async function emitDepositPaidNotifications(args: {
     customerUserId: args.order.customerUserId,
     performerUserId: args.order.performerUserId,
     providerStatus: args.providerStatus,
+    actorUserId,
   })) {
     await publishDomainEvent({ ...e, requestId: args.requestId });
   }
@@ -583,7 +587,7 @@ export async function emitDepositPaidNotifications(args: {
       type: "deposit",
       title: "Виконавець вніс гарантійну суму",
       message: `Замовлення ${shortRef}. Внесіть гарантійну суму (30% від суми замовлення) протягом ${CUSTOMER_COUNTER_DEPOSIT_DEADLINE_HOURS} годин.`,
-      data: { orderId: args.order.id, type: "deposit_customer_required", role: "customer", action: "pay_deposit" },
+      data: { orderId: args.order.id, type: "deposit_customer_required", role: "customer", action: "pay_deposit", actorId: actorUserId },
     });
     if (args.order.performerUserId) {
       await notifyUser({
@@ -591,7 +595,7 @@ export async function emitDepositPaidNotifications(args: {
         type: "deposit",
         title: "Гарантійну суму внесено",
         message: `Замовлення ${shortRef}. Ви внесли гарантійну суму — ${sum}. Очікуємо внесення замовником його гарантійної суми.`,
-        data: { orderId: args.order.id, type: "deposit_performer_paid", role: "performer", action: "view_order" },
+        data: { orderId: args.order.id, type: "deposit_performer_paid", role: "performer", action: "view_order", actorId: actorUserId },
       });
     }
   } else {
@@ -599,17 +603,17 @@ export async function emitDepositPaidNotifications(args: {
       await notifyUser({
         userId: args.order.performerUserId,
         type: "deposit",
-        title: "Замовник вніс гарантійну суму",
-        message: `Замовлення ${shortRef} підтверджено. Замовник вніс гарантійну суму. Можна починати роботу.`,
-        data: { orderId: args.order.id, type: "order_confirmed", role: "performer", action: "view_order" },
+        title: "Замовлення прийнято",
+        message: `Замовлення ${shortRef} прийнято. Обидві застави внесені, можна розпочинати роботу.`,
+        data: { orderId: args.order.id, type: "order_confirmed", role: "performer", action: "view_order", actorId: actorUserId },
       });
     }
     await notifyUser({
       userId: args.order.customerUserId,
       type: "deposit",
-      title: "Гарантійну суму внесено",
-      message: `Замовлення ${shortRef} підтверджено. Ви внесли гарантійну суму — ${sum}.`,
-      data: { orderId: args.order.id, type: "order_confirmed", role: "customer", action: "view_order" },
+      title: "Замовлення прийнято",
+      message: `Замовлення ${shortRef} прийнято. Обидві застави внесені, виконавець розпочинає роботу.`,
+      data: { orderId: args.order.id, type: "order_confirmed", role: "customer", action: "view_order", actorId: actorUserId },
     });
   }
   process.stdout.write(

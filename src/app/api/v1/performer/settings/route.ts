@@ -32,7 +32,7 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
 
-    const profile = await prisma.performerProfile.findUnique({
+    let profile = await prisma.performerProfile.findUnique({
       where: { userId: user.id },
       select: {
         baseLocationLabel: true,
@@ -42,6 +42,29 @@ export async function GET(req: Request) {
         coverageRadiusKm: true,
       },
     });
+
+    if (!profile) {
+      profile = await prisma.performerProfile.create({
+        data: {
+          userId: user.id,
+          baseLocationLabel: "",
+          baseLatitude: 0,
+          baseLongitude: 0,
+          coverageMode: "radius",
+          coverageRadiusKm: 50,
+          vatPayer: false,
+          avgRating: 0,
+          reviewCount: 0,
+        },
+        select: {
+          baseLocationLabel: true,
+          baseLatitude: true,
+          baseLongitude: true,
+          coverageMode: true,
+          coverageRadiusKm: true,
+        },
+      });
+    }
 
     const services = await prisma.performerService.findMany({
       where: { performerUserId: user.id },
@@ -60,16 +83,17 @@ export async function GET(req: Request) {
       }
     }
 
+    const coverageMode = profile.coverageMode || "radius";
+    const coverageRadiusKm = coverageMode === "country" ? null : (profile.coverageRadiusKm ?? 50);
+
     return ok(req, {
-      settings: profile
-        ? {
-            baseLocationLabel: profile.baseLocationLabel,
-            baseCoordinate: { lat: profile.baseLatitude, lng: profile.baseLongitude },
-            coverage: { mode: profile.coverageMode, radiusKm: profile.coverageRadiusKm },
-            services: services.map((s) => s.serviceId),
-            serviceSpecs,
-          }
-        : null,
+      settings: {
+        baseLocationLabel: profile.baseLocationLabel || "",
+        baseCoordinate: { lat: profile.baseLatitude, lng: profile.baseLongitude },
+        coverage: { mode: coverageMode, radiusKm: coverageRadiusKm },
+        services: services.map((s) => s.serviceId),
+        serviceSpecs,
+      },
     });
   } catch (err) {
     return fail(req, err);
