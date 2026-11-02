@@ -11,6 +11,7 @@ import {
   ORDER_DETAIL_GEO_REVEALED_STATUSES,
   buildOrderDetailPayload,
   resolveOrderDetailViewerRole,
+  isWithinUkraine,
 } from "@/shared";
 
 const patchSchema = z
@@ -37,6 +38,8 @@ const patchSchema = z
           addressLabel: z.string().min(1),
           regionName: z.string().min(1).optional(),
           settlementName: z.string().trim().min(1).max(120).nullable().optional(),
+        }).refine((loc) => isWithinUkraine(loc.lat, loc.lng), {
+          message: "Розміщення замовлень дозволено лише в межах України",
         })
       )
       .optional(),
@@ -167,6 +170,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
     const body = patchSchema.parse(await req.json());
     const nextStatus = body.status ?? order.status;
     const changedFields = Object.keys(body);
+
+    if (nextStatus === "published") {
+      const lat = body.location?.lat ?? (order.lat != null ? Number(order.lat) : null);
+      const lng = body.location?.lng ?? (order.lng != null ? Number(order.lng) : null);
+      if (lat == null || lng == null || !isWithinUkraine(lat, lng)) {
+        throw new ApiError(400, "VALIDATION_ERROR", "Публікація замовлень дозволена лише в межах України");
+      }
+    }
 
     const updated = await prisma.$transaction(async (tx) => {
       const u = await tx.order.update({

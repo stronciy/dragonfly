@@ -210,6 +210,10 @@ export async function POST(req: Request) {
     const body = postSchema.parse(rawBody);
     const status = body.status ?? "published";
 
+    if (!isWithinUkraine(body.location.lat, body.location.lng)) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Публікація замовлень дозволена лише в межах України");
+    }
+
     if (process.env.NODE_ENV !== "production") {
       console.info(`[api] POST /api/v1/orders requestId=${requestId} userId=${user.id} payload`, {
         serviceCategoryId: body.serviceCategoryId,
