@@ -168,6 +168,8 @@ export function buildOrderDetailPayload(args: {
   timeline: OrderDetailTimelineItem[];
   confirmationReview: OrderDetailReviewInput | null;
   counterpartyContact?: OrderDetailCounterpartyContact | null;
+  part2Paid?: boolean;
+  hasPaymentRequest?: boolean;
 }) {
   const { order, viewerRole } = args;
   const masked = isOrderDetailGeoMasked(order.status, viewerRole);
@@ -176,6 +178,16 @@ export function buildOrderDetailPayload(args: {
     lock: args.lock,
     intents: args.intents,
   });
+
+  const isPart2Paid =
+    args.part2Paid !== undefined
+      ? args.part2Paid
+      : args.intents.some((i) => i.part === 2 && i.status === "paid");
+
+  const hasPaymentReq =
+    args.hasPaymentRequest !== undefined
+      ? args.hasPaymentRequest
+      : !!order.customerPart2Deadline;
 
   const payload: Record<string, unknown> = {
     id: order.id,
@@ -193,13 +205,14 @@ export function buildOrderDetailPayload(args: {
     depositDeadline: order.depositDeadline,
     depositAmount: Number(safeDepositAmount(order.budget)),
     customerPart2Deadline: order.customerPart2Deadline ?? null,
+    hasPaymentRequest: hasPaymentReq,
     part2Amount: Math.round(Number(order.budget) * 0.7),
-    part2Paid: args.intents.some((i) => i.part === 2 && i.status === "paid"),
+    part2Paid: isPart2Paid,
     canPayPart2:
       viewerRole === "customer" &&
       order.status === "started" &&
       !!order.customerPart2Deadline &&
-      !args.intents.some((i) => i.part === 2 && i.status === "paid"),
+      !isPart2Paid,
     ...escrow,
     performerUserId: order.performerUserId,
     comment: order.comment,

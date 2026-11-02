@@ -134,10 +134,23 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
 
     const ownLock = viewerRole === "customer" ? customerLock : performerLock;
 
-    const ownIntents = await prisma.paymentIntent.findMany({
-      where: { orderId, role: viewerRole },
-      select: { part: true, status: true },
-    });
+    const [ownIntents, part2PaidIntent, pendingPaymentRequest] = await Promise.all([
+      prisma.paymentIntent.findMany({
+        where: { orderId, role: viewerRole },
+        select: { part: true, status: true },
+      }),
+      prisma.paymentIntent.findFirst({
+        where: { orderId, part: 2, status: "paid" },
+        select: { id: true },
+      }),
+      prisma.paymentRequest.findFirst({
+        where: { orderId, status: "pending" },
+        select: { id: true },
+      }),
+    ]);
+
+    const isPart2Paid = !!part2PaidIntent;
+    const hasPendingPaymentRequest = !!pendingPaymentRequest || !!order.customerPart2Deadline;
 
     const confirmationReview = await prisma.review.findFirst({
       where: { orderId, authorUserId: order.customerUserId },
@@ -154,6 +167,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
         timeline,
         confirmationReview,
         counterpartyContact,
+        part2Paid: isPart2Paid,
+        hasPaymentRequest: hasPendingPaymentRequest,
       }),
     });
   } catch (err) {

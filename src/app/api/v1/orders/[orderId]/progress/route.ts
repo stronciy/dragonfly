@@ -53,21 +53,31 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       },
     });
 
-    const unlinkedMedia = await prisma.orderMedia.findMany({
-      where: { orderId, kind: { in: ["progress", "report"] }, progressId: null },
+    const allOrderMedia = await prisma.orderMedia.findMany({
+      where: { orderId, kind: { in: ["progress", "report"] } },
       orderBy: { createdAt: "asc" },
-      select: { id: true, url: true },
+      select: { id: true, url: true, progressId: true },
     });
 
-    const progressList = [...progress];
-    if (unlinkedMedia.length > 0) {
+    const progressList = progress.map((p) => ({
+      ...p,
+      media: [...p.media],
+    }));
+
+    const existingIds = new Set<string>();
+    for (const p of progressList) {
+      for (const m of p.media) {
+        existingIds.add(m.id);
+      }
+    }
+
+    const missingMedia = allOrderMedia.filter((m) => !existingIds.has(m.id));
+    if (missingMedia.length > 0) {
       if (progressList.length > 0) {
         const last = progressList[progressList.length - 1];
-        const existingIds = new Set(last.media.map((m) => m.id));
-        for (const m of unlinkedMedia) {
-          if (!existingIds.has(m.id)) {
-            last.media.push(m);
-          }
+        for (const m of missingMedia) {
+          const target = m.progressId ? progressList.find((p) => p.id === m.progressId) || last : last;
+          target.media.push({ id: m.id, url: m.url });
         }
       } else {
         progressList.push({
@@ -77,7 +87,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
           percent: 0,
           comment: "Фотозвіт робіт",
           createdAt: new Date(),
-          media: unlinkedMedia,
+          media: missingMedia.map((m) => ({ id: m.id, url: m.url })),
         });
       }
     }
@@ -152,6 +162,23 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       throw new ApiError(400, "VALIDATION_ERROR", "Роботу ще не розпочато");
     }
 
+    // Check previous maximum progress: progress cannot decrease
+    const previousMax = await prisma.workProgressUpdate.findFirst({
+      where: { orderId, percent: { not: null } },
+      orderBy: { percent: "desc" },
+      select: { percent: true },
+    });
+
+    if (previousMax?.percent != null && percent < previousMax.percent) {
+      throw new ApiError(
+        400,
+        "VALIDATION_ERROR",
+        `Відсоток виконання не може бути меншим за раніше зафіксований (${previousMax.percent}%)`
+      );
+    }
+
+    const firstTime30 = percent >= 30 && (!previousMax || previousMax.percent === null || previousMax.percent < 30);
+
     // Create progress update with media
     const createdProgress = await prisma.workProgressUpdate.create({
       data: {
@@ -182,22 +209,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       },
     });
 
-    // Check if this is the first time reaching 30%
-    const previousUpdates = await prisma.workProgressUpdate.count({
-      where: { orderId, percent: { lt: 30 } },
-    });
-
     const hasReached30 = percent >= 30;
-    const wasBelow30 = previousUpdates > 0 || percent === 30;
-    
-    // Get previous max progress
-    const previousMax = await prisma.workProgressUpdate.findFirst({
-      where: { orderId },
-      orderBy: { percent: "desc" },
-      select: { percent: true },
-    });
-
-    const firstTime30 = hasReached30 && (!previousMax || previousMax.percent === null || previousMax.percent < 30);
 
     // Notify performer that they can request payment if first time 30%
     if (firstTime30) {

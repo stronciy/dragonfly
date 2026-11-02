@@ -35,6 +35,17 @@ export async function GET(req: Request) {
         customerUserId: true,
         acceptedAt: true,
         depositDeadline: true,
+        customerPart2Deadline: true,
+        paymentRequests: {
+          where: { requestedBy: user.id, status: "pending" },
+          select: { id: true, requestedAmount: true, createdAt: true, status: true },
+          take: 1,
+        },
+        paymentIntents: {
+          where: { part: 2, status: "paid" },
+          select: { id: true },
+          take: 1,
+        },
         createdAt: true,
         updatedAt: true,
       },
@@ -68,6 +79,9 @@ export async function GET(req: Request) {
       currency: order.currency,
       acceptedAt: order.acceptedAt,
       depositDeadline: order.depositDeadline,
+      customerPart2Deadline: order.customerPart2Deadline,
+      hasPaymentRequest: (order.paymentRequests?.length ?? 0) > 0 || !!order.customerPart2Deadline,
+      part2Paid: (order.paymentIntents?.length ?? 0) > 0,
       customer: customerMap.get(order.customerUserId) 
         ? { 
             id: customerMap.get(order.customerUserId)!.id, 
