@@ -124,7 +124,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       `[api] GET /api/v1/orders/${orderId}/progress requestId=${requestId} userId=${user.id} role=${user.role} updates=${progressList.length} photos=${photoCount} durationMs=${Date.now() - startedAt}`
     );
 
-    return ok(req, { progress: progressList });
+    return ok(req, {
+      progress: progressList,
+      /** New clients can skip the /report fallback when this is true. */
+      supportsLinkedPhotos: true,
+    });
   } catch (err) {
     return fail(req, err);
   }
@@ -291,6 +295,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     return ok(req, { 
       progress: percent,
       canRequestPayment: hasReached30 && !order.customerPart2Deadline,
+      /** How many photos were actually linked to this progress update. */
+      savedPhotos: createdProgress.media.length,
+      photoCount: createdProgress.media.length,
+      update: {
+        id: createdProgress.id,
+        percent: createdProgress.percent,
+        comment: createdProgress.comment,
+        createdAt: createdProgress.createdAt,
+      },
       message: hasReached30 ? "Досягнуто 30%! Ви можете запросити оплату оставшейся суми" : "Прогрес оновлено" 
     });
 

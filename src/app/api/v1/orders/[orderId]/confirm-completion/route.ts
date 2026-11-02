@@ -42,6 +42,24 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.customerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     if (order.status !== "completed") throw new ApiError(409, "CONFLICT", "Роботу ще не завершено");
+
+    // Safety net for orders completed before auto-100% was introduced: the
+    // customer must always see a 100% entry in the report history.
+    const latestProgress = await prisma.workProgressUpdate.findFirst({
+      where: { orderId, percent: { not: null } },
+      orderBy: { percent: "desc" },
+      select: { percent: true },
+    });
+    if (latestProgress?.percent == null || latestProgress.percent < 100) {
+      await prisma.workProgressUpdate.create({
+        data: {
+          orderId,
+          authorId: order.performerUserId ?? user.id,
+          percent: 100,
+          comment: "Роботи завершено. Прогрес автоматично встановлено на 100%.",
+        },
+      });
+    }
     
     // Перевірка чи вже не було підтвердження завершення
     // Перевіряємо чи вже є review від цього замовника

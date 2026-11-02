@@ -47,7 +47,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       }
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const { order: updated, completedProgress } = await prisma.$transaction(async (tx) => {
       const u = await tx.order.update({
         where: { id: orderId },
         data: {
@@ -58,10 +58,31 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       await tx.orderStatusEvent.create({
         data: { orderId, status: body.status, note: null },
       });
+
+      let completedProgress: { id: string; comment: string | null } | null = null;
       if (body.status === "completed") {
         await tx.orderMatch.deleteMany({ where: { orderId } });
+
+        // Finishing the work always means 100% progress. Create an explicit
+        // history entry for both sides, unless 100% was already recorded.
+        const latest = await tx.workProgressUpdate.findFirst({
+          where: { orderId, percent: { not: null } },
+          orderBy: { percent: "desc" },
+          select: { percent: true },
+        });
+        if (latest?.percent == null || latest.percent < 100) {
+          completedProgress = await tx.workProgressUpdate.create({
+            data: {
+              orderId,
+              authorId: order.performerUserId ?? user.id,
+              percent: 100,
+              comment: "Роботи завершено. Прогрес автоматично встановлено на 100%.",
+            },
+            select: { id: true, comment: true },
+          });
+        }
       }
-      return u;
+      return { order: u, completedProgress };
     });
 
     // Відправляємо Push та In-App сповіщення замовнику через notifyUser
@@ -119,7 +140,38 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       },
     });
 
-    return ok(req, { order: { id: updated.id, status: updated.status } }, { message: "Статус оновлено" });
+    if (completedProgress) {
+      console.info(
+        `[api] PATCH /api/v1/orders/${orderId}/status auto-progress-100 requestId=${requestId} orderId=${orderId} progressId=${completedProgress.id} performerUserId=${updated.performerUserId}`
+      );
+      // Notify both clients so the new 100% history entry appears immediately.
+      await publishDomainEvent({
+        type: "order.progress_updated",
+        requestId,
+        targets: {
+          userIds: [updated.customerUserId, updated.performerUserId!].filter(Boolean) as string[],
+        },
+        data: {
+          orderId: updated.id,
+          percent: 100,
+          note: completedProgress.comment,
+          actorId: user.id,
+          title: "Роботи завершено",
+          message: "Прогрес автоматично оновлено до 100%",
+        },
+      });
+    }
+
+    return ok(
+      req,
+      {
+        order: { id: updated.id, status: updated.status },
+        completedProgress: completedProgress
+          ? { id: completedProgress.id, percent: 100, comment: completedProgress.comment }
+          : null,
+      },
+      { message: "Статус оновлено" }
+    );
   } catch (err) {
     if (err instanceof z.ZodError) {
       return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));

@@ -66,6 +66,24 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         },
       });
 
+      // Completion always means 100% progress. Add the history entry both
+      // sides render in "Хід виконання робіт" / "Історія звітів".
+      const latestProgress = await tx.workProgressUpdate.findFirst({
+        where: { orderId, percent: { not: null } },
+        orderBy: { percent: "desc" },
+        select: { percent: true },
+      });
+      if (latestProgress?.percent == null || latestProgress.percent < 100) {
+        await tx.workProgressUpdate.create({
+          data: {
+            orderId,
+            authorId: order.performerUserId ?? user.id,
+            percent: 100,
+            comment: "Роботи завершено. Прогрес автоматично встановлено на 100%.",
+          },
+        });
+      }
+
       // 2. Get or create wallets
       const [performerWallet, customerWallet] = await Promise.all([
         tx.wallet.upsert({
@@ -192,6 +210,20 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         performerPayout: result.performerPayout,
         performerDepositRefund: result.performerDepositRefund,
         actorId: user.id,
+      },
+    });
+
+    await publishDomainEvent({
+      type: "order.progress_updated",
+      requestId,
+      targets: { userIds: [order.customerUserId, order.performerUserId!] },
+      data: {
+        orderId,
+        percent: 100,
+        note: "Роботи завершено. Прогрес автоматично встановлено на 100%.",
+        actorId: user.id,
+        title: "Роботи завершено",
+        message: "Прогрес автоматично оновлено до 100%",
       },
     });
 
