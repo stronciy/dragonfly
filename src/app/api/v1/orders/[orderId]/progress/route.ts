@@ -11,6 +11,40 @@ const progressSchema = z.object({
   note: z.string().max(500).optional(),
 });
 
+export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
+  try {
+    const user = await requireUser(req);
+    const { orderId } = await ctx.params;
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { customerUserId: true, performerUserId: true },
+    });
+
+    if (!order) {
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+    }
+
+    if (order.customerUserId !== user.id && order.performerUserId !== user.id && user.role !== "admin") {
+      throw new ApiError(403, "FORBIDDEN", "Немає доступу до цього замовлення");
+    }
+
+    const progress = await prisma.workProgressUpdate.findMany({
+      where: { orderId },
+      orderBy: { createdAt: "asc" },
+      include: {
+        media: {
+          select: { id: true, url: true },
+        },
+      },
+    });
+
+    return ok(req, { progress });
+  } catch (err) {
+    return fail(req, err);
+  }
+}
+
 export async function POST(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
     const requestId = getRequestId(req);

@@ -361,25 +361,34 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ orderId: str
       await publishDomainEvent({
         type: "marketplace.match_removed",
         requestId,
-        targets: { userIds: matchedPerformers.map((m) => m.performerUserId) },
+        targets: { userIds: matchedPerformers.map((m) => m.performerUserId).filter((id) => id !== user.id) },
         data: { orderId },
       });
     }
 
-    await publishDomainEvent({
-      type: "order.deleted",
-      requestId,
-      targets: {
-        userIds: [
-          ...new Set([
-            user.id,
-            ...(order.performerUserId ? [order.performerUserId] : []),
-            ...matchedPerformers.map((m) => m.performerUserId),
-          ]),
-        ],
-      },
-      data: { orderId },
-    });
+    // Сповіщаємо контрагентів (виконавця та матчерів), але НЕ самого користувача, який видалив замовлення
+    const counterpartyIds = [
+      ...new Set([
+        ...(order.performerUserId && order.performerUserId !== user.id ? [order.performerUserId] : []),
+        ...matchedPerformers.map((m) => m.performerUserId).filter((id) => id !== user.id),
+      ]),
+    ];
+
+    if (counterpartyIds.length > 0) {
+      await publishDomainEvent({
+        type: "order.deleted",
+        requestId,
+        targets: {
+          userIds: counterpartyIds,
+        },
+        data: {
+          orderId,
+          actorId: user.id,
+          customerId: order.customerUserId,
+          performerId: order.performerUserId,
+        },
+      });
+    }
 
     return ok(req, { deleted: true, orderId }, { status: 200, message: "Видалено" });
   } catch (err) {

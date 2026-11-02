@@ -112,7 +112,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       type: "order.status_changed",
       requestId,
       targets: { userIds: [order.customerUserId, ...(order.performerUserId ? [order.performerUserId] : [])] },
-      data: { orderId, fromStatus: order.status, toStatus: "cancelled" },
+      data: {
+        orderId,
+        fromStatus: order.status,
+        toStatus: "cancelled",
+        actorId: user.id,
+        customerId: order.customerUserId,
+        performerId: order.performerUserId,
+      },
     });
 
     console.log(
