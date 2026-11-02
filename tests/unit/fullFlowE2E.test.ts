@@ -184,14 +184,14 @@ function createInMemoryStore() {
         let lock = escrowLocks.get(key);
         if (lock) {
           Object.assign(lock, update);
-        } else {
-          lock = {
-            id: `lock-${Math.random().toString(36).substring(2, 8)}`,
-            ...create,
-          };
-          escrowLocks.set(key, lock);
+          return { ...lock };
         }
-        return { ...lock };
+        const newLock: InMemoryLock = {
+          id: `lock-${Math.random().toString(36).substring(2, 8)}`,
+          ...create,
+        };
+        escrowLocks.set(key, newLock);
+        return { ...newLock };
       },
       findMany: async ({ where }: any) => {
         return [...escrowLocks.values()].filter(
@@ -586,7 +586,7 @@ test("Full Happy Path Flow: Register → Profile → Order → Accept → Both D
 
   // Performer wallet receives payment (budget 100000 - fee 8500 = 91500)
   const performerPayout = budget.toNumber() - customerFee;
-  await store.tx.wallet.upsert({
+  await (store.tx.wallet.upsert as any)({
     where: { userId: performerUser.id },
     create: { balance: performerPayout },
   });
