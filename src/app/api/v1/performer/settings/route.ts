@@ -30,7 +30,6 @@ const putSchema = z.object({
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
 
     let profile = await prisma.performerProfile.findUnique({
       where: { userId: user.id },
@@ -103,7 +102,6 @@ export async function GET(req: Request) {
 export async function PUT(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
 
     const body = putSchema.parse(await req.json());
 
@@ -250,7 +248,7 @@ export async function PUT(req: Request) {
       }
     });
 
-    if (hasServices || hasCoverage || hasBaseCoordinate) {
+    if ((hasServices || hasCoverage || hasBaseCoordinate) && user.role === "performer") {
       await enqueueMatchNewExecutor(user.id);
     }
 
