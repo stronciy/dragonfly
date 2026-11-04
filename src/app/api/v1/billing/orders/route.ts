@@ -68,7 +68,7 @@ export async function GET(req: Request) {
             paymentRequests: {
               orderBy: { createdAt: "desc" },
               take: 1,
-              select: { id: true, amount: true, status: true },
+              select: { id: true, requestedAmount: true, status: true },
             },
           },
         }),
