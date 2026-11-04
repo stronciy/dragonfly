@@ -42,6 +42,8 @@ npm test                  # = tsx --test tests/unit/*.test.ts (з source, без
 | `NODE_ENV` | optional | `production` вмикає secure cookies, вимикає verbose logging |
 | `HEALTHCHECK_TOKEN` | optional | Якщо встановлено — `GET /api/v1/health?detailed=1` вимагає header `x-health-token` |
 | `PUSH_SKIP_IF_ONLINE` | optional | `true` — не надсилати Expo Push, якщо користувач зараз онлайн через WebSocket |
+| `BACKUP_DIR` | optional | Тека для дампів `pg_dump` перед скиданням даних з адмінки. Default `/app/backups`. У CapRover підключи persistent directory, інакше дампи зникають при редеплої. |
+| `BACKUP_KEEP` | optional | Скільки останніх дампів зберігати (default `5`), старші видаляються. |
 
 ## Architecture
 

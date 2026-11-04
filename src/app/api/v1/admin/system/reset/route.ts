@@ -9,9 +9,10 @@ import {
   buildResetTruncateSql,
   selectResetTables,
 } from "@/lib/adminDataReset";
+import { createDatabaseBackup } from "@/lib/dbBackup";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const RESET_CONFIRMATION = "RESET ALL DATA";
 
@@ -42,6 +43,11 @@ export async function POST(req: Request) {
     }
 
     const reason = body.reason || "Повний скид даних через адмін-панель";
+
+    // Dump the database before anything destructive happens. If pg_dump fails
+    // the reset is aborted: a wipe without a fallback copy is not worth one
+    // click. The dump is written inside the backend container.
+    const backup = await createDatabaseBackup();
 
     // Collect table names and counts before the destructive transaction. These
     // are read-only queries and can be slow on a seeded database; keeping them
@@ -117,6 +123,7 @@ export async function POST(req: Request) {
             resetAt,
             truncatedTables: tables.length,
             preservedTables: [...RESET_PRESERVED_TABLES],
+            backup,
             queuesBeforeCleared: queuesBefore.cleared,
             queueErrors: queuesBefore.errors,
           },
@@ -127,6 +134,7 @@ export async function POST(req: Request) {
           deleted,
           truncatedTables: tables.length,
           preservedTables: [...RESET_PRESERVED_TABLES],
+          backup,
         };
       },
       // TRUNCATE ... CASCADE can wait for locks; the default 5s is too short
@@ -150,6 +158,7 @@ export async function POST(req: Request) {
         durationMs: Date.now() - startedAt,
         truncatedTables: tables.length,
         deleted,
+        backup,
         queuesBefore: queuesBefore.cleared,
         queuesAfter: queuesAfter.cleared,
         queueErrors: [...queuesBefore.errors, ...queuesAfter.errors],
