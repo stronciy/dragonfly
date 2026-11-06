@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { requireUser } from "@/lib/auth/requireAuth";
-import { ApiError } from "@/shared";
+import { ApiError, prisma } from "@/shared";
 
 export const runtime = "nodejs";
 
@@ -33,6 +33,28 @@ export async function POST(req: Request) {
     const user = await requireUser(req);
     const body = reportSchema.parse(await req.json());
     const reportId = crypto.randomUUID();
+    const device = body.device ?? {};
+    const str = (value: unknown, max = 120) =>
+      typeof value === "string" && value.length > 0 ? value.slice(0, max) : null;
+
+    await prisma.clientDiagnosticReport.create({
+      data: {
+        reportId,
+        userId: user.id,
+        userRole: user.role,
+        userName: str(user.name),
+        userPhone: str(user.phone, 40),
+        appVersion: str(device.appVersion, 40),
+        buildNumber: str(device.buildNumber, 40),
+        platform: str(device.platform, 20),
+        osVersion: str(device.osVersion, 40),
+        deviceModel: str(device.model, 80),
+        isDevice: typeof device.isDevice === "boolean" ? device.isDevice : null,
+        capturedAt: Number.isNaN(Date.parse(body.capturedAt)) ? new Date() : new Date(body.capturedAt),
+        entryCount: body.entries.length,
+        entries: body.entries,
+      },
+    });
 
     log({
       msg: "client_diagnostics_report",

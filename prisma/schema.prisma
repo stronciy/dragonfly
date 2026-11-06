@@ -134,6 +134,32 @@ model AdminAuditLog {
   @@map("admin_audit_logs")
 }
 
+/// Журнал застосунку, який користувач надіслав кнопкою «Надіслати логи» (Налаштування).
+/// Імена й телефон — знімок на момент відправки, щоб звіт читався без JOIN.
+model ClientDiagnosticReport {
+  id          String   @id @default(cuid())
+  reportId    String   @unique @map("report_id")
+  userId      String   @map("user_id")
+  userRole    String?  @map("user_role")
+  userName    String?  @map("user_name")
+  userPhone   String?  @map("user_phone")
+  appVersion  String?  @map("app_version")
+  buildNumber String?  @map("build_number")
+  platform    String?
+  osVersion   String?  @map("os_version")
+  deviceModel String?  @map("device_model")
+  isDevice    Boolean? @map("is_device")
+  capturedAt  DateTime @map("captured_at")
+  entryCount  Int      @map("entry_count")
+  /// Масив записів журналу: {t, kind, msg, data}. Дані вже відредаговані на застосунку.
+  entries     Json
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("client_diagnostic_reports")
+}
+
 model RefreshToken {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
