@@ -52,6 +52,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     }
 
     const intent = await prisma.$transaction(async (tx) => {
+      const paid = await tx.paymentIntent.findFirst({
+        where: { orderId, role: "customer", part: targetPart, status: "paid" },
+        select: { id: true },
+      });
+      if (paid) {
+        throw new ApiError(
+          409,
+          "CONFLICT",
+          isPart2 ? "Залишок 70% вже сплачено" : "Гарантійну суму вже сплачено"
+        );
+      }
       const pending = await findPendingIntent(tx, { orderId, role: "customer", part: targetPart });
       if (pending) return ensureIntentServerUrl(tx, pending, req);
       const intentId = crypto.randomUUID();

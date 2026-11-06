@@ -250,6 +250,33 @@ export async function confirmDeposit(
   const order = await tx.order.findUnique({ where: { id: intent.orderId } });
   if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
+  // Той самий платіж (role+part) по замовленню вже зараховано — цей інтент
+  // оплачено повторно. Не чіпаємо escrow і статус замовлення, а фіксуємо
+  // платіж як "duplicate" для ручного повернення коштів (LiqPay кабінет).
+  const alreadyPaid = await tx.paymentIntent.findFirst({
+    where: { orderId: intent.orderId, role: intent.role, part: intent.part, status: "paid" },
+    select: { id: true },
+  });
+  if (alreadyPaid) {
+    const duplicateIntent = await tx.paymentIntent.update({
+      where: { id: intent.id },
+      data: {
+        status: "duplicate",
+        paidAt: new Date(),
+        data: args.data,
+        signature: args.signature,
+        providerRaw: {
+          action: decoded.action ?? null,
+          status: providerStatus,
+          payment_id: decoded.payment_id ?? null,
+          amount: decoded.amount ?? null,
+          duplicateOf: alreadyPaid.id,
+        } as unknown as Prisma.InputJsonValue,
+      },
+    });
+    return { order, intent: duplicateIntent, duplicate: true as const };
+  }
+
   if (intent.part === 2) {
     const now = new Date();
     await tx.order.update({
