@@ -3,14 +3,14 @@ import { ApiError } from "@/shared";
 function isUploadFile(v: unknown): v is File {
   return (
     v instanceof File ||
-    (typeof v === "object" && v !== null && typeof (v as any).arrayBuffer === "function")
+    (typeof v === "object" && v !== null && typeof (v as { arrayBuffer?: unknown }).arrayBuffer === "function")
   );
 }
 
 export async function readFormFileAsDataUrl(formData: FormData, fieldName: string) {
   const value = formData.get(fieldName);
   if (!isUploadFile(value)) throw new ApiError(400, "VALIDATION_ERROR", `${fieldName}: файл обов'язковий`);
-  return fileToDataUrl(value, fieldName);
+  return fileToDataUrl(value);
 }
 
 export async function readFormFilesAsDataUrl(formData: FormData, fieldName: string, maxCount: number) {
@@ -24,12 +24,12 @@ export async function readFormFilesAsDataUrl(formData: FormData, fieldName: stri
   }
   const out = [];
   for (const value of values) {
-    out.push(await fileToDataUrl(value, fieldName));
+    out.push(await fileToDataUrl(value));
   }
   return out;
 }
 
-async function fileToDataUrl(value: File, fieldName: string) {
+async function fileToDataUrl(value: File) {
   const buf = Buffer.from(await value.arrayBuffer());
   if (buf.byteLength === 0) throw new ApiError(400, "VALIDATION_ERROR", "Порожній файл");
   if (buf.byteLength > 10 * 1024 * 1024) throw new ApiError(400, "VALIDATION_ERROR", "Файл завеликий");
@@ -42,6 +42,6 @@ async function fileToDataUrl(value: File, fieldName: string) {
     dataUrl,
     mimeType,
     size: buf.byteLength,
-    name: (value as any).name || `photo-${Date.now()}.jpg`,
+    name: value.name || `photo-${Date.now()}.jpg`,
   };
 }

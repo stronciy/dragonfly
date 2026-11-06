@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { ok, fail } from "@/lib/apiResponse";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
@@ -17,7 +18,7 @@ export async function GET(req: Request) {
         ? { performerUserId: user.id }
         : { customerUserId: user.id };
 
-    let statusFilter: any;
+    let statusFilter: Prisma.OrderWhereInput["status"];
     if (type === "in_progress") {
       statusFilter = {
         in: ["accepted", "requires_confirmation", "confirmed", "started", "arbitration"],
