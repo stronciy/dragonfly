@@ -248,7 +248,7 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
           status === "in_escrow"
             ? "Застава зберігається на рахунку компанії-гаранта. Повернеться після завершення роботи або буде утримана за порушення."
             : status === "returned"
-              ? "Застава повернена на баланс після завершення роботи."
+              ? "Застава розблокована на вашій картці після завершення роботи. На баланс не зараховується."
               : "Застава утримана за рішенням арбітражу або через відмову від заказу — залишається у компанії як штраф.",
       });
     }
@@ -304,13 +304,13 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
           id: `deposit-return:${lock.id}`,
           occurredAt,
           kind: "performer_deposit_return",
-          direction: "in",
+          direction: "none",
           amount,
           currency: "UAH",
           status: "returned",
           ...meta,
-          title: "Повернення застави",
-          reason: "Заказ завершено без порушень: гарантійна сума повернута на баланс.",
+          title: "Розблокування застави",
+          reason: "Заказ завершено без порушень: гарантійна сума розблокована на вашій картці. Вона не зараховується на баланс.",
         });
       }
     }
@@ -372,12 +372,13 @@ export function summarizeLedger(role: LedgerRole, entries: LedgerEntry[]): Ledge
     };
   }
 
+  // Застава не є грошима виконавця на балансі: вона лише блокується на картці
+  // і після роботи розблоковується там, тож у доступний баланс не входить.
   const earned = sum((e) => e.kind === "order_payout" && e.status === "completed");
-  const returned = sum((e) => e.kind === "performer_deposit_return");
   const withdrawn = sum((e) => e.kind === "withdrawal" && e.status === "paid");
   const pending = sum((e) => e.kind === "withdrawal" && e.status === "requested");
   return {
-    availableUah: round2(earned + returned - withdrawn - pending),
+    availableUah: round2(earned - withdrawn - pending),
     inEscrowUah,
     earnedOrPaidUah: earned,
     feesPaidUah: 0,

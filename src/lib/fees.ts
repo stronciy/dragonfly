@@ -6,6 +6,14 @@
 
 export const SERVICE_FEE_RATE = 0.085;
 
+/** Комісія LiqPay за кожну транзакцію (2% від суми платежу). */
+export const LIQPAY_FEE_RATE = 0.02;
+
+/** Комісія LiqPay за платіж (2%, округлено до копійок). */
+export function liqpayFeeAmount(gross: number): number {
+  return Math.round(gross * LIQPAY_FEE_RATE * 100) / 100;
+}
+
 /**
  * Calculate service fee amount (8.5% of budget, rounded to 2 decimals).
  */

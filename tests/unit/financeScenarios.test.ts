@@ -178,7 +178,7 @@ describe("журнал виконавця", () => {
     assert.equal(summary.inEscrowUah, 3000);
   });
 
-  it("після завершення і підтвердження: оплата за роботу та застава на балансі", async () => {
+  it("після завершення і підтвердження: оплата за роботу на балансі, застава розблокована на картці", async () => {
     const id = await completedOneDay(10000);
     assert.equal((await confirm(id, { accepted: true, rating: 5 })).status, 200);
     const { summary, entries } = await transactions(USERS.performer);
@@ -193,7 +193,7 @@ describe("журнал виконавця", () => {
     assert.equal(back.amount, 3000);
     assert.equal(kindOf(entries, "performer_deposit").status, "returned");
 
-    assert.equal(summary.availableUah, 13000);
+    assert.equal(summary.availableUah, 10000, "застава на баланс не зараховується");
     assert.equal(summary.earnedOrPaidUah, 10000);
     assert.equal(summary.inEscrowUah, 0);
   });
@@ -233,7 +233,7 @@ describe("виведення коштів виконавцем", () => {
     assert.equal(res.body.data.payout.status, "requested");
 
     const { summary, entries } = await transactions(USERS.performer);
-    assert.equal(summary.availableUah, 8000, "13000 − 5000 зарезервовано");
+    assert.equal(summary.availableUah, 5000, "10000 − 5000 зарезервовано");
     assert.equal(summary.pendingWithdrawalUah, 5000);
     const withdrawal = kindOf(entries, "withdrawal");
     assert.equal(withdrawal.status, "requested");
@@ -250,7 +250,7 @@ describe("виведення коштів виконавцем", () => {
     const { summary, entries } = await transactions(USERS.performer);
     assert.equal(kindOf(entries, "withdrawal").status, "paid");
     assert.equal(summary.withdrawnUah, 5000);
-    assert.equal(summary.availableUah, 8000);
+    assert.equal(summary.availableUah, 5000);
     assert.equal(summary.pendingWithdrawalUah, 0);
   });
 
@@ -262,7 +262,7 @@ describe("виведення коштів виконавцем", () => {
     const rejected = await processPayout(payoutId, { action: "reject", reason: "IBAN не відповідає виписці" });
     assert.equal(rejected.status, 200);
     const { summary, entries } = await transactions(USERS.performer);
-    assert.equal(summary.availableUah, 13000, "повністю відновлено");
+    assert.equal(summary.availableUah, 10000, "повністю відновлено");
     assert.equal(kindOf(entries, "withdrawal").status, "rejected");
     assert.match(kindOf(entries, "withdrawal").reason, /IBAN не відповідає/);
   });
