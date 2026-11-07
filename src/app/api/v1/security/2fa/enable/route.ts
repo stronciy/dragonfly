@@ -15,8 +15,10 @@ export async function POST(req: Request) {
     const user = await requireUser(req);
     const body = schema.parse(await req.json());
 
-    const okCode = verify({ token: body.code, secret: body.secret });
-    if (!okCode) throw new ApiError(400, "VALIDATION_ERROR", "Невірний код");
+    // otplib v13: verify асинхронний і повертає { valid }. Без await промис завжди
+    // «істинний», і 2FA вмикалась би без перевірки коду.
+    const { valid } = await verify({ token: body.code, secret: body.secret });
+    if (!valid) throw new ApiError(400, "VALIDATION_ERROR", "Невірний код");
 
     const enabledAt = new Date();
     await prisma.user.update({

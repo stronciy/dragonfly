@@ -7,6 +7,8 @@ import { publishDomainEvent } from "@/shared";
 import { ExpoPushService } from "@/shared";
 import { releaseEscrowForOrder, settleProviderHolds, emitEscrowChanged } from "@/shared";
 import { recomputePerformerRating } from "@/shared";
+import { customerPaymentPlan } from "@/shared";
+import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 import { Prisma } from "@prisma/client";
 
 const schema = z.object({
@@ -38,6 +40,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
+    if (!body.accepted) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Щоб відхилити роботу, відкрийте арбітраж з причиною та доказами");
+    }
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.customerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
@@ -74,6 +79,23 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       throw new ApiError(409, "CONFLICT", "Завершення вже підтверджено");
     }
 
+    const alreadyConfirmed = await prisma.orderStatusEvent.findFirst({
+      where: { orderId, note: COMPLETION_CONFIRMED_NOTE },
+      select: { id: true },
+    });
+    if (alreadyConfirmed) throw new ApiError(409, "CONFLICT", "Завершення вже підтверджено");
+
+    const plan = customerPaymentPlan(order.budget, order.dateFrom, order.dateTo);
+    if (plan.mode === "split") {
+      const part2Paid = await prisma.paymentIntent.findFirst({
+        where: { orderId, role: "customer", part: 2, status: "paid" },
+        select: { id: true },
+      });
+      if (!part2Paid) {
+        throw new ApiError(409, "CONFLICT", "Залишок 70% ще не внесено — закриття можливе після оплати");
+      }
+    }
+
     const resolvedArbitration = await prisma.arbitrationResolution.findFirst({
       where: { orderId, status: "approved" },
       select: { id: true },
@@ -84,198 +106,123 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
     const expo = new ExpoPushService(prisma);
 
-    if (body.accepted) {
-      // Замовник підтверджує завершення
-      await prisma.$transaction(async (tx) => {
-        // Створюємо Review якщо є рейтинг
-        if (body.rating && order.performerUserId) {
-          await tx.review.create({
-            data: {
-              orderId,
-              performerUserId: order.performerUserId,
-              authorUserId: user.id,
-              rating: body.rating,
-              text: body.comment ?? null,
-            },
-          });
-        }
-
-        if (body.fine && order.performerUserId) {
-          await releaseEscrowForOrder(tx, { orderId, role: "performer", to: "forfeited" });
-          await releaseEscrowForOrder(tx, { orderId, role: "customer", to: "released" });
-        } else {
-          await releaseEscrowForOrder(tx, { orderId, to: "released" });
-        }
-      });
-
-      if (order.performerUserId) await recomputePerformerRating(order.performerUserId).catch(() => {});
+    // Замовник підтверджує завершення
+    await prisma.$transaction(async (tx) => {
+      // Створюємо Review якщо є рейтинг
+      if (body.rating && order.performerUserId) {
+        await tx.review.create({
+          data: {
+            orderId,
+            performerUserId: order.performerUserId,
+            authorUserId: user.id,
+            rating: body.rating,
+            text: body.comment ?? null,
+          },
+        });
+      }
 
       if (body.fine && order.performerUserId) {
-        await settleProviderHolds({ orderId, role: "performer", to: "forfeited" }).catch(() => {});
-        await settleProviderHolds({ orderId, role: "customer", to: "released" }).catch(() => {});
+        await releaseEscrowForOrder(tx, { orderId, role: "performer", to: "forfeited" });
+        await releaseEscrowForOrder(tx, { orderId, role: "customer", to: "released" });
       } else {
-        await settleProviderHolds({ orderId, to: "released" }).catch(() => {});
+        await releaseEscrowForOrder(tx, { orderId, to: "released" });
       }
+    });
 
-      await emitEscrowChanged({
-        requestId,
-        orderId,
-        customerUserId: order.customerUserId,
-        performerUserId: order.performerUserId,
-        roles: ["performer", "customer"],
-        orderStatus: "completed",
+    await prisma.orderStatusEvent.create({
+      data: { orderId, status: "completed", note: COMPLETION_CONFIRMED_NOTE },
+    });
+
+    if (order.performerUserId) await recomputePerformerRating(order.performerUserId).catch(() => {});
+
+    if (body.fine && order.performerUserId) {
+      await settleProviderHolds({ orderId, role: "performer", to: "forfeited" }).catch(() => {});
+      await settleProviderHolds({ orderId, role: "customer", to: "released" }).catch(() => {});
+    } else {
+      await settleProviderHolds({ orderId, to: "released" }).catch(() => {});
+    }
+
+    await emitEscrowChanged({
+      requestId,
+      orderId,
+      customerUserId: order.customerUserId,
+      performerUserId: order.performerUserId,
+      roles: ["performer", "customer"],
+      orderStatus: "completed",
+    });
+
+
+    // Відправляємо Push виконавцю
+    if (order.performerUserId) {
+      const performerDevices = await prisma.device.findMany({
+        where: { userId: order.performerUserId, revokedAt: null },
+        select: { expoPushToken: true },
       });
 
-
-      // Відправляємо Push виконавцю
-      if (order.performerUserId) {
-        const performerDevices = await prisma.device.findMany({
-          where: { userId: order.performerUserId, revokedAt: null },
-          select: { expoPushToken: true },
-        });
-
-        for (const device of performerDevices) {
-          await expo.sendPush({
-            toUserId: order.performerUserId,
-            toExpoToken: device.expoPushToken,
-            title: "Замовлення підтверджено",
-            body: body.fine
-              ? `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
-              : `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
-            data: {
-              orderId,
-              type: "order_confirmed_completed",
-              role: "performer",
-              accepted: true,
-              rating: body.rating,
-              fine: body.fine ?? false,
-            },
-          });
-        }
-
-        // Створюємо notification виконавцю
-        await prisma.notification.create({
-          data: {
-            userId: order.performerUserId,
-            type: "order",
-            title: "Замовлення підтверджено",
-            message: body.fine
-              ? `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
-              : `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
-            data: {
-              orderId,
-              type: "order_confirmed_completed",
-              role: "performer",
-              accepted: true,
-              rating: body.rating,
-              fine: body.fine ?? false,
-            } as unknown as Prisma.InputJsonValue,
-          },
-        });
-
-        // WebSocket виконавцю
-        await publishDomainEvent({
-          type: "order.completed",
-          requestId,
-          targets: { userIds: [order.performerUserId] },
+      for (const device of performerDevices) {
+        await expo.sendPush({
+          toUserId: order.performerUserId,
+          toExpoToken: device.expoPushToken,
+          title: "Замовлення підтверджено",
+          body: body.fine
+            ? `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
+            : `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
           data: {
             orderId,
-            status: "completed",
-            confirmedByCustomer: true,
+            type: "order_confirmed_completed",
+            role: "performer",
+            accepted: true,
             rating: body.rating,
+            fine: body.fine ?? false,
           },
         });
       }
 
-      console.log(
-        "\n✅ [ConfirmCompletion] Замовник підтвердив завершення:",
-        `\n   OrderId: ${orderId}`,
-        `\n   Rating: ${body.rating ?? 'N/A'}`,
-        `\n   Comment: ${body.comment ?? 'N/A'}\n`
-      );
-
-      return ok(req, {
-        order: { id: order.id, status: "completed" },
-        review: body.rating ? { rating: body.rating, comment: body.comment } : null,
-      }, { message: "Завершення підтверджено" });
-    } else {
-      // Замовник відхиляє завершення → арбітраж
-      await prisma.$transaction([
-        prisma.order.update({
-          where: { id: orderId },
-          data: { status: "arbitration" },
-        }),
-        prisma.orderStatusEvent.create({
+      // Створюємо notification виконавцю
+      await prisma.notification.create({
+        data: {
+          userId: order.performerUserId,
+          type: "order",
+          title: "Замовлення підтверджено",
+          message: body.fine
+            ? `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
+            : `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
           data: {
             orderId,
-            status: "arbitration",
-            note: body.comment ?? "Замовник відхилив завершення",
-          },
-        }),
-      ]);
+            type: "order_confirmed_completed",
+            role: "performer",
+            accepted: true,
+            rating: body.rating,
+            fine: body.fine ?? false,
+          } as unknown as Prisma.InputJsonValue,
+        },
+      });
 
-
-      // Відправляємо Push виконавцю
-      if (order.performerUserId) {
-        const performerDevices = await prisma.device.findMany({
-          where: { userId: order.performerUserId, revokedAt: null },
-          select: { expoPushToken: true },
-        });
-
-        for (const device of performerDevices) {
-          await expo.sendPush({
-            toUserId: order.performerUserId,
-            toExpoToken: device.expoPushToken,
-            title: "Замовлення відхилено",
-            body: `Замовлення ${await orderRef(orderId)}. Замовник відхилив завершення. Відкрито арбітраж.`,
-            data: {
-              orderId,
-              type: "order_rejected_completion",
-              role: "performer",
-              accepted: false,
-            },
-          });
-        }
-
-        // Створюємо notification виконавцю
-        await prisma.notification.create({
-          data: {
-            userId: order.performerUserId,
-            type: "order",
-            title: "Замовлення відхилено",
-            message: `Замовлення ${await orderRef(orderId)}. Замовник відхилив завершення. Відкрито арбітраж.`,
-            data: {
-              orderId,
-              type: "order_rejected_completion",
-              role: "performer",
-              accepted: false,
-            } as unknown as Prisma.InputJsonValue,
-          },
-        });
-
-        // WebSocket виконавцю
-        await publishDomainEvent({
-          type: "order.status_changed",
-          requestId,
-          targets: { userIds: [order.performerUserId, order.customerUserId] },
-          data: {
-            orderId,
-            fromStatus: "completed",
-            toStatus: "arbitration",
-          },
-        });
-      }
-
-      console.log(
-        "\n❌ [ConfirmCompletion] Замовник відхилив завершення:",
-        `\n   OrderId: ${orderId}`,
-        `\n   Reason: ${body.comment ?? 'N/A'}\n`
-      );
-
-      return ok(req, {
-        order: { id: order.id, status: "arbitration" },
-      }, { message: "Завершення відхилено, відкрито арбітраж" });
+      // WebSocket виконавцю
+      await publishDomainEvent({
+        type: "order.completed",
+        requestId,
+        targets: { userIds: [order.performerUserId] },
+        data: {
+          orderId,
+          status: "completed",
+          confirmedByCustomer: true,
+          rating: body.rating,
+        },
+      });
     }
+
+    console.log(
+      "\n✅ [ConfirmCompletion] Замовник підтвердив завершення:",
+      `\n   OrderId: ${orderId}`,
+      `\n   Rating: ${body.rating ?? 'N/A'}`,
+      `\n   Comment: ${body.comment ?? 'N/A'}\n`
+    );
+
+    return ok(req, {
+      order: { id: order.id, status: "completed" },
+      review: body.rating ? { rating: body.rating, comment: body.comment } : null,
+    }, { message: "Завершення підтверджено" });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return fail(req, new ApiError(400, "VALIDATION_ERROR", "Помилка валідації запиту", err.flatten()));

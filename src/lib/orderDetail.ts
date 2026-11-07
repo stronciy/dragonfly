@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { safeDepositAmount } from "./deposit";
+import { customerPaymentPlan, safeDepositAmount } from "./deposit";
 import { SERVICE_FEE_RATE, serviceFeeAmount } from "./fees";
 import { MASKED_LOCATION_LABEL_FALLBACK } from "./marketplaceVisibility";
 
@@ -60,6 +60,7 @@ export interface OrderDetailOrderInput extends OrderDetailLocationInput {
   performerUserId: string | null;
   comment: string | null;
   customerPart2Deadline?: Date | null;
+  reportSubmittedAt?: Date | null;
 }
 
 export interface OrderDetailTimelineItem {
@@ -205,8 +206,9 @@ export function buildOrderDetailPayload(args: {
     depositDeadline: order.depositDeadline,
     depositAmount: Number(safeDepositAmount(order.budget)),
     customerPart2Deadline: order.customerPart2Deadline ?? null,
+    reportSubmittedAt: order.reportSubmittedAt ?? null,
     hasPaymentRequest: hasPaymentReq,
-    part2Amount: Math.round(Number(order.budget) * 0.7),
+    part2Amount: Number(customerPaymentPlan(order.budget, order.dateFrom, order.dateTo).part2Amount),
     part2Paid: isPart2Paid,
     canPayPart2:
       viewerRole === "customer" &&
@@ -226,8 +228,10 @@ export function buildOrderDetailPayload(args: {
   if (viewerRole === "customer") {
     payload.serviceFeeRate = SERVICE_FEE_RATE;
     payload.serviceFeeAmount = serviceFeeAmount(order.budget.toNumber());
-    payload.customerPayableNow =
-      Number(safeDepositAmount(order.budget)) + serviceFeeAmount(order.budget.toNumber());
+    const plan = customerPaymentPlan(order.budget, order.dateFrom, order.dateTo);
+    payload.customerPaymentMode = plan.mode;
+    payload.customerImmediateAmount = Number(plan.immediateAmount);
+    payload.customerPayableNow = Number(plan.immediateAmount) + serviceFeeAmount(order.budget.toNumber());
   }
 
   // Add counterparty contact info if both deposits are confirmed and user is the customer

@@ -116,6 +116,8 @@ type FakeOrder = {
   performerUserId: string | null;
   depositDeadline: Date | null;
   orderNumber: string | null;
+  dateFrom?: Date | null;
+  dateTo?: Date | null;
 };
 
 type FakeIntent = {
@@ -236,6 +238,8 @@ test("customer confirm: full deposit intent, deadline cleared, escrow held", asy
     performerUserId: "p1",
     depositDeadline: new Date("2026-10-13T22:00:00.000Z"),
     orderNumber: null,
+    dateFrom: new Date("2026-10-13T09:00:00+03:00"),
+    dateTo: new Date("2026-10-15T18:00:00+03:00"),
   };
   const { tx, locks } = makeFakeTx(order);
   const client = tx as unknown as Prisma.TransactionClient;
@@ -245,7 +249,7 @@ test("customer confirm: full deposit intent, deadline cleared, escrow held", asy
     role: "customer",
     intentId: "ci1",
   });
-  assert.equal(created.amount.toString(), "38500"); // deposit 30000 + fee 8500
+  assert.equal(created.amount.toString(), "38500"); // 3-day order: 30% 30000 + fee 8500
   assert.equal(created.intent.amount.toString(), "38500");
   assert.equal((created.intent as any).depositAmount?.toString(), "30000"); // escrow lock amount
   assert.equal(created.intent.feeAmount.toString(), "8500");
@@ -370,4 +374,32 @@ test("confirm rejects an intent whose order status forbids the transition", asyn
   );
   assert.equal(locks.length, 0);
   assert.equal(order.status, "completed");
+});
+
+test("customer pays 100% upfront for orders up to 2 days, part 2 is rejected", async () => {
+  process.env.LIQPAY_PUBLIC_KEY = "test_public";
+  process.env.LIQPAY_PRIVATE_KEY = "test_private";
+  const order: FakeOrder = {
+    id: "o2",
+    budget: new Prisma.Decimal("100000"),
+    currency: "UAH",
+    status: "requires_confirmation",
+    customerUserId: "c1",
+    performerUserId: "p1",
+    depositDeadline: new Date("2026-10-13T22:00:00.000Z"),
+    orderNumber: null,
+    dateFrom: new Date("2026-10-13T09:00:00+03:00"),
+    dateTo: new Date("2026-10-14T18:00:00+03:00"),
+  };
+  const { tx } = makeFakeTx(order);
+  const client = tx as unknown as Prisma.TransactionClient;
+
+  const created = await createDepositIntent(client, { orderId: "o2", role: "customer", intentId: "ci2" });
+  assert.equal(created.amount.toString(), "108500"); // 100000 + fee 8500
+  assert.equal((created.intent as any).depositAmount?.toString(), "100000");
+
+  await assert.rejects(
+    createDepositIntent(client, { orderId: "o2", role: "customer", part: 2, intentId: "ci3" }),
+    (err: unknown) => err instanceof ApiError && err.status === 409
+  );
 });

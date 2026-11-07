@@ -187,6 +187,8 @@ export function marketplaceDistanceKm(
   target: { lat: number; lng: number }
 ): number | null {
   if (base.baseLatitude == null || base.baseLongitude == null) return null;
+  // Профіль створюється з 0,0 як плейсхолдер — це не реальна база.
+  if (base.baseLatitude === 0 && base.baseLongitude === 0) return null;
   return (
     Math.round(
       haversineKm(base.baseLatitude, base.baseLongitude, target.lat, target.lng) *

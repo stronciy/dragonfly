@@ -51,7 +51,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         to: customerPaid ? "forfeited" : "released",
       });
       if (customerPaid) {
-        await releaseEscrowForOrder(tx, { orderId, role: "customer", to: "released" });
+        await releaseEscrowForOrder(tx, { orderId, role: "customer", to: "refunded" });
       }
       await tx.orderMatch.deleteMany({ where: { orderId } });
     });
@@ -62,7 +62,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       to: customerPaid ? "forfeited" : "released",
     }).catch(() => {});
     if (customerPaid) {
-      await settleProviderHolds({ orderId, role: "customer", to: "released" }).catch(() => {});
+      await settleProviderHolds({ orderId, role: "customer", to: "refunded" }).catch(() => {});
     }
 
     await emitEscrowChanged({

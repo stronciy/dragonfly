@@ -47,9 +47,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (!isPart2 && order.depositDeadline && order.depositDeadline.getTime() <= Date.now()) {
       throw new ApiError(400, "VALIDATION_ERROR", "Строк внесення застави минув");
     }
-    if (isPart2 && order.customerPart2Deadline && order.customerPart2Deadline.getTime() <= Date.now()) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Строк внесення залишку (70%) минув");
-    }
+    // Після дедлайну залишок усе ще приймаємо: прострочка лише дає виконавцю
+    // право перевести замовлення в арбітраж (див. part2Deadline воркер).
 
     const intent = await prisma.$transaction(async (tx) => {
       const paid = await tx.paymentIntent.findFirst({

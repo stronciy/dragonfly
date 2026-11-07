@@ -44,6 +44,8 @@ type InMemoryOrder = {
   acceptedAt: Date | null;
   depositDeadline: Date | null;
   completedAt: Date | null;
+  dateFrom?: Date | null;
+  dateTo?: Date | null;
 };
 
 type InMemoryIntent = {
@@ -160,6 +162,12 @@ function createInMemoryStore() {
         return [...paymentIntents.values()].filter(
           (pi) => pi.orderId === where.orderId && pi.status === where.status && pi.role === where.role
         );
+      },
+      findFirst: async ({ where }: { where: Record<string, unknown> }) => {
+        const found = [...paymentIntents.values()].find((pi) =>
+          Object.entries(where).every(([k, v]) => (pi as Record<string, unknown>)[k] === v)
+        );
+        return found ? { ...found } : null;
       },
       update: async ({ where, data }: { where: { id: string }; data: Partial<InMemoryIntent> }) => {
         const pi = paymentIntents.get(where.id);
@@ -403,6 +411,9 @@ test("Full Happy Path Flow: Register → Profile → Order → Accept → Both D
     acceptedAt: null,
     depositDeadline: null,
     completedAt: null,
+    // 3-денна робота: 30% + комісія одразу (заказ без дат рахується повним).
+    dateFrom: new Date("2026-11-09T09:00:00+02:00"),
+    dateTo: new Date("2026-11-11T18:00:00+02:00"),
   };
   store.orders.set(orderId, initialOrder);
   assert.equal(initialOrder.status, "published");

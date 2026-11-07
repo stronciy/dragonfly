@@ -6,6 +6,7 @@ import { publishDomainEvent } from "@/shared";
 import { notifyUser } from "@/shared";
 import { releaseEscrowForOrder, settleProviderHolds, emitEscrowChanged } from "@/shared";
 import { recomputePerformerRating } from "@/shared";
+import { customerPaymentPlan } from "@/shared";
 import {
   getLatestArbitrationResolution,
   serializeArbitrationResolution,
@@ -29,6 +30,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const pending = await getLatestArbitrationResolution(orderId);
     if (!pending || pending.status !== "pending") {
       throw new ApiError(409, "CONFLICT", "Немає активної пропозиції");
+    }
+
+    // Той самий інваріант, що й у confirm-completion: без залишку 70% заказ
+    // не закривається, інакше виконавець отримав би лише гарантійну частину.
+    if (customerPaymentPlan(order.budget, order.dateFrom, order.dateTo).mode === "split") {
+      const part2Paid = await prisma.paymentIntent.findFirst({
+        where: { orderId, role: "customer", part: 2, status: "paid" },
+        select: { id: true },
+      });
+      if (!part2Paid) {
+        throw new ApiError(409, "CONFLICT", "Залишок 70% ще не внесено — закриття можливе після оплати");
+      }
     }
     const withFine = pending.decision === "close_fine";
 

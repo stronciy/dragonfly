@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { ok, fail } from "@/lib/apiResponse";
 import { requireUser } from "@/lib/auth/requireAuth";
-import { prisma } from "@/shared";
+import { prisma, customerPaymentPlan } from "@/shared";
 import { parsePagination, makePage } from "@/lib/pagination";
 
 export async function GET(req: Request) {
@@ -108,12 +108,13 @@ export async function GET(req: Request) {
       const customerPart2 = o.paymentIntents.find((i) => i.role === "customer" && i.part === 2);
       const part1Paid = !!customerPart1;
       const part2Paid = !!customerPart2;
+      const plan = customerPaymentPlan(o.budget, o.dateFrom, o.dateTo);
       const part1Amount = customerPart1
         ? Number(customerPart1.depositAmount ?? customerPart1.amount)
-        : Math.round(budget * 0.3);
+        : Number(plan.immediateAmount);
       const part2Amount = customerPart2
         ? Number(customerPart2.amount)
-        : Math.max(0, budget - part1Amount);
+        : Number(plan.part2Amount);
 
       const customerTotalPaid = isCompleted
         ? budget

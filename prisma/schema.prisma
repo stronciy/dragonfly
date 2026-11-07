@@ -53,6 +53,7 @@ model User {
   orders         Order[]
   devices        Device[]
   notifications  Notification[]
+  payouts        Payout[]
   orderMedia     OrderMedia[]
   earlyStartRequests EarlyStartRequest[] @relation("RequestedEarlyStarts")
   authoredResolutions ArbitrationResolution[] @relation("ProposedResolutions")
@@ -361,6 +362,9 @@ model Order {
   depositDeadline      DateTime? @map("deposit_deadline")
   enRouteAt            DateTime? @map("en_route_at")
   customerPart2Deadline DateTime? @map("customer_part2_deadline")
+  part2ReminderSentAt  DateTime? @map("part2_reminder_sent_at")
+  part2OverdueNotifiedAt DateTime? @map("part2_overdue_notified_at")
+  reportSubmittedAt    DateTime? @map("report_submitted_at")
   paymentPaused        Boolean   @default(false) @map("payment_paused")
 
   createdAt            DateTime @default(now()) @map("created_at")
@@ -731,6 +735,30 @@ model OrderNumberCounter {
 
   @@id([serviceCode, yy])
   @@map("order_number_counters")
+}
+
+// Заявка виконавця на виведення коштів з балансу. Кошти виплачує компанія-гарант
+// вручну (банківський переказ); статус змінює адміністратор у панелі.
+model Payout {
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+  amount       Decimal   @db.Decimal(12, 2)
+  currency     String    @default("UAH")
+  iban         String
+  accountName  String    @map("account_name")
+  status       String    @default("requested") // requested, paid, rejected
+  requestedAt  DateTime  @default(now()) @map("requested_at")
+  processedAt  DateTime? @map("processed_at")
+  processedByAdminId String? @map("processed_by_admin_id")
+  rejectReason String?   @map("reject_reason")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status, requestedAt])
+  @@map("payouts")
 }
 
 // Wallet model for user balances

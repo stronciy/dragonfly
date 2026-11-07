@@ -248,8 +248,12 @@ export async function PUT(req: Request) {
       }
     });
 
+    // Збереження вже в БД; підбір замовлень — фонове завдання, тож його збій
+    // не має показувати користувачу помилку й провокувати повторне збереження.
     if ((hasServices || hasCoverage || hasBaseCoordinate) && user.role === "performer") {
-      await enqueueMatchNewExecutor(user.id);
+      await enqueueMatchNewExecutor(user.id).catch((err) => {
+        console.warn("[performer.settings] matching enqueue failed", err instanceof Error ? err.message : err);
+      });
     }
 
     return ok(req, { ok: true }, { message: "Збережено" });

@@ -23,8 +23,10 @@ export async function POST(req: Request) {
       return ok(req, { twoFactor: { enabled: false } });
     }
 
-    const okCode = verify({ token: body.code, secret: dbUser.twoFactorSecret });
-    if (!okCode) throw new ApiError(400, "VALIDATION_ERROR", "Невірний код");
+    // otplib v13: verify асинхронний і повертає { valid }. Без await знімання 2FA
+    // не перевіряло б код.
+    const { valid } = await verify({ token: body.code, secret: dbUser.twoFactorSecret });
+    if (!valid) throw new ApiError(400, "VALIDATION_ERROR", "Невірний код");
 
     await prisma.user.update({
       where: { id: user.id },

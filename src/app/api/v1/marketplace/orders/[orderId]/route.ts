@@ -33,8 +33,19 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
             where: performerBlockingEscrowWhere(orderId),
             select: { id: true },
           });
-      if (escrowCommitment)
+      if (escrowCommitment) {
+        // Виконавець, якому замовлення було розіслано, має побачити, що його
+        // взяв інший. Решту не посвячуємо — для них це просто «не знайдено».
+        const wasSentToMe = await prisma.orderMatch.findUnique({
+          where: {
+            uniq_performer_order_match: { performerUserId: user.id, orderId },
+          },
+          select: { id: true },
+        });
+        if (wasSentToMe && order.status !== "cancelled")
+          throw new ApiError(409, "ORDER_TAKEN", "Це замовлення вже взяв інший виконавець");
         throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+      }
     }
 
     const match = isAssigned

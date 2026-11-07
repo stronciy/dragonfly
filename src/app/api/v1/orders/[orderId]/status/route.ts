@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError, orderRef } from "@/shared";
+import { ApiError, customerPaymentPlan, orderRef, part2DeadlineFor } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -47,12 +47,18 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       }
     }
 
+    const startPlan =
+      body.status === "started" ? customerPaymentPlan(order.budget, order.dateFrom, order.dateTo) : null;
+    const part2Deadline =
+      startPlan?.mode === "split" ? part2DeadlineFor(new Date()) : null;
+
     const { order: updated, completedProgress } = await prisma.$transaction(async (tx) => {
       const u = await tx.order.update({
         where: { id: orderId },
         data: {
           status: body.status,
           ...(body.status === "completed" ? { completedAt: new Date() } : {}),
+          ...(part2Deadline ? { customerPart2Deadline: part2Deadline } : {}),
         },
       });
       await tx.orderStatusEvent.create({
@@ -98,6 +104,17 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       message = `Замовлення ${ref}. Виконавець вирушив до місця виконання робіт.`;
     } else if (body.status === "started") {
       message = `Замовлення ${ref}. Виконавець розпочав виконання робіт.`;
+      if (part2Deadline && startPlan) {
+        const deadlineLabel = part2Deadline.toLocaleString("uk-UA", {
+          timeZone: "Europe/Kyiv",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        message += ` Внесіть залишок ${Number(startPlan.part2Amount)} ₴ до ${deadlineLabel}.`;
+      }
     } else if (body.status === "completed") {
       message = `Замовлення ${ref}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`;
     }

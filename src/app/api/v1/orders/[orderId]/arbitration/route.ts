@@ -3,6 +3,7 @@ import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { ApiError, prisma, notifyUser, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { publishDomainEvent } from "@/realtime/publishDomainEvent";
+import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 
 const createSchema = z.object({
   reason: z.string().min(1),
@@ -31,10 +32,21 @@ export async function POST(
       },
     });
     if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+    if (user.id !== order.customerUserId && user.id !== order.performerUserId) {
+      throw new ApiError(403, "FORBIDDEN", "У вас немає доступу до цього замовлення");
+    }
 
     // Only allow opening arbitration for active orders
     if (!["confirmed", "started", "en_route", "completed"].includes(order.status)) {
       throw new ApiError(400, "VALIDATION_ERROR", "Арбітраж можна відкрити тільки для активних замовлень");
+    }
+
+    const confirmed = await prisma.orderStatusEvent.findFirst({
+      where: { orderId, note: COMPLETION_CONFIRMED_NOTE },
+      select: { id: true },
+    });
+    if (confirmed) {
+      throw new ApiError(409, "CONFLICT", "Замовник уже підтвердив завершення — арбітраж недоступний");
     }
 
     const body = createSchema.parse(await req.json());

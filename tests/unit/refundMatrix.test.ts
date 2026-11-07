@@ -334,6 +334,15 @@ const forfeitPerformerReleaseCustomer: Trigger = async (tx, client, orderId) => 
   await settleProviderHolds({ orderId, role: "customer", to: "released", client });
 };
 
+// Mirrors refuse route after the customer committed: performer forfeited,
+// customer's money goes back to the customer (refunded, not released).
+const refuseAfterCustomerCommit: Trigger = async (tx, client, orderId) => {
+  await releaseEscrowForOrder(tx, { orderId, role: "performer", to: "forfeited" });
+  await releaseEscrowForOrder(tx, { orderId, role: "customer", to: "refunded" });
+  await settleProviderHolds({ orderId, role: "performer", to: "forfeited", client });
+  await settleProviderHolds({ orderId, role: "customer", to: "refunded", client });
+};
+
 // Mirrors depositDeadlineTimeout.worker.ts (requires_confirmation timeout)
 const depositDeadlineTimeout: Trigger = async (tx, client, orderId) => {
   await releaseEscrowForOrder(tx, { orderId, to: "refunded" });
@@ -431,13 +440,13 @@ const CELLS: MatrixCell[] = [
     stage: "customer part1 only (confirmed)",
     trigger: "refuse (performer, customer committed)",
     seed: stageCustomerPart1Only,
-    run: forfeitPerformerReleaseCustomer,
+    run: refuseAfterCustomerCommit,
     expect: {
       performerLock: "forfeited",
-      customerLock: "released",
+      customerLock: "refunded",
       customerLockAmount: "9000",
       calls: [REVERSAL_C1, CAPTURE_PERF],
-      intentStatuses: { perf: "forfeited", c1: "released" },
+      intentStatuses: { perf: "forfeited", c1: "refunded" },
     },
   },
   {
@@ -548,13 +557,13 @@ const CELLS: MatrixCell[] = [
     stage: "legacy confirmed (old single 10% deposits)",
     trigger: "refuse (performer, customer committed)",
     seed: stageLegacyConfirmed,
-    run: forfeitPerformerReleaseCustomer,
+    run: refuseAfterCustomerCommit,
     expect: {
       performerLock: "forfeited",
-      customerLock: "released",
+      customerLock: "refunded",
       customerLockAmount: "10000",
       calls: [CAPTURE_PERF, REFUND_C1],
-      intentStatuses: { perf: "forfeited", c1: "released" },
+      intentStatuses: { perf: "forfeited", c1: "refunded" },
     },
   },
   {

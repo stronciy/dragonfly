@@ -1,6 +1,6 @@
 import { Prisma, type PaymentIntent } from "@prisma/client";
 import { ApiError } from "../lib/errors";
-import { CUSTOMER_COUNTER_DEPOSIT_DEADLINE_HOURS, depositAmountFor, nextDepositDeadline, nextCustomerCounterDepositDeadline } from "../lib/deposit";
+import { CUSTOMER_COUNTER_DEPOSIT_DEADLINE_HOURS, customerPaymentPlan, depositAmountFor, nextDepositDeadline, nextCustomerCounterDepositDeadline } from "../lib/deposit";
 import { SERVICE_FEE_RATE, serviceFeeAmount } from "../lib/fees";
 import { canTransition, type OrderStatus } from "../lib/orderStatus";
 import { createLiqPayCheckout, getLiqPayCheckoutUrl, liqpayDecodeData, liqpayVerifySignature, captureHold, refundCaptured, reverseHold } from "./liqpay.service";
@@ -80,12 +80,18 @@ export async function createDepositIntent(
   const part = args.part ?? 1;
   const isPart2 = args.role === "customer" && part === 2;
 
-  // Customer part 1 pays deposit (30%) + service fee (8.5% of budget) in one payment.
-  // Customer part 2 pays remaining balance (70% of budget) with no extra fee.
-  // Performer pays only deposit (30%).
+  // Customer part 1: plan's upfront amount (100% for orders up to 2 days, else 30%)
+  // plus service fee (8.5% of budget). Customer part 2 pays the remaining 70% of a
+  // split order with no extra fee. Performer pays only deposit (30%).
+  const plan = customerPaymentPlan(order.budget, order.dateFrom, order.dateTo);
+  if (isPart2 && plan.mode === "full") {
+    throw new ApiError(409, "CONFLICT", "Замовлення оплачується повністю, доплата не потрібна");
+  }
   const depositAmount = isPart2
-    ? order.budget.sub(depositAmountFor(order.budget))
-    : depositAmountFor(order.budget);
+    ? plan.part2Amount
+    : args.role === "customer"
+      ? plan.immediateAmount
+      : depositAmountFor(order.budget);
   const feeAmount =
     args.role === "customer" && !isPart2
       ? new Prisma.Decimal(serviceFeeAmount(order.budget.toNumber()))
@@ -707,7 +713,7 @@ export async function emitDepositPaidNotifications(args: {
       userId: args.order.customerUserId,
       type: "deposit",
       title: "Виконавець вніс гарантійну суму",
-      message: `Замовлення ${shortRef}. Внесіть гарантійну суму (30% від суми замовлення) протягом ${CUSTOMER_COUNTER_DEPOSIT_DEADLINE_HOURS} годин.`,
+      message: `Замовлення ${shortRef}. Внесіть оплату за замовлення протягом ${CUSTOMER_COUNTER_DEPOSIT_DEADLINE_HOURS} годин.`,
       data: { orderId: args.order.id, type: "deposit_customer_required", role: "customer", action: "pay_deposit", actorId: actorUserId },
     });
     if (args.order.performerUserId) {

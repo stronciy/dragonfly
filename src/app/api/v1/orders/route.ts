@@ -10,7 +10,7 @@ import { notifyUser } from "@/shared";
 import { nextOrderNumber } from "@/shared";
 import { validateSpecs, isValidServiceId } from "@/../services-tree";
 import { Prisma } from "@prisma/client";
-import { safeDepositAmount, ESCROW_OPEN_STATUSES, isWithinUkraine } from "@/shared";
+import { safeDepositAmount, customerPaymentPlan, ESCROW_OPEN_STATUSES, isWithinUkraine } from "@/shared";
 
 const postSchema = z.object({
   serviceCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
@@ -183,8 +183,10 @@ export async function GET(req: Request) {
         depositAmount: Number(safeDepositAmount(o.budget)),
         serviceFeeRate: 0.085,
         serviceFeeAmount: Math.round(Number(o.budget) * 0.085 * 100) / 100,
+        customerPaymentMode: customerPaymentPlan(o.budget, o.dateFrom, o.dateTo).mode,
+        customerImmediateAmount: Number(customerPaymentPlan(o.budget, o.dateFrom, o.dateTo).immediateAmount),
         customerPayableNow:
-          Number(safeDepositAmount(o.budget)) +
+          Number(customerPaymentPlan(o.budget, o.dateFrom, o.dateTo).immediateAmount) +
           Math.round(Number(o.budget) * 0.085 * 100) / 100,
         escrowAmount: o.escrowLocks.reduce((sum, l) => sum + Number(l.amount), 0),
         specs: o.specs,

@@ -9,7 +9,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     const user = await requireUser(req);
     const { orderId } = await ctx.params;
 
-    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { customerUserId: true, performerUserId: true } });
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { customerUserId: true, performerUserId: true, reportSubmittedAt: true },
+    });
     if (!order) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
     const canRead =
@@ -42,7 +45,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       `[api] GET /api/v1/orders/${orderId}/report requestId=${getRequestId(req)} userId=${user.id} photos=${items.length} durationMs=${Date.now() - startedAt}`
     );
 
-    return ok(req, { report: { items } });
+    return ok(req, {
+      report: {
+        items,
+        submittedAt: order.reportSubmittedAt ? order.reportSubmittedAt.toISOString() : null,
+      },
+    });
   } catch (err) {
     return fail(req, err);
   }
