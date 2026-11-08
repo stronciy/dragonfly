@@ -3,6 +3,18 @@ import { publishDomainEvent } from "../realtime/publishDomainEvent";
 export type PayoutStatus = "requested" | "paid" | "rejected";
 
 /**
+ * Сигнал, що баланс або застава користувача змінились (повернення, штраф).
+ * Клієнт перечитує журнал фінансів; сума в події не є джерелом істини.
+ */
+export async function publishWalletChanged(args: { userId: string; orderId: string }) {
+  await publishDomainEvent({
+    type: "wallet.changed",
+    targets: { userIds: [args.userId] },
+    data: { orderId: args.orderId },
+  }).catch(() => {});
+}
+
+/**
  * Сигнал застосунку виконавця, що його заявка на виведення змінилась.
  * Дані в події лише для відображення; баланс клієнт перечитує з журналу.
  */

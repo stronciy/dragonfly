@@ -11,6 +11,7 @@ import type { Prisma } from "@prisma/client";
  */
 export const PERFORMER_BLOCKING_ESCROW_STATUSES = [
   "held",
+  "decision_pending",
   "release_pending",
   "refund_pending",
   "forfeit_pending",

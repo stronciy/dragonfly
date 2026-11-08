@@ -33,6 +33,7 @@ export async function loadLedgerInput(
     where: orderWhere,
     select: {
       id: true,
+      status: true,
       orderNumber: true,
       customerUserId: true,
       performerUserId: true,
@@ -89,6 +90,7 @@ export async function loadLedgerInput(
     userId,
     orders: orders.map((o) => ({
       id: o.id,
+      status: o.status,
       orderNumber: o.orderNumber,
       customerUserId: o.customerUserId,
       performerUserId: o.performerUserId,

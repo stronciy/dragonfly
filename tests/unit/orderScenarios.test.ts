@@ -179,19 +179,29 @@ describe("однодневний заказ — невдалі сценарії"
     assert.ok(customerNotes.includes("arbitration_opened"), "заказчик отримав сповіщення");
   });
 
-  it("виконавець відмовляється після оплати заказчика — заставу виконавця конфісковано, заказчика повернено", async () => {
+  it("виконавець відмовляється після оплати заказчика — застава чекає рішення заказчика, оплату заказчика повернено", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
     const req = await call(USERS.performer, "POST", { reason: "Захворіла людина з бригади" });
     const res = await readResponse(await refusePost(req, ctx(id)));
     assert.equal(res.status, 200);
-    assert.equal(res.body.data.forfeited, true);
+    assert.equal(res.body.data.forfeited, false);
+    assert.equal(res.body.data.decisionPending, true);
     assert.equal(order(id).status, "published");
     assert.equal(order(id).performerUserId, null);
-    assert.deepEqual(escrowOf(id, "performer"), { status: "forfeited", amount: 3000 });
+    assert.deepEqual(escrowOf(id, "performer"), { status: "decision_pending", amount: 3000 });
     assert.deepEqual(escrowOf(id, "customer"), { status: "refunded", amount: 10000 });
-    assert.ok(notificationsFor(USERS.customer).some((n) => n.data?.type === "order_refused_by_performer"));
+    assert.ok(notificationsFor(USERS.customer).some((n) => n.data?.type === "performer_deposit_decision_required"));
+  });
+
+  it("після відмови виконавця його рядок матчу позначено refused — заказ йому більше не пропонується", async () => {
+    const id = createOrder({ days: 1 });
+    await performerClaimsAndPays(id);
+    await refusePost(await call(USERS.performer, "POST", { reason: "Не встигаю" }), ctx(id));
+    const rows = db.findMany("orderMatch", { where: { orderId: id, performerUserId: USERS.performer } }) as any[];
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].status, "refused");
   });
 
   it("арбітраж неможливий, поки заказ ще не оплачено (accepted / requires_confirmation → 400)", async () => {

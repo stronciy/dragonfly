@@ -22,6 +22,8 @@ export type LedgerDirection = "out" | "in" | "none";
 export type LedgerStatus =
   | "in_escrow"
   | "settling"
+  | "unlock_pending"
+  | "decision_pending"
   | "completed"
   | "refunded"
   | "returned"
@@ -46,6 +48,7 @@ export type LedgerEntry = {
 
 export type LedgerOrder = {
   id: string;
+  status: string;
   orderNumber: string | null;
   customerUserId: string;
   performerUserId: string | null;
@@ -232,8 +235,11 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
       const lock = locksByKey.get(`${order.id}:performer`);
       const lockStatus = lock?.status;
       let status: LedgerStatus = "in_escrow";
-      if (lockStatus === "released" || lockStatus === "release_pending") status = "returned";
+      if (lockStatus === "release_pending") status = "unlock_pending";
+      if (lockStatus === "decision_pending") status = "decision_pending";
+      if (lockStatus === "released") status = "returned";
       if (lockStatus === "forfeited" || lockStatus === "forfeit_pending") status = "forfeited";
+      const completedWork = order.status === "completed";
       entries.push({
         id: `intent:${intent.id}`,
         occurredAt,
@@ -247,9 +253,15 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
         reason:
           status === "in_escrow"
             ? "Застава зберігається на рахунку компанії-гаранта. Повернеться після завершення роботи або буде утримана за порушення."
-            : status === "returned"
-              ? "Застава розблокована на вашій картці після завершення роботи. На баланс не зараховується."
-              : "Застава утримана за рішенням арбітражу або через відмову від заказу — залишається у компанії як штраф.",
+            : status === "unlock_pending"
+              ? "Заставу повертаємо на вашу картку. Розблокування обробляє платіжна система, зазвичай це кілька хвилин."
+              : status === "decision_pending"
+                ? "Ви відмовились від заказу після оплати замовника. Замовник вирішує: повернути заставу чи утримати її як штраф."
+              : status === "returned"
+                ? completedWork
+                  ? "Застава розблокована на вашій картці після завершення роботи. На баланс не зараховується."
+                  : "Застава розблокована на вашій картці: заказ не виконано. На баланс не зараховується."
+                : "Застава утримана за рішенням арбітражу або через відмову від заказу — залишається у компанії як штраф.",
       });
     }
   }
@@ -358,7 +370,11 @@ export function summarizeLedger(role: LedgerRole, entries: LedgerEntry[]): Ledge
   const inEscrowUah =
     role === "customer"
       ? sum((e) => (e.kind === "customer_deposit" || e.kind === "customer_balance") && e.status === "in_escrow")
-      : sum((e) => (e.kind === "performer_deposit" || e.kind === "order_payout") && (e.status === "in_escrow" || e.status === "settling"));
+      : sum(
+          (e) =>
+            (e.kind === "performer_deposit" && (e.status === "in_escrow" || e.status === "decision_pending")) ||
+            (e.kind === "order_payout" && (e.status === "in_escrow" || e.status === "settling")),
+        );
 
   if (role === "customer") {
     return {

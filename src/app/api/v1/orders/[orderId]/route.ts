@@ -158,18 +158,31 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       select: { rating: true, text: true, createdAt: true },
     });
 
+    const pendingPerformerDeposit =
+      viewerRole === "customer"
+        ? await prisma.escrowLock.findFirst({
+            where: { orderId, role: "performer", status: "decision_pending" },
+            select: { amount: true },
+          })
+        : null;
+
     return ok(req, {
-      order: buildOrderDetailPayload({
-        order,
-        viewerRole,
-        lock: ownLock,
-        intents: ownIntents,
-        timeline,
-        confirmationReview,
-        counterpartyContact,
-        part2Paid: isPart2Paid,
-        hasPaymentRequest: hasPendingPaymentRequest,
-      }),
+      order: {
+        ...buildOrderDetailPayload({
+          order,
+          viewerRole,
+          lock: ownLock,
+          intents: ownIntents,
+          timeline,
+          confirmationReview,
+          counterpartyContact,
+          part2Paid: isPart2Paid,
+          hasPaymentRequest: hasPendingPaymentRequest,
+        }),
+        performerDepositDecision: pendingPerformerDeposit
+          ? { amount: Number(pendingPerformerDeposit.amount), status: "pending" }
+          : null,
+      },
     });
   } catch (err) {
     return fail(req, err);

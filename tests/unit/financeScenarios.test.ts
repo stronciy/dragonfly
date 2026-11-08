@@ -15,6 +15,9 @@ import { GET as transactionsGet } from "../../src/app/api/v1/finance/transaction
 import { GET as payoutsGet, POST as payoutsPost } from "../../src/app/api/v1/finance/payouts/route";
 import { GET as adminPayoutsGet } from "../../src/app/api/v1/admin/payouts/route";
 import { PATCH as adminPayoutPatch } from "../../src/app/api/v1/admin/payouts/[id]/route";
+import { POST as performerDepositDecisionPost } from "../../src/app/api/v1/orders/[orderId]/performer-deposit-decision/route";
+
+const decisionPost = (req: Request, orderId: string) => performerDepositDecisionPost(req, ctx(orderId));
 
 const ADMIN_KEY = "test-panel-secret";
 const ADMIN_ID = "admin_1";
@@ -142,6 +145,31 @@ describe("журнал заказчика", () => {
     assert.equal(summary.feesPaidUah, 850, "комісія лише один раз");
   });
 
+  it("виконавець відмовився до оплати заказчика: застава одразу розблокована, пояснення коректне", async () => {
+    const id = createOrder({ days: 1, budget: 10000 });
+    await performerClaimsAndPays(id);
+    const req = await call(USERS.performer, "POST", { reason: "Не встигаю за графіком" });
+    assert.equal((await readResponse(await refusePost(req, ctx(id)))).status, 200);
+
+    const { entries } = await transactions(USERS.performer);
+    const deposit = kindOf(entries, "performer_deposit");
+    assert.equal(deposit.status, "returned");
+    assert.match(deposit.reason, /заказ не виконано/);
+    assert.doesNotMatch(deposit.reason, /після завершення/);
+  });
+
+  it("застава в черзі на розблокування показується окремим статусом, не як розблокована", async () => {
+    const id = createOrder({ days: 1, budget: 10000 });
+    await performerClaimsAndPays(id);
+    db.updateMany("escrowLock", { where: { orderId: id, role: "performer" }, data: { status: "release_pending" } });
+
+    const { entries, summary } = await transactions(USERS.performer);
+    const deposit = kindOf(entries, "performer_deposit");
+    assert.equal(deposit.status, "unlock_pending");
+    assert.match(deposit.reason, /Розблокування обробляє платіжна система/);
+    assert.equal(summary.availableUah, 0, "застава ніколи не входить у доступний баланс");
+  });
+
   it("заказ відмінено виконавцем: кошти повернуто, у журналі «Повернення коштів»", async () => {
     const id = createOrder({ days: 1, budget: 10000 });
     await performerClaimsAndPays(id);
@@ -208,18 +236,71 @@ describe("журнал виконавця", () => {
     assert.equal(summary.availableUah, 10000, "застава не повертається, оплата за роботу — так");
   });
 
-  it("відмова після оплати заказчика: застава втрачена, суми в журналі відповідають", async () => {
+  it("відмова після оплати заказчика: застава чекає рішення замовника, не списується автоматично", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
     const req = await call(USERS.performer, "POST", { reason: "Хвороба в бригаді" });
-    await refusePost(req, ctx(id));
+    assert.equal((await readResponse(await refusePost(req, ctx(id)))).status, 200);
+    const { summary, entries } = await transactions(USERS.performer);
+    const deposit = kindOf(entries, "performer_deposit");
+    assert.equal(deposit.status, "decision_pending");
+    assert.match(deposit.reason, /вирішує/);
+    assert.equal(summary.availableUah, 0);
+    assert.equal(summary.inEscrowUah, 3000, "застава блокована, поки замовник не вирішить");
+  });
+
+  it("відмова до оплати заказчика: застава одразу повертається, виконавець отримує сповіщення", async () => {
+    const id = createOrder({ days: 1 });
+    await performerClaimsAndPays(id);
+    const req = await call(USERS.performer, "POST", { reason: "Не встигаю" });
+    assert.equal((await readResponse(await refusePost(req, ctx(id)))).status, 200);
+
+    const { entries } = await transactions(USERS.performer);
+    assert.equal(kindOf(entries, "performer_deposit").status, "returned");
+    const notes = db.findMany("notification", { where: { userId: USERS.performer } }) as any[];
+    assert.ok(notes.find((n) => n.data?.type === "performer_deposit_returned"), "сповіщення про повернення відсутнє");
+  });
+
+  it("замовник повертає заставу після відмови: виконавець отримує повернення", async () => {
+    const id = createOrder({ days: 1 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    await refusePost(await call(USERS.performer, "POST", { reason: "Хвороба" }), ctx(id));
+
+    const res = await readResponse(await decisionPost(await call(USERS.customer, "POST", { decision: "return" }), id));
+    assert.equal(res.status, 200);
+    const { summary, entries } = await transactions(USERS.performer);
+    assert.equal(kindOf(entries, "performer_deposit").status, "returned");
+    assert.equal(summary.inEscrowUah, 0);
+    const notes = db.findMany("notification", { where: { userId: USERS.performer } }) as any[];
+    assert.ok(notes.find((n) => n.data?.decision === "return"));
+  });
+
+  it("замовник утримує заставу як штраф: застава втрачена, виконавець бачить штраф", async () => {
+    const id = createOrder({ days: 1 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    await refusePost(await call(USERS.performer, "POST", { reason: "Хвороба" }), ctx(id));
+
+    assert.equal((await readResponse(await decisionPost(await call(USERS.customer, "POST", { decision: "fine" }), id))).status, 200);
     const { summary, entries } = await transactions(USERS.performer);
     const forfeit = kindOf(entries, "performer_deposit");
     assert.equal(forfeit.status, "forfeited");
     assert.match(forfeit.reason, /штраф/);
     assert.equal(summary.availableUah, 0);
     assert.equal(summary.inEscrowUah, 0);
+  });
+
+  it("рішення щодо застави приймається лише раз (409) і лише заказчиком", async () => {
+    const id = createOrder({ days: 1 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    await refusePost(await call(USERS.performer, "POST", { reason: "Хвороба" }), ctx(id));
+
+    assert.equal((await decisionPost(await call(USERS.performer, "POST", { decision: "return" }), id)).status, 403);
+    assert.equal((await readResponse(await decisionPost(await call(USERS.customer, "POST", { decision: "return" }), id))).status, 200);
+    assert.equal((await readResponse(await decisionPost(await call(USERS.customer, "POST", { decision: "fine" }), id))).status, 409);
   });
 });
 
