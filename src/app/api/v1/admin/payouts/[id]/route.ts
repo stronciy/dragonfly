@@ -4,6 +4,7 @@ import { requirePanelAdmin } from "@/lib/adminAuth";
 import { writeAuditLog } from "@/lib/adminAudit";
 import { ApiError, prisma } from "@/shared";
 import { notifyUser } from "@/services/notify";
+import { publishPayoutUpdated, type PayoutStatus } from "@/services/payoutEvents";
 
 export const runtime = "nodejs";
 
@@ -63,6 +64,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       message,
       data: { payoutId: id, amount: Number(result.updated.amount), status: result.updated.status, action: "view_finance" },
     }).catch(() => {});
+    await publishPayoutUpdated({
+      userId: result.payout.userId,
+      payoutId: id,
+      status: result.updated.status as PayoutStatus,
+      amount: Number(result.updated.amount),
+    });
 
     return ok(req, { payout: { id, status: result.updated.status } }, { message: "Заявку оновлено" });
   } catch (err) {

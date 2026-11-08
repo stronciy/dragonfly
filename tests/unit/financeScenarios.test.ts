@@ -267,6 +267,49 @@ describe("виведення коштів виконавцем", () => {
     assert.match(kindOf(entries, "withdrawal").reason, /IBAN не відповідає/);
   });
 
+  it("відхилення надсилає виконавцю сповіщення з причиною і посиланням на кошелек", async () => {
+    const id = await completedOneDay(10000);
+    await confirm(id, { accepted: true, rating: 5 });
+    const payoutId = (await requestPayout(USERS.performer, 5000)).body.data.payout.id;
+
+    await processPayout(payoutId, { action: "reject", reason: "IBAN не відповідає виписці" });
+
+    const notes = db.findMany("notification", { where: { userId: USERS.performer } }) as any[];
+    const note = notes.find((n) => n.type === "wallet.withdrawal_processed");
+    assert.ok(note, "сповіщення про відхилення відсутнє");
+    assert.match(note.message, /IBAN не відповідає виписці/);
+    assert.match(note.message, /повернуто на баланс/);
+    assert.equal(note.data.action, "view_finance");
+    assert.equal(note.data.payoutId, payoutId);
+  });
+
+  it("після відхилення можна знову подати заявку на весь баланс", async () => {
+    const id = await completedOneDay(10000);
+    await confirm(id, { accepted: true, rating: 5 });
+    const payoutId = (await requestPayout(USERS.performer, 10000)).body.data.payout.id;
+    await processPayout(payoutId, { action: "reject", reason: "Помилка в реквізитах" });
+
+    const again = await requestPayout(USERS.performer, 10000);
+    assert.equal(again.status, 201);
+    const { summary } = await transactions(USERS.performer);
+    assert.equal(summary.availableUah, 0);
+    assert.equal(summary.pendingWithdrawalUah, 10000);
+  });
+
+  it("перерахунок надсилає сповіщення з сумою і статусом «виведено»", async () => {
+    const id = await completedOneDay(10000);
+    await confirm(id, { accepted: true, rating: 5 });
+    const payoutId = (await requestPayout(USERS.performer, 5000)).body.data.payout.id;
+
+    await processPayout(payoutId, { action: "mark_paid" });
+
+    const notes = db.findMany("notification", { where: { userId: USERS.performer } }) as any[];
+    const note = notes.find((n) => n.title === "Виведення виконано");
+    assert.ok(note, "сповіщення про переказ відсутнє");
+    assert.match(note.message, /5000\.00 ₴ перераховано на ваш рахунок/);
+    assert.equal(note.data.action, "view_finance");
+  });
+
   it("сума понад доступний баланс відхиляється (400)", async () => {
     const id = await completedOneDay(10000);
     await confirm(id, { accepted: true, rating: 5 });

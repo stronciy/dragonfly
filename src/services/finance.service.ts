@@ -8,6 +8,7 @@ import {
   type LedgerRole,
 } from "../lib/finance/ledger";
 import { normalizeUAIban, validateUAIban } from "../lib/validators";
+import { publishPayoutUpdated } from "./payoutEvents";
 
 type Client = Prisma.TransactionClient | typeof prisma;
 
@@ -154,7 +155,7 @@ export async function requestPayout(args: { userId: string; amount: number }) {
     throw new ApiError(400, "VALIDATION_ERROR", `Мінімальна сума для виведення — ${PAYOUT_MIN_AMOUNT_UAH} ₴`);
   }
 
-  return prisma.$transaction(async (tx) => {
+  const payout = await prisma.$transaction(async (tx) => {
     // Серіалізуємо заявки одного користувача: без блокування два паралельні
     // запити могли б разом перевищити доступний баланс.
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${args.userId}))`;
@@ -178,4 +179,11 @@ export async function requestPayout(args: { userId: string; amount: number }) {
       },
     });
   });
+  await publishPayoutUpdated({
+    userId: args.userId,
+    payoutId: payout.id,
+    status: "requested",
+    amount: Number(payout.amount),
+  });
+  return payout;
 }

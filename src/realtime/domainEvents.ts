@@ -33,7 +33,8 @@ export type DomainEventType =
   | "arbitration.resolve_requested"
   | "arbitration.resolved"
   | "arbitration.created"
-  | "arbitration.message.created";
+  | "arbitration.message.created"
+  | "wallet.payout_updated";
 
 export type DomainEvent<T extends DomainEventType = DomainEventType, D = unknown> = {
   eventId: string;
