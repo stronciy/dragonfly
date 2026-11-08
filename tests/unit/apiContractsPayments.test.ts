@@ -121,6 +121,16 @@ describe("скасування платежу", () => {
 });
 
 describe("налаштування виконавця", () => {
+  it("заказчик не може задати локацію і радіус: 403, профіль виконавця не створюється", async () => {
+    const res = await readResponse(await settingsPut(await call(USERS.customer, "PUT", {
+      baseLocationLabel: "Полтава",
+      baseCoordinate: { lat: 49.59, lng: 34.55 },
+      coverage: { mode: "radius", radiusKm: 80 },
+    })));
+    assert.equal(res.status, 403);
+    assert.equal(db.count("performerProfile", { where: { userId: USERS.customer } }), 0);
+  });
+
   it("зона роботи радіусом зберігається і віддається", async () => {
     const put = await readResponse(await settingsPut(await call(USERS.performer, "PUT", {
       baseLocationLabel: "Полтава",
