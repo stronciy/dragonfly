@@ -325,8 +325,8 @@ const refuseBeforeCustomerCommit: Trigger = async (tx, client, orderId) => {
   await settleProviderHolds({ orderId, role: "performer", to: "released", client });
 };
 
-// Mirrors refuse (after the customer committed), arbitration/resolve/approve
-// with fine, and confirm-completion with fine
+// Mirrors refuse (after the customer committed) and arbitration/resolve/approve
+// with fine (confirm-completion no longer has a fine option)
 const forfeitPerformerReleaseCustomer: Trigger = async (tx, client, orderId) => {
   await releaseEscrowForOrder(tx, { orderId, role: "performer", to: "forfeited" });
   await releaseEscrowForOrder(tx, { orderId, role: "customer", to: "released" });
@@ -464,7 +464,7 @@ const CELLS: MatrixCell[] = [
   },
   {
     stage: "customer part1 only (confirmed)",
-    trigger: "arbitration/completion fine",
+    trigger: "arbitration fine",
     seed: stageCustomerPart1Only,
     run: forfeitPerformerReleaseCustomer,
     expect: {
@@ -490,7 +490,7 @@ const CELLS: MatrixCell[] = [
   },
   {
     stage: "full escrow: part1 + part2 paid (started)",
-    trigger: "arbitration/completion fine",
+    trigger: "arbitration fine",
     seed: stageFullEscrow,
     run: forfeitPerformerReleaseCustomer,
     expect: {
@@ -529,7 +529,7 @@ const CELLS: MatrixCell[] = [
   },
   {
     stage: "part2 pending / order paused (started)",
-    trigger: "arbitration/completion fine",
+    trigger: "arbitration fine",
     seed: stagePart2PendingPaused,
     run: forfeitPerformerReleaseCustomer,
     expect: {

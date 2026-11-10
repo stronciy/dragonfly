@@ -226,14 +226,39 @@ describe("журнал виконавця", () => {
     assert.equal(summary.inEscrowUah, 0);
   });
 
-  it("заказчик підтвердив зі штрафом: застава утримана, оплата за роботу все одно зарахована", async () => {
+  it("виконавець завершив, але замовник ще не прийняв: застава виконавця заблокована", async () => {
     const id = await completedOneDay(10000);
-    assert.equal((await confirm(id, { accepted: true, rating: 2, fine: true })).status, 200);
     const { summary, entries } = await transactions(USERS.performer);
-    assert.equal(kindOf(entries, "performer_deposit").status, "forfeited");
-    assert.equal(entries.find((e) => e.kind === "performer_deposit_return"), undefined);
-    assert.equal(kindOf(entries, "order_payout").amount, 10000);
-    assert.equal(summary.availableUah, 10000, "застава не повертається, оплата за роботу — так");
+    assert.equal(kindOf(entries, "performer_deposit").status, "in_escrow");
+    assert.equal(summary.inEscrowUah, 3000, "застава не розблокована до прийняття замовником");
+    assert.equal(summary.availableUah, 0);
+    const customer = await transactions(USERS.customer);
+    assert.equal(kindOf(customer.entries, "customer_deposit").status, "in_escrow");
+  });
+
+  it("замовник приймає роботу: обидві застави розблоковано, штрафу немає", async () => {
+    const id = await completedOneDay(10000);
+    assert.equal((await confirm(id, { accepted: true, rating: 5 })).status, 200);
+    const performer = await transactions(USERS.performer);
+    assert.equal(kindOf(performer.entries, "performer_deposit").status, "returned");
+    assert.equal(performer.summary.inEscrowUah, 0);
+    assert.equal(performer.entries.find((e) => e.status === "forfeited"), undefined);
+    const customer = await transactions(USERS.customer);
+    assert.equal(kindOf(customer.entries, "customer_deposit").status, "completed");
+  });
+
+  it("параметр штрафу (fine) більше не утримує заставу: прийняття завжди розблоковує", async () => {
+    const id = await completedOneDay(10000);
+    assert.equal((await confirm(id, { accepted: true, rating: 2, fine: true } as Record<string, unknown>)).status, 200);
+    const { entries } = await transactions(USERS.performer);
+    assert.equal(kindOf(entries, "performer_deposit").status, "returned");
+  });
+
+  it("прийняття до завершення виконавцем відхиляється (409)", async () => {
+    const id = createOrder({ days: 1 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    assert.equal((await confirm(id, { accepted: true, rating: 5 })).status, 409);
   });
 
   it("відмова після оплати заказчика: застава чекає рішення замовника, не списується автоматично", async () => {

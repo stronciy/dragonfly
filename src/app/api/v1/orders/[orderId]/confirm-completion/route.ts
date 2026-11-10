@@ -15,23 +15,15 @@ const schema = z.object({
   accepted: z.boolean(),
   comment: z.string().max(1000).optional(),
   rating: z.number().min(1).max(5).optional(),
-  fine: z.boolean().optional(),
 });
 
 /**
  * POST /api/v1/orders/:orderId/confirm-completion
- * 
- * Замовник підтверджує або відхиляє завершення роботи виконавцем
- * 
- * Якщо accepted=true:
- * - Статус залишається completed
- * - Створюється Review (якщо є rating)
- * - Замовлення переходить в архів (closed)
- * - Відправляється Push виконавцю
- * 
- * Якщо accepted=false:
- * - Статус змінюється на arbitration
- * - Відправляється Push виконавцю
+ *
+ * Замовник приймає роботу. Гарантійні суми (застава виконавця і застава
+ * замовника) розблоковуються лише тут: виконавець уже має статус completed
+ * (він підтвердив завершення), а замовник підтверджує прийняття.
+ * Штрафу в цьому маршруті немає: незгоду замовник оформлює арбітражем.
  */
 export async function POST(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
@@ -121,12 +113,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         });
       }
 
-      if (body.fine && order.performerUserId) {
-        await releaseEscrowForOrder(tx, { orderId, role: "performer", to: "forfeited" });
-        await releaseEscrowForOrder(tx, { orderId, role: "customer", to: "released" });
-      } else {
-        await releaseEscrowForOrder(tx, { orderId, to: "released" });
-      }
+      await releaseEscrowForOrder(tx, { orderId, to: "released" });
     });
 
     await prisma.orderStatusEvent.create({
@@ -135,12 +122,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
     if (order.performerUserId) await recomputePerformerRating(order.performerUserId).catch(() => {});
 
-    if (body.fine && order.performerUserId) {
-      await settleProviderHolds({ orderId, role: "performer", to: "forfeited" }).catch(() => {});
-      await settleProviderHolds({ orderId, role: "customer", to: "released" }).catch(() => {});
-    } else {
-      await settleProviderHolds({ orderId, to: "released" }).catch(() => {});
-    }
+    await settleProviderHolds({ orderId, to: "released" }).catch(() => {});
 
     await emitEscrowChanged({
       requestId,
@@ -164,16 +146,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
           toUserId: order.performerUserId,
           toExpoToken: device.expoPushToken,
           title: "Замовлення підтверджено",
-          body: body.fine
-            ? `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
-            : `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
+          body: `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
           data: {
             orderId,
             type: "order_confirmed_completed",
             role: "performer",
             accepted: true,
             rating: body.rating,
-            fine: body.fine ?? false,
           },
         });
       }
@@ -184,16 +163,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
           userId: order.performerUserId,
           type: "order",
           title: "Замовлення підтверджено",
-          message: body.fine
-            ? `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення зі штрафом: ваша застава утримана.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`
-            : `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
+          message: `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
           data: {
             orderId,
             type: "order_confirmed_completed",
             role: "performer",
             accepted: true,
             rating: body.rating,
-            fine: body.fine ?? false,
           } as unknown as Prisma.InputJsonValue,
         },
       });

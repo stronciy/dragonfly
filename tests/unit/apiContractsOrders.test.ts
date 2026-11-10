@@ -199,6 +199,35 @@ describe("прогрес робіт і відгуки", () => {
     assert.equal(forStranger.status, 403);
   });
 
+  it("заказ до 2 діб: досягнення 30% не запитує залишок 70% і не сповіщає виконавця про це", async () => {
+    const id = createOrder({ days: 2 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "en_route" }), ctx(id)));
+    await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id)));
+
+    const post = await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 30, note: "Третина" }), ctx(id)));
+    assert.equal(post.status, 200);
+    assert.equal(post.body.data.canRequestPayment, false);
+    const notes = db.findMany("notification", { where: { userId: USERS.performer } }) as any[];
+    assert.equal(notes.filter((n) => n.type === "progress.30_percent_reached").length, 0);
+  });
+
+  it("заказ від 3 діб: досягнення 30% сповіщає виконавця про можливість запросити залишок 70%", async () => {
+    const id = createOrder({ days: 3 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "en_route" }), ctx(id)));
+    await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id)));
+
+    const post = await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 30, note: "Третина" }), ctx(id)));
+    assert.equal(post.status, 200);
+    // Сповіщення в маршруті надсилається без await: даємо йому записатися.
+    await new Promise((r) => setTimeout(r, 20));
+    const notes = db.findMany("notification", { where: { userId: USERS.performer } }) as any[];
+    assert.equal(notes.filter((n) => n.type === "progress.30_percent_reached").length, 1);
+  });
+
   it("відгук виконавця на замовника можна лише після завершення робіт", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
