@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError } from "@/shared";
+import { ApiError, customerPaymentPlan } from "@/shared";
 import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { notifyUser } from "@/services/notify";
@@ -250,13 +250,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     });
 
     const hasReached30 = percent >= 30;
+    // Залишок 70% запитується лише для заказів від 3 діб (режим split). До 2 діб включно
+    // оплата повна наперед, тож про запит залишку виконавця не сповіщаємо.
+    const needsPart2Request = customerPaymentPlan(order.budget, order.dateFrom, order.dateTo).mode === "split";
 
     console.info(
       `[api] POST /api/v1/orders/${orderId}/progress created requestId=${requestId} progressId=${createdProgress.id} userId=${user.id} percent=${percent} photos=${createdProgress.media.length} first30=${firstTime30} durationMs=${Date.now() - startedAt}`
     );
 
     // Notify performer that they can request payment if first time 30%
-    if (firstTime30) {
+    if (firstTime30 && needsPart2Request) {
       notifyUser({
         userId: user.id,
         type: "progress.30_percent_reached",
@@ -294,7 +297,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
     return ok(req, { 
       progress: percent,
-      canRequestPayment: hasReached30 && !order.customerPart2Deadline,
+      canRequestPayment: needsPart2Request && hasReached30 && !order.customerPart2Deadline,
       /** How many photos were actually linked to this progress update. */
       savedPhotos: createdProgress.media.length,
       photoCount: createdProgress.media.length,
@@ -304,7 +307,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         comment: createdProgress.comment,
         createdAt: createdProgress.createdAt,
       },
-      message: hasReached30 ? "Досягнуто 30%! Ви можете запросити оплату оставшейся суми" : "Прогрес оновлено" 
+      message: hasReached30 && needsPart2Request ? "Досягнуто 30%! Ви можете запросити оплату оставшейся суми" : "Прогрес оновлено",
     });
 
   } catch (err) {
