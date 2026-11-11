@@ -1,58 +1,37 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError, orderRef } from "@/shared";
+import { ApiError, orderRef, publishDomainEvent, notifyUser, recomputePerformerRating } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
-import { prisma } from "@/shared";
-import { publishDomainEvent } from "@/shared";
-import { notifyUser } from "@/shared";
-import { recomputePerformerRating } from "@/shared";
+import { submitOrderRating } from "@/lib/orderRating";
 
 const schema = z.object({
   rating: z.number().int().min(1).max(5),
   comment: z.string().max(2000).optional(),
 });
 
+/** Старий шлях оцінки (сумісність зі старими збірками): ті самі правила, що й /rating. */
 export async function POST(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order || order.performerUserId !== user.id) {
-      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
-    }
-    if (order.status !== "completed") {
-      throw new ApiError(409, "CONFLICT", "Замовника можна оцінити лише після завершення робіт");
-    }
-
-    const existing = await prisma.review.findFirst({ where: { orderId, authorUserId: user.id } });
-    if (existing) throw new ApiError(409, "CONFLICT", "Відгук вже надіслано");
-
-    await prisma.review.create({
-      data: {
-        orderId,
-        customerUserId: order.customerUserId,
-        authorUserId: user.id,
-        rating: body.rating,
-        text: body.comment?.trim() ? body.comment.trim() : null,
-      },
-    });
-    await recomputePerformerRating(user.id);
+    const result = await submitOrderRating({ orderId, userId: user.id, rating: body.rating, comment: body.comment });
+    // Видимість оцінки залежить від взаємності: після будь-якої оцінки перераховуємо рейтинг виконавця.
+    if (result.performerUserId) await recomputePerformerRating(result.performerUserId);
 
     await notifyUser({
-      userId: order.customerUserId,
+      userId: result.counterpartyUserId,
       type: "order",
       title: "Вас оцінили",
-      message: `Замовлення ${await orderRef(orderId)}. Виконавець оцінив співпрацю: ${body.rating}/5.`,
-      data: { orderId, type: "customer_rated", role: "customer", rating: body.rating },
+      message: `Замовлення ${await orderRef(orderId)}. Вас оцінено: ${body.rating}/5.`,
+      data: { orderId, type: "order_rated", rating: body.rating },
     });
     await publishDomainEvent({
       type: "order.updated",
       requestId,
-      targets: { userIds: [order.customerUserId] },
+      targets: { userIds: [result.counterpartyUserId] },
       data: { orderId },
     });
 
@@ -64,3 +43,4 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     return fail(req, err);
   }
 }
+

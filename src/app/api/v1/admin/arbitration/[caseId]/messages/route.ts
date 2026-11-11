@@ -7,6 +7,8 @@ export const runtime = "nodejs";
 
 const schema = z.object({
   text: z.string().trim().min(1).max(5000),
+  /** common — обом учасникам; customer/performer — лише цьому учаснику (приватна гілка). */
+  channel: z.enum(["common", "customer", "performer"]).default("common"),
 });
 
 /** Повідомлення адміністратора в кейсі: бачать обидві сторони. */
@@ -15,7 +17,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
     const admin = await requirePanelAdmin(req);
     const requestId = getRequestId(req);
     const { caseId } = await ctx.params;
-    const { text } = schema.parse(await req.json().catch(() => null));
+    const { text, channel } = schema.parse(await req.json().catch(() => null));
 
     const arbitrationCase = await prisma.arbitrationCase.findUnique({
       where: { id: caseId },
@@ -37,13 +39,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
         data: { status: "admin_assigned", assigneeAdminId: admin.id },
       });
       return tx.arbitrationMessage.create({
-        data: { arbitrationCaseId: caseId, adminId: admin.id, text },
+        data: { arbitrationCaseId: caseId, adminId: admin.id, text, channel },
         select: { id: true, text: true, createdAt: true },
       });
     });
 
     const { customerUserId, performerUserId } = arbitrationCase.order;
-    const recipients = [customerUserId, performerUserId].filter((id): id is string => Boolean(id));
+    const allParties = [customerUserId, performerUserId].filter((id): id is string => Boolean(id));
+    const recipients =
+      channel === "common"
+        ? allParties
+        : allParties.filter((id) => (channel === "customer" ? id === customerUserId : id === performerUserId));
     const number = await orderRef(arbitrationCase.orderId);
     for (const userId of recipients) {
       await notifyUser({
@@ -51,7 +57,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
         type: "arbitration",
         title: "Арбітраж: відповідь адміністратора",
         message: `Замовлення ${number}. ${text.slice(0, 160)}`,
-        data: { orderId: arbitrationCase.orderId, type: "arbitration_admin_message", caseId, action: "view_order" },
+        data: { orderId: arbitrationCase.orderId, type: "arbitration_admin_message", caseId, channel, action: "view_order" },
       });
     }
 

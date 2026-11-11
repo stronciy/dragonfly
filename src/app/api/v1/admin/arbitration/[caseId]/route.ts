@@ -33,6 +33,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ caseId: string 
           select: {
             id: true,
             text: true,
+            channel: true,
             createdAt: true,
             user: { select: { id: true, name: true, role: true } },
             admin: { select: { id: true, email: true } },

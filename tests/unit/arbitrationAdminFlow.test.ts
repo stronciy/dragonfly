@@ -327,3 +327,159 @@ describe("медіа арбітражу (окремий endpoint)", () => {
     assert.equal(rowsWhere("orderMedia", { kind: "arbitration" }).length, 1);
   });
 });
+
+describe("канали листування: загальний чат і приватні гілки адміна", () => {
+  it("адмін пише заказчику лично — виконавець цього не бачить, заказчик бачить", async () => {
+    const { id, caseId } = await openedArbitration();
+    const res = await readResponse(
+      await adminMessagePost(adminReq("POST", { text: "Надішліть фото акту", channel: "customer" }), caseCtx(caseId))
+    );
+    assert.equal(res.status, 201);
+
+    const customerView = await readResponse(await arbGet(await call(USERS.customer, "GET"), ctx(id)));
+    assert.ok(customerView.body.data.messages.some((m: any) => m.text === "Надішліть фото акту"));
+    const performerView = await readResponse(await arbGet(await call(USERS.performer, "GET"), ctx(id)));
+    assert.ok(!performerView.body.data.messages.some((m: any) => m.text === "Надішліть фото акту"));
+  });
+
+  it("особисте повідомлення адміна йде лише цьому учаснику", async () => {
+    const { caseId } = await openedArbitration();
+    await adminMessagePost(adminReq("POST", { text: "Лично", channel: "performer" }), caseCtx(caseId));
+    const perf = notificationsFor(USERS.performer).filter((n) => n.data?.type === "arbitration_admin_message");
+    const cust = notificationsFor(USERS.customer).filter((n) => n.data?.type === "arbitration_admin_message");
+    assert.equal(perf.length, 1);
+    assert.equal(cust.length, 0, "заказчик не отримує чужу приватну гілку");
+  });
+
+  it("загальне повідомлення адміна бачать обидві сторони", async () => {
+    const { id, caseId } = await openedArbitration();
+    await adminMessagePost(adminReq("POST", { text: "Всім: надішліть докази" }), caseCtx(caseId));
+    for (const userId of [USERS.customer, USERS.performer]) {
+      const view = await readResponse(await arbGet(await call(userId, "GET"), ctx(id)));
+      assert.ok(view.body.data.messages.some((m: any) => m.text === "Всім: надішліть докази"), userId);
+    }
+  });
+
+  it("сторона пише адміну приватно — повідомлення бачать учасник і адмін, але не друга сторона", async () => {
+    const { id } = await openedArbitration();
+    const res = await readResponse(
+      await arbMessage(await call(USERS.performer, "PATCH", { reason: "Тільки для адміна", toAdmin: true }), ctx(id))
+    );
+    assert.equal(res.status, 201);
+    const perfView = await readResponse(await arbGet(await call(USERS.performer, "GET"), ctx(id)));
+    assert.ok(perfView.body.data.messages.some((m: any) => m.text === "Тільки для адміна"));
+    const custView = await readResponse(await arbGet(await call(USERS.customer, "GET"), ctx(id)));
+    assert.ok(!custView.body.data.messages.some((m: any) => m.text === "Тільки для адміна"));
+    const adminView = await readResponse(await adminCaseGet(adminReq("GET"), caseCtx(casesFor(id)[0].id)));
+    assert.ok(adminView.body.data.case.messages.some((m: any) => m.text === "Тільки для адміна"));
+  });
+
+  it("приватне повідомлення від сторони не створює сповіщення іншій стороні", async () => {
+    const { id } = await openedArbitration();
+    const before = notificationsFor(USERS.customer).filter((n) => n.type === "arbitration").length;
+    await arbMessage(await call(USERS.performer, "PATCH", { reason: "Приват", toAdmin: true }), ctx(id));
+    const after = notificationsFor(USERS.customer).filter((n) => n.type === "arbitration").length;
+    assert.equal(after, before);
+  });
+
+  it("повідомлення з невідомим каналом адміна відхиляється (400)", async () => {
+    const { caseId } = await openedArbitration();
+    const res = await readResponse(
+      await adminMessagePost(adminReq("POST", { text: "x", channel: "everyone" }), caseCtx(caseId))
+    );
+    assert.equal(res.status, 400);
+  });
+});
+
+describe("ничья: спор закрыт без победителя и проигравшего", () => {
+  it("рішення none без штрафу — обидві застави повертаються, заказ закрито, рішення draw", async () => {
+    const { id, caseId } = await openedArbitration({ budget: 10000 });
+    const res = await readResponse(
+      await adminRulingPost(adminReq("POST", { winner: "none", penalty: false, reason: "Сторони домовились" }), caseCtx(caseId))
+    );
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.decision, "draw");
+    assert.equal(order(id).status, "completed");
+    assert.deepEqual(escrowOf(id, "performer"), { status: "released", amount: 3000 });
+    assert.deepEqual(escrowOf(id, "customer"), { status: "released", amount: 10000 });
+  });
+
+  it("ничья зі штрафом відхиляється (400) — штраф не має переможця", async () => {
+    const { id, caseId } = await openedArbitration();
+    const res = await readResponse(
+      await adminRulingPost(adminReq("POST", { winner: "none", penalty: true, reason: "x" }), caseCtx(caseId))
+    );
+    assert.equal(res.status, 400);
+    assert.equal(order(id).status, "arbitration");
+  });
+
+  it("після ничьої історія кейсу доступна обом сторонам", async () => {
+    const { id, caseId } = await openedArbitration();
+    await adminRulingPost(adminReq("POST", { winner: "none", penalty: false, reason: "Закрито" }), caseCtx(caseId));
+    const view = await readResponse(await arbGet(await call(USERS.performer, "GET"), ctx(id)));
+    assert.equal(view.status, 200);
+    assert.equal(view.body.data.case.status, "resolved");
+    assert.ok(view.body.data.messages.length >= 1);
+  });
+});
+
+describe("вкладення в чаті учасників", () => {
+  it("кілька файлів в одному повідомленні — кожен прив'язаний до нього", async () => {
+    const { id, caseId } = await openedArbitration();
+    const form = new FormData();
+    form.append("text", "Докази");
+    form.append("files", new File([new Uint8Array([1])], "a.jpg", { type: "image/jpeg" }));
+    form.append("files", new File([new Uint8Array([2])], "b.mp4", { type: "video/mp4" }));
+    const req = new Request("http://localhost/api/v1/test", {
+      method: "PATCH",
+      headers: { authorization: (await call(USERS.customer, "GET")).headers.get("authorization") ?? "" },
+      body: form,
+    });
+    const res = await readResponse(await arbMessage(req, ctx(id)));
+    assert.equal(res.status, 201);
+    const msg = rowsWhere("arbitrationMessage", { arbitrationCaseId: caseId }).find((m) => m.text === "Докази");
+    assert.ok(msg);
+    const media = rowsWhere("orderMedia", { arbitrationMessageId: msg!.id });
+    assert.equal(media.length, 2);
+  });
+
+  it("повідомлення лише з файлом без тексту — приймається", async () => {
+    const { id, caseId } = await openedArbitration();
+    const form = new FormData();
+    form.append("files", new File([new Uint8Array([3])], "act.pdf", { type: "application/pdf" }));
+    const req = new Request("http://localhost/api/v1/test", {
+      method: "PATCH",
+      headers: { authorization: (await call(USERS.performer, "GET")).headers.get("authorization") ?? "" },
+      body: form,
+    });
+    const res = await readResponse(await arbMessage(req, ctx(id)));
+    assert.equal(res.status, 201);
+    const msg = rowsWhere("arbitrationMessage", { arbitrationCaseId: caseId }).find((m) => m.text === "Вкладення");
+    assert.ok(msg, "текст за замовчуванням — «Вкладення»");
+  });
+
+  it("більше 5 файлів в одному повідомленні відхиляється (400)", async () => {
+    const { id } = await openedArbitration();
+    const form = new FormData();
+    for (let i = 0; i < 6; i++) form.append("files", new File([new Uint8Array([i])], `f${i}.jpg`, { type: "image/jpeg" }));
+    const req = new Request("http://localhost/api/v1/test", {
+      method: "PATCH",
+      headers: { authorization: (await call(USERS.customer, "GET")).headers.get("authorization") ?? "" },
+      body: form,
+    });
+    const res = await readResponse(await arbMessage(req, ctx(id)));
+    assert.equal(res.status, 400);
+  });
+
+  it("порожнє повідомлення без тексту і файлів відхиляється (400)", async () => {
+    const { id } = await openedArbitration();
+    const form = new FormData();
+    const req = new Request("http://localhost/api/v1/test", {
+      method: "PATCH",
+      headers: { authorization: (await call(USERS.customer, "GET")).headers.get("authorization") ?? "" },
+      body: form,
+    });
+    const res = await readResponse(await arbMessage(req, ctx(id)));
+    assert.equal(res.status, 400);
+  });
+});

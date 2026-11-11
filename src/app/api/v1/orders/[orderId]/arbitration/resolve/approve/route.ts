@@ -57,23 +57,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
           note: withFine ? "Арбітраж закрито зі штрафом (за згодою сторін)" : "Арбітраж закрито без штрафу (за згодою сторін)",
         },
       });
-      if (pending.rating && order.performerUserId) {
-        const alreadyReviewed = await tx.review.findFirst({
-          where: { orderId, authorUserId: pending.proposedById },
-          select: { id: true },
-        });
-        if (!alreadyReviewed) {
-          await tx.review.create({
-            data: {
-              orderId,
-              performerUserId: order.performerUserId,
-              authorUserId: pending.proposedById,
-              rating: pending.rating,
-              text: pending.comment,
-            },
-          });
-        }
-      }
       if (withFine) {
         await releaseEscrowForOrder(tx, { orderId, role: "performer", to: "forfeited" });
         await releaseEscrowForOrder(tx, { orderId, role: "customer", to: "released" });

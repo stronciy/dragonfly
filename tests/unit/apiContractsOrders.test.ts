@@ -20,6 +20,7 @@ import { POST as reviewPost } from "../../src/app/api/v1/orders/[orderId]/review
 import { POST as blockPost } from "../../src/app/api/v1/admin/users/[id]/block/route";
 import { POST as verifyPost } from "../../src/app/api/v1/admin/legal-profiles/[userId]/verify/route";
 import { PATCH as statusPatch } from "../../src/app/api/v1/orders/[orderId]/status/route";
+import { POST as confirmRoute } from "../../src/app/api/v1/orders/[orderId]/confirm-completion/route";
 
 const ADMIN_KEY = "test-panel-secret";
 const ADMIN_ID = "admin_1";
@@ -236,13 +237,19 @@ describe("прогрес робіт і відгуки", () => {
     assert.equal(early.status, 409);
   });
 
-  it("відгук після завершення зберігається, повторний — 409", async () => {
+  it("оцінка лише після закриття: до підтвердження заказчиком — 409, потім один раз", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
     for (const s of ["en_route", "started", "completed"]) {
       await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: s }), ctx(id)));
     }
+    const early = await readResponse(await reviewPost(await call(USERS.performer, "POST", { rating: 4, comment: "Вдячні" }), ctx(id)));
+    assert.equal(early.status, 409, "завершено, але не закрито — оцінювати рано");
+
+    const confirmed = await readResponse(await confirmRoute(await call(USERS.customer, "POST", { accepted: true }), ctx(id)));
+    assert.equal(confirmed.status, 200);
+
     const first = await readResponse(await reviewPost(await call(USERS.performer, "POST", { rating: 4, comment: "Вдячні" }), ctx(id)));
     assert.equal(first.status, 201);
     const second = await readResponse(await reviewPost(await call(USERS.performer, "POST", { rating: 4 }), ctx(id)));

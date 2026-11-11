@@ -12,7 +12,7 @@ test("у «Трактор+причепні» та «Самохідні» є кл
   for (const id of ["3.2", "3.3"]) {
     const spec = getSubcategoryById(id)?.specs?.find((s) => s.name === CLEARANCE);
     assert.ok(spec, `клиренс є для ${id}`);
-    assert.ok(spec.options?.includes(300), `300 см доступні для ${id}`);
+    assert.ok((spec.options as unknown[] | undefined)?.includes(300), `300 см доступні для ${id}`);
   }
 });
 

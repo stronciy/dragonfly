@@ -9,6 +9,7 @@ import {
 import { db } from "../helpers/fakePrisma";
 import { PATCH as statusPatch } from "../../src/app/api/v1/orders/[orderId]/status/route";
 import { POST as confirmPost } from "../../src/app/api/v1/orders/[orderId]/confirm-completion/route";
+import { POST as ratingPost } from "../../src/app/api/v1/orders/[orderId]/rating/route";
 import { POST as arbitrationPost, GET as arbitrationGet } from "../../src/app/api/v1/orders/[orderId]/arbitration/route";
 import { POST as arbitrationMediaPost } from "../../src/app/api/v1/orders/[orderId]/arbitration/media/route";
 import { POST as refusePost } from "../../src/app/api/v1/orders/[orderId]/refuse/route";
@@ -76,15 +77,22 @@ describe("однодневний заказ — успішний сценарі�
     await status(id, USERS.performer, "started");
     await status(id, USERS.performer, "completed");
 
-    const res = await confirm(id, { accepted: true, rating: 5, comment: "Все добре" });
+    const res = await confirm(id, { accepted: true });
     assert.equal(res.status, 200);
     assert.equal(order(id).status, "completed");
     assert.deepEqual(escrowOf(id, "customer"), { status: "released", amount: 10000 });
     assert.deepEqual(escrowOf(id, "performer"), { status: "released", amount: 3000 });
 
+    // Оцінка не ставиться разом із підтвердженням — це окремий крок після закриття.
+    assert.equal(rowsWhere("review", { orderId: id }).length, 0);
+    const rated = await readResponse(
+      await call(USERS.customer, "POST", { rating: 5, comment: "Все добре" }).then((req) => ratingPost(req, ctx(id)))
+    );
+    assert.equal(rated.status, 201);
     const review = rowsWhere("review", { orderId: id });
     assert.equal(review.length, 1);
     assert.equal(review[0].rating, 5);
+    assert.equal(review[0].performerUserId, USERS.performer);
     // Рейтинг виконавця показується лише після взаємних відгуків: одностороння
     // оцінка заказчика зберігається, але в середнє не йде.
     const profile = db.findUnique("performerProfile", { where: { userId: USERS.performer } }) as any;

@@ -17,13 +17,18 @@ import {
 
 export const runtime = "nodejs";
 
-const schema = z.object({
-  /** Сторона, на чий бік стає рішення. */
-  winner: z.enum(["customer", "performer"]),
-  /** true — застава програлої сторони утримується (штраф); false — обидві застави повертаються. */
-  penalty: z.boolean(),
-  reason: z.string().trim().min(1).max(2000),
-});
+const schema = z
+  .object({
+    /** Сторона-переможець; none — спір закрито без переможця і проигравшего (ничья). */
+    winner: z.enum(["customer", "performer", "none"]),
+    /** true — застава програлої сторони утримується (штраф); false — обидві застави повертаються. */
+    penalty: z.boolean(),
+    reason: z.string().trim().min(1).max(2000),
+  })
+  .refine((v) => !(v.winner === "none" && v.penalty), {
+    message: "Без переможця штраф не застосовується",
+    path: ["penalty"],
+  });
 
 /**
  * Рішення адміністратора в арбітражі: визначає, чия сторона виграла, чи штрафувати
@@ -76,10 +81,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
       }
     }
 
+    const isDraw = body.winner === "none";
     const loserRole = body.winner === "customer" ? "performer" : "customer";
     const winnerRole = body.winner === "customer" ? "customer" : "performer";
-    const decision = `${body.winner}_wins${body.penalty ? "_penalty" : ""}`;
-    const winnerLabel = body.winner === "customer" ? "на боці замовника" : "на боці виконавця";
+    const decision = isDraw ? "draw" : `${body.winner}_wins${body.penalty ? "_penalty" : ""}`;
+    const winnerLabel = isDraw
+      ? "без переможця (спір закрито за згодою)"
+      : body.winner === "customer"
+        ? "на боці замовника"
+        : "на боці виконавця";
     const now = new Date();
 
     await prisma.$transaction(async (tx) => {
@@ -108,7 +118,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
       });
       await tx.orderMatch.deleteMany({ where: { orderId: order.id } });
 
-      if (body.penalty) {
+      if (body.penalty && !isDraw) {
         await releaseEscrowForOrder(tx, { orderId: order.id, role: loserRole, to: "forfeited" });
         await releaseEscrowForOrder(tx, { orderId: order.id, role: winnerRole, to: "released" });
       } else {
@@ -126,7 +136,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
       });
     });
 
-    if (body.penalty) {
+    if (body.penalty && !isDraw) {
       await settleProviderHolds({ orderId: order.id, role: loserRole, to: "forfeited" }).catch(() => {});
       await settleProviderHolds({ orderId: order.id, role: winnerRole, to: "released" }).catch(() => {});
     } else {
@@ -145,9 +155,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
     });
 
     const number = await orderRef(order.id);
-    const outcome = body.penalty
-      ? `Рішення ${winnerLabel}, застава іншої сторони утримана.`
-      : `Рішення ${winnerLabel}, застави повернуто.`;
+    const outcome =
+      body.penalty && !isDraw
+        ? `Рішення ${winnerLabel}, застава іншої сторони утримана.`
+        : `Рішення ${winnerLabel}, застави повернуто.`;
     for (const userId of [order.customerUserId, order.performerUserId]) {
       await notifyUser({
         userId,

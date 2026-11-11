@@ -58,19 +58,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       });
     }
     
-    // Перевірка чи вже не було підтвердження завершення
-    // Перевіряємо чи вже є review від цього замовника
-    const existingReview = await prisma.review.findFirst({
-      where: {
-        orderId,
-        authorUserId: user.id,
-      },
-    });
-    
-    if (existingReview) {
-      throw new ApiError(409, "CONFLICT", "Завершення вже підтверджено");
-    }
-
     const alreadyConfirmed = await prisma.orderStatusEvent.findFirst({
       where: { orderId, note: COMPLETION_CONFIRMED_NOTE },
       select: { id: true },
@@ -99,20 +86,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const expo = new ExpoPushService(prisma);
 
     // Замовник підтверджує завершення
+    // Оцінка не ставиться тут: вона окремий крок після закриття заказу (POST /orders/:id/rating).
     await prisma.$transaction(async (tx) => {
-      // Створюємо Review якщо є рейтинг
-      if (body.rating && order.performerUserId) {
-        await tx.review.create({
-          data: {
-            orderId,
-            performerUserId: order.performerUserId,
-            authorUserId: user.id,
-            rating: body.rating,
-            text: body.comment ?? null,
-          },
-        });
-      }
-
       await releaseEscrowForOrder(tx, { orderId, to: "released" });
     });
 
@@ -188,16 +163,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       });
     }
 
-    console.log(
-      "\n✅ [ConfirmCompletion] Замовник підтвердив завершення:",
-      `\n   OrderId: ${orderId}`,
-      `\n   Rating: ${body.rating ?? 'N/A'}`,
-      `\n   Comment: ${body.comment ?? 'N/A'}\n`
-    );
-
     return ok(req, {
       order: { id: order.id, status: "completed" },
-      review: body.rating ? { rating: body.rating, comment: body.comment } : null,
     }, { message: "Завершення підтверджено" });
   } catch (err) {
     if (err instanceof z.ZodError) {

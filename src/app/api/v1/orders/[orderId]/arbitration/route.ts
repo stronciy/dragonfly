@@ -4,10 +4,14 @@ import { ApiError, prisma, notifyUser, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
-import { readFormFileAsDataUrl } from "@/lib/uploads";
+import { readFormFilesAsDataUrl } from "@/lib/uploads";
+
+const MAX_CHAT_FILES = 5;
 
 const createSchema = z.object({
   reason: z.string().trim().min(1),
+  /** true — приватне повідомлення адміністратору (гілка цього учасника), false — загальний чат. */
+  toAdmin: z.boolean().optional(),
 });
 
 export async function POST(
@@ -232,6 +236,7 @@ export async function GET(
         select: {
           id: true,
           text: true,
+          channel: true,
           createdAt: true,
           user: {
             select: {
@@ -262,9 +267,15 @@ export async function GET(
       throw new ApiError(404, "NOT_FOUND", "Арбітражний кейс не знайдено");
     }
 
+    const myChannel = user.id === order.customerUserId ? "customer" : "performer";
+    const visible = messages.filter(
+      (m) => !m.channel || m.channel === "common" || m.channel === myChannel
+    );
+
     return ok(req, {
       case: caseRecord,
-      messages,
+      messages: visible,
+      myChannel,
     });
   } catch (err) {
     return fail(req, err);
@@ -307,17 +318,24 @@ export async function PATCH(
     }
 
     let text: string;
-    let file: Awaited<ReturnType<typeof readFormFileAsDataUrl>> | null = null;
+    let toAdmin = false;
+    let files: Awaited<ReturnType<typeof readFormFilesAsDataUrl>> = [];
     const contentType = (req.headers.get("content-type") || "").toLowerCase();
     if (contentType.includes("multipart/form-data")) {
       const form = await req.formData();
       const raw = form.get("text");
       text = typeof raw === "string" ? raw.trim() : "";
-      if (!text) throw new ApiError(400, "VALIDATION_ERROR", "Введіть текст повідомлення");
-      if (form.get("file")) file = await readFormFileAsDataUrl(form, "file");
+      toAdmin = form.get("toAdmin") === "true";
+      files = await readFormFilesAsDataUrl(form, "files", MAX_CHAT_FILES);
+      if (!text && files.length === 0) throw new ApiError(400, "VALIDATION_ERROR", "Введіть текст або додайте файл");
+      if (!text) text = "Вкладення";
     } else {
-      text = createSchema.parse(await req.json()).reason;
+      const body = createSchema.parse(await req.json());
+      text = body.reason;
+      toAdmin = body.toAdmin === true;
     }
+    const myChannel = user.id === order.customerUserId ? "customer" : "performer";
+    const channel = toAdmin ? myChannel : "common";
 
     const message = await prisma.$transaction(async (tx) => {
       const created = await tx.arbitrationMessage.create({
@@ -325,6 +343,7 @@ export async function PATCH(
           arbitrationCaseId: caseRecord.id,
           userId: user.id,
           text,
+          channel,
         },
         select: {
           id: true,
@@ -339,7 +358,7 @@ export async function PATCH(
           },
         },
       });
-      if (file) {
+      for (const file of files) {
         await tx.orderMedia.create({
           data: {
             orderId,
@@ -357,7 +376,7 @@ export async function PATCH(
     });
 
     const otherUserId = user.id === order.customerUserId ? order.performerUserId : order.customerUserId;
-    if (otherUserId) {
+    if (otherUserId && channel === "common") {
       await notifyUser({
         userId: otherUserId,
         type: "arbitration",
