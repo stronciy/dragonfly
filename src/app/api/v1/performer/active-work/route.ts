@@ -16,7 +16,7 @@ export async function GET(req: Request) {
       where: {
         performerUserId: user.id,
         OR: [
-          { status: { in: ["confirmed", "started", "completed", "arbitration"] } },
+          { status: { in: ["confirmed", "en_route", "started", "completed", "arbitration"] } },
           {
             status: { in: ["requires_confirmation", "accepted"] },
             depositDeadline: { gte: now }, // ще не просрочено
