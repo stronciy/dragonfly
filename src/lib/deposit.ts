@@ -57,7 +57,7 @@ type CustomerPaymentPlan = {
   part2Amount: Prisma.Decimal;
 };
 
-function kyivDateKey(date: Date): string {
+export function kyivDateKey(date: Date): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: PAYMENT_TZ,
     year: "numeric",

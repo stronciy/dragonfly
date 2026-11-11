@@ -161,7 +161,7 @@ export const servicesTree: ServicesTree = {
         },
         {
           id: "3.2",
-          name: "Причепні",
+          name: "Трактор+причепні",
           categoryId: "3",
           specs: [
             { 
@@ -174,7 +174,7 @@ export const servicesTree: ServicesTree = {
               name: "Кліренс (см)", 
               type: "select", 
               required: true, 
-              options: [105, 125, 135, 155, 175, 180, 190, 210] 
+              options: [300, 105, 125, 135, 155, 175, 180, 190, 210] 
             },
           ],
         },
@@ -193,7 +193,7 @@ export const servicesTree: ServicesTree = {
               name: "Кліренс (см)", 
               type: "select", 
               required: true, 
-              options: [105, 125, 135, 155, 175, 180, 190, 210] 
+              options: [300, 105, 125, 135, 155, 175, 180, 190, 210] 
             },
           ],
         },

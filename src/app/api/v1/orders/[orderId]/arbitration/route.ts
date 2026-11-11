@@ -4,6 +4,7 @@ import { ApiError, prisma, notifyUser, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
+import { readFormFileAsDataUrl } from "@/lib/uploads";
 
 const createSchema = z.object({
   reason: z.string().min(1),
@@ -62,8 +63,8 @@ export async function POST(
       throw new ApiError(409, "CONFLICT", "Відкритий арбітражний кейс вже існує");
     }
 
-    const [caseRecord, firstMessage] = await prisma.$transaction([
-      prisma.arbitrationCase.create({
+    const { caseRecord, firstMessage } = await prisma.$transaction(async (tx) => {
+      const createdCase = await tx.arbitrationCase.create({
         data: {
           orderId,
           openedByUserId: user.id,
@@ -79,10 +80,10 @@ export async function POST(
             },
           },
         },
-      }),
-      prisma.arbitrationMessage.create({
+      });
+      const createdMessage = await tx.arbitrationMessage.create({
         data: {
-          arbitrationCaseId: "", // placeholder - will be updated
+          arbitrationCaseId: createdCase.id,
           userId: user.id,
           text: body.reason,
         },
@@ -97,24 +98,19 @@ export async function POST(
             },
           },
         },
-      }),
-      prisma.order.update({
+      });
+      await tx.order.update({
         where: { id: orderId },
         data: { status: "arbitration" },
-      }),
-      prisma.orderStatusEvent.create({
+      });
+      await tx.orderStatusEvent.create({
         data: {
           orderId,
           status: "arbitration",
           note: body.reason,
         },
-      }),
-    ]);
-
-    // Update the message with proper caseId
-    await prisma.arbitrationMessage.update({
-      where: { id: firstMessage.id },
-      data: { arbitrationCaseId: caseRecord.id },
+      });
+      return { caseRecord: createdCase, firstMessage: createdMessage };
     });
 
     const requestId = getRequestId(req);
@@ -199,6 +195,7 @@ export async function GET(
     const [caseRecord, messages] = await Promise.all([
       prisma.arbitrationCase.findFirst({
         where: { orderId },
+        orderBy: { createdAt: "desc" },
         select: {
           id: true,
           status: true,
@@ -306,27 +303,66 @@ export async function PATCH(
       throw new ApiError(404, "NOT_FOUND", "Арбітражний кейс не знайдено або завершено");
     }
 
-    const body = createSchema.parse(await req.json());
+    let text: string;
+    let file: Awaited<ReturnType<typeof readFormFileAsDataUrl>> | null = null;
+    const contentType = (req.headers.get("content-type") || "").toLowerCase();
+    if (contentType.includes("multipart/form-data")) {
+      const form = await req.formData();
+      const raw = form.get("text");
+      text = typeof raw === "string" ? raw.trim() : "";
+      if (!text) throw new ApiError(400, "VALIDATION_ERROR", "Введіть текст повідомлення");
+      if (form.get("file")) file = await readFormFileAsDataUrl(form, "file");
+    } else {
+      text = createSchema.parse(await req.json()).reason;
+    }
 
-    const message = await prisma.arbitrationMessage.create({
-      data: {
-        arbitrationCaseId: caseRecord.id,
-        userId: user.id,
-        text: body.reason,
-      },
-      select: {
-        id: true,
-        text: true,
-        createdAt: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
+    const message = await prisma.$transaction(async (tx) => {
+      const created = await tx.arbitrationMessage.create({
+        data: {
+          arbitrationCaseId: caseRecord.id,
+          userId: user.id,
+          text,
+        },
+        select: {
+          id: true,
+          text: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+            },
           },
         },
-      },
+      });
+      if (file) {
+        await tx.orderMedia.create({
+          data: {
+            orderId,
+            userId: user.id,
+            kind: "arbitration",
+            name: file.name,
+            mimeType: file.mimeType,
+            size: file.size,
+            url: file.dataUrl,
+            arbitrationMessageId: created.id,
+          },
+        });
+      }
+      return created;
     });
+
+    const otherUserId = user.id === order.customerUserId ? order.performerUserId : order.customerUserId;
+    if (otherUserId) {
+      await notifyUser({
+        userId: otherUserId,
+        type: "arbitration",
+        title: "Нове повідомлення в арбітражі",
+        message: `Замовлення ${await orderRef(orderId)}. ${text.slice(0, 160)}`,
+        data: { orderId, type: "arbitration_message", caseId: caseRecord.id, actorId: user.id, action: "view_order" },
+      });
+    }
 
     // Publish domain event for real-time updates
     await publishDomainEvent({
@@ -336,7 +372,7 @@ export async function PATCH(
         userIds: [
           order.customerUserId,
           order.performerUserId!,
-        ],
+        ].filter(Boolean) as string[],
       },
       data: {
         arbitrationCaseId: caseRecord.id,
