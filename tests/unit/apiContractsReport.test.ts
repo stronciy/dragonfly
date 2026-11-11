@@ -63,6 +63,26 @@ describe("відправка звіту: умови", () => {
 });
 
 describe("відправка звіту: успіх і наслідки", () => {
+  it("фото, додані в ході прогресу, враховуються у звіті (не лише окремо завантажені до звіту)", async () => {
+    const id = await startedOrder();
+    db.insert("orderMedia", {
+      id: "progress_photo_1",
+      orderId: id,
+      userId: USERS.performer,
+      kind: "progress",
+      name: "work.jpg",
+      mimeType: "image/jpeg",
+      size: 10,
+      url: "data:image/jpeg;base64,AA==",
+      createdAt: new Date(),
+    });
+    const res = await submit(id);
+    assert.equal(res.status, 200, "фото прогресу мають рахуватися як фото звіту");
+    assert.equal(res.body.data.report.photoCount, 1);
+    const report = await readResponse(await reportGet(await call(USERS.customer, "GET"), ctx(id)));
+    assert.equal(report.body.data.report.items.length, 1);
+  });
+
   it("з фото звіт надсилається: час відправки, запис у таймлайні, сповіщення заказчику", async () => {
     const id = await startedOrder();
     await uploadPhoto(id);

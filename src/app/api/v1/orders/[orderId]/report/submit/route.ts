@@ -25,7 +25,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     }
     if (order.reportSubmittedAt) throw new ApiError(409, "CONFLICT", "Звіт вже надіслано замовнику");
 
-    const photoCount = await prisma.orderMedia.count({ where: { orderId, kind: "report" } });
+    // Фотозвіт — це фото робіт: окремо завантажені до звіту та фото, додані в ході
+    // прогресу (вони вже видно заказчику в хабі прогресу).
+    const photoCount = await prisma.orderMedia.count({ where: { orderId, kind: { in: ["report", "progress"] } } });
     if (photoCount === 0) {
       throw new ApiError(400, "VALIDATION_ERROR", "Додайте хоча б одне фото до звіту");
     }
