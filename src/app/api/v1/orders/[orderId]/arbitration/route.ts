@@ -7,7 +7,7 @@ import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 import { readFormFileAsDataUrl } from "@/lib/uploads";
 
 const createSchema = z.object({
-  reason: z.string().min(1),
+  reason: z.string().trim().min(1),
 });
 
 export async function POST(
@@ -300,6 +300,9 @@ export async function PATCH(
     ]);
 
     if (!caseRecord || !order) {
+      throw new ApiError(404, "NOT_FOUND", "Арбітражний кейс не знайдено або завершено");
+    }
+    if (user.id !== order.customerUserId && user.id !== order.performerUserId) {
       throw new ApiError(404, "NOT_FOUND", "Арбітражний кейс не знайдено або завершено");
     }
 
