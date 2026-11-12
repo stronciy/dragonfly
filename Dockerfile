@@ -1,11 +1,11 @@
 # ---- dependencies ----
-FROM node:20-bookworm-slim AS deps
+FROM node:24-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
 # ---- build ----
-FROM node:20-bookworm-slim AS build
+FROM node:24-bookworm-slim AS build
 WORKDIR /app
 # Prisma needs OpenSSL for version detection (silences "failed to detect libssl" warnings)
 RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
@@ -17,7 +17,7 @@ RUN npm run prisma:generate
 RUN npm run build
 
 # ---- runtime ----
-FROM node:20-bookworm-slim AS runner
+FROM node:24-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 # OpenSSL is needed by Prisma; postgresql-client provides `pg_dump` so the admin
