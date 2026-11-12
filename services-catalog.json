@@ -38,7 +38,7 @@
     },
     {
       "serviceCategoryId": "3",
-      "serviceCategoryName": "Внесення ЗЗР, добрив",
+      "serviceCategoryName": "Внесення ЗЗР, мікродобрив",
       "icon": "🚁",
       "subcategories": [
         {
@@ -46,7 +46,7 @@
           "serviceSubCategoryName": "Дрони",
           "types": [],
           "requiredSpecs": [
-            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [4, 6, 8, 10] }
+            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [18, 24, 30] }
           ]
         },
         {
@@ -55,7 +55,7 @@
           "types": [],
           "requiredSpecs": [
             { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [18, 30] },
-            { "name": "Кліренс (см)", "type": "select", "required": true, "options": [105, 125, 135, 155, 175, 180, 190, 210, 300] }
+            { "name": "Кліренс (см)", "type": "select", "required": true, "options": [105, 125, 135, 155, 175, 180, 190, 210] }
           ]
         },
         {
@@ -63,8 +63,8 @@
           "serviceSubCategoryName": "Самохідні",
           "types": [],
           "requiredSpecs": [
-            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [24, 28, 32, 36] },
-            { "name": "Кліренс (см)", "type": "select", "required": true, "options": [105, 125, 135, 155, 175, 180, 190, 210, 300] }
+            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [18, 24, 28, 30, 32, 36, 42, 48] },
+            { "name": "Кліренс (см)", "type": "select", "required": true, "options": [105, 125, 135, 155, 175, 180, 190, 210] }
           ]
         }
       ]

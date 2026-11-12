@@ -143,7 +143,7 @@ export const servicesTree: ServicesTree = {
     },
     {
       id: "3",
-      name: "Внесення ЗЗР, добрив",
+      name: "Внесення ЗЗР, мікродобрив",
       icon: "🚁",
       children: [
         {
@@ -155,7 +155,7 @@ export const servicesTree: ServicesTree = {
               name: "Ширина внесення штанги (м)", 
               type: "select", 
               required: true, 
-              options: [4, 6, 8, 10] 
+              options: [18, 24, 30] 
             },
           ],
         },
@@ -174,7 +174,7 @@ export const servicesTree: ServicesTree = {
               name: "Кліренс (см)", 
               type: "select", 
               required: true, 
-              options: [105, 125, 135, 155, 175, 180, 190, 210, 300] 
+              options: [105, 125, 135, 155, 175, 180, 190, 210] 
             },
           ],
         },
@@ -187,13 +187,13 @@ export const servicesTree: ServicesTree = {
               name: "Ширина внесення штанги (м)", 
               type: "select", 
               required: true, 
-              options: [24, 28, 32, 36] 
+              options: [18, 24, 28, 30, 32, 36, 42, 48] 
             },
             { 
               name: "Кліренс (см)", 
               type: "select", 
               required: true, 
-              options: [105, 125, 135, 155, 175, 180, 190, 210, 300] 
+              options: [105, 125, 135, 155, 175, 180, 190, 210] 
             },
           ],
         },

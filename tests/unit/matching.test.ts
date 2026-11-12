@@ -157,7 +157,7 @@ test("performerCoversOrderSpecs still matches legacy scalar specs", () => {
 
 test("validatePerformerServiceSpecs accepts several values from the options", () => {
   assert.deepEqual(
-    validatePerformerServiceSpecs("3.1", { "Ширина внесення штанги (м)": [4, 8, 10] }),
+    validatePerformerServiceSpecs("3.1", { "Ширина внесення штанги (м)": [18, 24] }),
     []
   );
   assert.deepEqual(
@@ -167,7 +167,7 @@ test("validatePerformerServiceSpecs accepts several values from the options", ()
 });
 
 test("validatePerformerServiceSpecs rejects a value outside the options in a set", () => {
-  assert.ok(validatePerformerServiceSpecs("3.1", { "Ширина внесення штанги (м)": [4, 7] }).length > 0);
+  assert.ok(validatePerformerServiceSpecs("3.1", { "Ширина внесення штанги (м)": [18, 19] }).length > 0);
 });
 
 test("validatePerformerServiceSpecs rejects an empty set", () => {
@@ -175,7 +175,7 @@ test("validatePerformerServiceSpecs rejects an empty set", () => {
 });
 
 test("validatePerformerServiceSpecs accepts a scalar for an order-style payload", () => {
-  assert.deepEqual(validatePerformerServiceSpecs("3.1", { "Ширина внесення штанги (м)": 8 }), []);
+  assert.deepEqual(validatePerformerServiceSpecs("3.1", { "Ширина внесення штанги (м)": 24 }), []);
 });
 
 test("validatePerformerServiceSpecs accepts valid specs", () => {
