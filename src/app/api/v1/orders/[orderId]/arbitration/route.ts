@@ -6,6 +6,7 @@ import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 import { readFormFilesAsDataUrl } from "@/lib/uploads";
 import { responseDueAt } from "@/lib/arbitrationDeadlines";
+import { readMultipartForm } from "@/lib/multipart";
 
 const MAX_CHAT_FILES = 5;
 
@@ -332,7 +333,7 @@ export async function PATCH(
     let files: Awaited<ReturnType<typeof readFormFilesAsDataUrl>> = [];
     const contentType = (req.headers.get("content-type") || "").toLowerCase();
     if (contentType.includes("multipart/form-data")) {
-      const form = await req.formData();
+      const form = await readMultipartForm(req);
       const raw = form.get("text");
       text = typeof raw === "string" ? raw.trim() : "";
       toAdmin = form.get("toAdmin") === "true";

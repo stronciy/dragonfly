@@ -3,6 +3,7 @@ import { ApiError } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { readFormFileAsDataUrl } from "@/lib/uploads";
+import { readMultipartForm } from "@/lib/multipart";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
     if (order.status !== "arbitration") throw new ApiError(409, "CONFLICT", "Замовлення не в арбітражі");
 
-    const form = await req.formData();
+    const form = await readMultipartForm(req);
     const { dataUrl, mimeType, size, name } = await readFormFileAsDataUrl(form, "file");
 
     const openCase = await prisma.arbitrationCase.findFirst({

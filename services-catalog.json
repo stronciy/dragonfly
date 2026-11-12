@@ -46,7 +46,7 @@
           "serviceSubCategoryName": "Дрони",
           "types": [],
           "requiredSpecs": [
-            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [18, 24, 30] }
+            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [4, 6, 7, 10] }
           ]
         },
         {
@@ -54,7 +54,7 @@
           "serviceSubCategoryName": "Трактор+причепні",
           "types": [],
           "requiredSpecs": [
-            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [18, 30] },
+            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [18, 24, 30] },
             { "name": "Кліренс (см)", "type": "select", "required": true, "options": [105, 125, 135, 155, 175, 180, 190, 210] }
           ]
         },
