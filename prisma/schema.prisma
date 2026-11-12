@@ -611,6 +611,9 @@ model ArbitrationCase {
   createdAt    DateTime @default(now()) @map("created_at")
   resolvedAt   DateTime? @map("resolved_at")
   closedAt     DateTime? @map("closed_at")
+  /// Строк відповіді заказчика і виконавця (24 год); null — відповідати не потрібно.
+  customerResponseDueAt DateTime? @map("customer_response_due_at")
+  performerResponseDueAt DateTime? @map("performer_response_due_at")
 
   order          Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   openedBy       User  @relation("OpenedArbitrationCases", fields: [openedByUserId], references: [id], onDelete: Cascade)

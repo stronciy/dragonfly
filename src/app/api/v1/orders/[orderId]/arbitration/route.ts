@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/requireAuth";
 import { publishDomainEvent } from "@/realtime/publishDomainEvent";
 import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 import { readFormFilesAsDataUrl } from "@/lib/uploads";
+import { responseDueAt } from "@/lib/arbitrationDeadlines";
 
 const MAX_CHAT_FILES = 5;
 
@@ -73,6 +74,9 @@ export async function POST(
           orderId,
           openedByUserId: user.id,
           status: "open",
+          // Відповідає інша сторона; відкривач відповіді не чекає.
+          customerResponseDueAt: user.id === order.customerUserId ? null : responseDueAt(),
+          performerResponseDueAt: user.id === order.customerUserId ? responseDueAt() : null,
         },
         select: {
           id: true,
@@ -203,6 +207,8 @@ export async function GET(
         select: {
           id: true,
           status: true,
+          customerResponseDueAt: true,
+          performerResponseDueAt: true,
           createdAt: true,
           resolvedAt: true,
           closedAt: true,
@@ -272,10 +278,14 @@ export async function GET(
       (m) => !m.channel || m.channel === "common" || m.channel === myChannel
     );
 
+    const myResponseDueAt =
+      myChannel === "customer" ? caseRecord?.customerResponseDueAt ?? null : caseRecord?.performerResponseDueAt ?? null;
+
     return ok(req, {
       case: caseRecord,
       messages: visible,
       myChannel,
+      myResponseDueAt,
     });
   } catch (err) {
     return fail(req, err);
@@ -337,7 +347,20 @@ export async function PATCH(
     const myChannel = user.id === order.customerUserId ? "customer" : "performer";
     const channel = toAdmin ? myChannel : "common";
 
+    const isCustomerSide = user.id === order.customerUserId;
     const message = await prisma.$transaction(async (tx) => {
+      // Відповідь сторони знімає її строк; загальне повідомлення запускає строк іншій стороні.
+      await tx.arbitrationCase.update({
+        where: { id: caseRecord.id },
+        data: {
+          ...(isCustomerSide ? { customerResponseDueAt: null } : { performerResponseDueAt: null }),
+          ...(channel === "common"
+            ? isCustomerSide
+              ? { performerResponseDueAt: responseDueAt() }
+              : { customerResponseDueAt: responseDueAt() }
+            : {}),
+        },
+      });
       const created = await tx.arbitrationMessage.create({
         data: {
           arbitrationCaseId: caseRecord.id,

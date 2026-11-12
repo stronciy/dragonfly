@@ -1,11 +1,12 @@
-// Потік рішення арбітражу: пропозиція заказчика, підтвердження або відхилення
-// виконавцем, відкликання пропозиції та грошові наслідки кожного кроку.
+// Спір вирішує лише адміністратор: сторони не пропонують, не підтверджують і не
+// відхиляють рішення самі. Листування і оцінки — окремі сценарії.
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import {
   resetWorld, createOrder, call, ctx, readResponse, performerClaimsAndPays, customerPays,
-  USERS, order, escrowOf, notificationsFor,
+  USERS, order,
 } from "../helpers/world";
+import { db } from "../helpers/fakePrisma";
 import { PATCH as statusPatch } from "../../src/app/api/v1/orders/[orderId]/status/route";
 import { POST as openArb } from "../../src/app/api/v1/orders/[orderId]/arbitration/route";
 import { GET as resolveGet, POST as resolvePropose } from "../../src/app/api/v1/orders/[orderId]/arbitration/resolve/route";
@@ -13,8 +14,8 @@ import { POST as approvePost } from "../../src/app/api/v1/orders/[orderId]/arbit
 import { POST as rejectPost } from "../../src/app/api/v1/orders/[orderId]/arbitration/resolve/reject/route";
 import { POST as withdrawPost } from "../../src/app/api/v1/orders/[orderId]/arbitration/resolve/withdraw/route";
 
-const act = (userId: string, body: Record<string, unknown> = {}, method: "POST" | "GET" = "POST") =>
-  call(userId, method, method === "POST" ? body : undefined);
+const ADMIN_KEY = "test-panel-secret";
+process.env.ADMIN_PANEL_SECRET = ADMIN_KEY;
 
 async function inArbitration(days = 1, budget = 10000) {
   const id = createOrder({ days, budget });
@@ -23,123 +24,56 @@ async function inArbitration(days = 1, budget = 10000) {
   await statusPatch(await call(USERS.performer, "PATCH", { status: "en_route" }), ctx(id));
   await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id));
   await statusPatch(await call(USERS.performer, "PATCH", { status: "completed" }), ctx(id));
-  const res = await readResponse(await openArb(await act(USERS.customer, { reason: "Не виконано" }), ctx(id)));
+  const res = await readResponse(await openArb(await call(USERS.customer, "POST", { reason: "Не виконано" }), ctx(id)));
   assert.equal(res.status, 201);
   return id;
 }
 
-beforeEach(() => resetWorld());
-
-describe("пропозиція рішення", () => {
-  it("заказчик пропонує close_plain — пропозиція очікує виконавця", async () => {
-    const id = await inArbitration();
-    const res = await readResponse(await resolvePropose(await act(USERS.customer, { decision: "close_plain" }), ctx(id)));
-    assert.equal(res.status, 201);
-    const view = await readResponse(await resolveGet(await act(USERS.performer, {}, "GET"), ctx(id)));
-    assert.equal(view.status, 200);
-    assert.ok(JSON.stringify(view.body.data).includes("pending"));
-    assert.ok(notificationsFor(USERS.performer).length > 0, "виконавець отримав сповіщення");
-  });
-
-  it("повторна пропозиція поки є активна — 409", async () => {
-    const id = await inArbitration();
-    await resolvePropose(await act(USERS.customer, { decision: "close_plain" }), ctx(id));
-    const res = await readResponse(await resolvePropose(await act(USERS.customer, { decision: "close_fine" }), ctx(id)));
-    assert.equal(res.status, 409);
-  });
-
-  it("виконавець не може пропонувати рішення (403)", async () => {
-    const id = await inArbitration();
-    const res = await readResponse(await resolvePropose(await act(USERS.performer, { decision: "close_plain" }), ctx(id)));
-    assert.equal(res.status, 403);
-  });
-
-  it("пропозиція поза арбітражем відхиляється (409)", async () => {
-    const id = createOrder({ days: 1 });
-    const res = await readResponse(await resolvePropose(await act(USERS.customer, { decision: "close_plain" }), ctx(id)));
-    assert.equal(res.status, 409);
-  });
+beforeEach(() => {
+  resetWorld();
+  db.insert("admin", { id: "admin_1", email: "a@test.local", passwordHash: "x", role: "admin", active: true });
 });
 
-describe("підтвердження рішення виконавцем", () => {
-  it("close_plain: заказ завершується, застава виконавця повертається, оплата йде виконавцю", async () => {
-    const id = await inArbitration(1, 10000);
-    await resolvePropose(await act(USERS.customer, { decision: "close_plain" }), ctx(id));
-    const res = await readResponse(await approvePost(await act(USERS.performer), ctx(id)));
+describe("сторони не вирішують спір самі", () => {
+  it("заказчик не може запропонувати рішення (403), заказ лишається в арбітражі", async () => {
+    const id = await inArbitration();
+    const res = await readResponse(await resolvePropose(await call(USERS.customer, "POST", { decision: "close_plain" }), ctx(id)));
+    assert.equal(res.status, 403);
+    assert.equal(order(id).status, "arbitration");
+    assert.equal(db.findMany("arbitrationResolution", { where: { orderId: id } }).length, 0);
+  });
+
+  it("виконавець не може ні підтвердити, ні відхилити, ні відкликати (403)", async () => {
+    const id = await inArbitration();
+    for (const handler of [approvePost, rejectPost, withdrawPost]) {
+      const res = await readResponse(await handler(await call(USERS.performer, "POST", {}), ctx(id)));
+      assert.equal(res.status, 403);
+    }
+    assert.equal(order(id).status, "arbitration");
+  });
+
+  it("читання стану спору доступне стороні і не змінює його", async () => {
+    const id = await inArbitration();
+    const res = await readResponse(await resolveGet(await call(USERS.performer, "GET"), ctx(id)));
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.resolution, null);
+  });
+
+  it("решення адміна закриває заказ (єдиний шлях розв'язання)", async () => {
+    const id = await inArbitration();
+    const { POST: rulingPost } = await import("../../src/app/api/v1/admin/arbitration/[caseId]/ruling/route");
+    const caseId = db.findMany("arbitrationCase", { where: { orderId: id } })[0].id as string;
+    const res = await readResponse(
+      await rulingPost(
+        new Request("http://localhost/x", {
+          method: "POST",
+          headers: { "x-admin-key": ADMIN_KEY, "x-admin-id": "admin_1", "content-type": "application/json" },
+          body: JSON.stringify({ winner: "customer", penalty: false, reason: "Ок" }),
+        }),
+        { params: Promise.resolve({ caseId }) },
+      ),
+    );
     assert.equal(res.status, 200);
     assert.equal(order(id).status, "completed");
-    assert.deepEqual(escrowOf(id, "performer"), { status: "released", amount: 3000 });
-    assert.deepEqual(escrowOf(id, "customer"), { status: "released", amount: 10000 });
-  });
-
-  it("close_fine: застава виконавця утримується, заказчика — зараховано", async () => {
-    const id = await inArbitration(1, 10000);
-    await resolvePropose(await act(USERS.customer, { decision: "close_fine" }), ctx(id));
-    const res = await readResponse(await approvePost(await act(USERS.performer), ctx(id)));
-    assert.equal(res.status, 200);
-    assert.deepEqual(escrowOf(id, "performer"), { status: "forfeited", amount: 3000 });
-    assert.deepEqual(escrowOf(id, "customer"), { status: "released", amount: 10000 });
-  });
-
-  it("підтвердити можна лише активну пропозицію (409 без неї)", async () => {
-    const id = await inArbitration();
-    const res = await readResponse(await approvePost(await act(USERS.performer), ctx(id)));
-    assert.equal(res.status, 409);
-    assert.equal(order(id).status, "arbitration");
-  });
-
-  it("інший виконавець не може підтвердити рішення (404)", async () => {
-    const id = await inArbitration();
-    await resolvePropose(await act(USERS.customer, { decision: "close_plain" }), ctx(id));
-    const res = await readResponse(await approvePost(await act(USERS.otherPerformer), ctx(id)));
-    assert.equal(res.status, 404);
-  });
-
-  it("для багатоденного заказу закрити без залишку 70% не можна (409)", async () => {
-    const id = createOrder({ days: 3, budget: 10000 });
-    await performerClaimsAndPays(id);
-    await customerPays(id);
-    await statusPatch(await call(USERS.performer, "PATCH", { status: "en_route" }), ctx(id));
-    await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id));
-    await readResponse(await openArb(await act(USERS.performer, { reason: "Заказчик не платить" }), ctx(id)));
-    await resolvePropose(await act(USERS.customer, { decision: "close_plain" }), ctx(id));
-    const res = await readResponse(await approvePost(await act(USERS.performer), ctx(id)));
-    assert.equal(res.status, 409);
-    assert.equal(order(id).status, "arbitration");
-  });
-});
-
-describe("відхилення та відкликання пропозиції", () => {
-  it("виконавець відхиляє — заказ лишається в арбітражі, можна запропонувати знову", async () => {
-    const id = await inArbitration();
-    await resolvePropose(await act(USERS.customer, { decision: "close_plain" }), ctx(id));
-    const rej = await readResponse(await rejectPost(await act(USERS.performer), ctx(id)));
-    assert.equal(rej.status, 200);
-    assert.equal(order(id).status, "arbitration");
-    const again = await readResponse(await resolvePropose(await act(USERS.customer, { decision: "close_fine" }), ctx(id)));
-    assert.equal(again.status, 201);
-  });
-
-  it("заказчик відкликає власну пропозицію", async () => {
-    const id = await inArbitration();
-    await resolvePropose(await act(USERS.customer, { decision: "close_plain" }), ctx(id));
-    const res = await readResponse(await withdrawPost(await act(USERS.customer), ctx(id)));
-    assert.equal(res.status, 200);
-    assert.equal(order(id).status, "arbitration");
-  });
-
-  it("відкликати чужу пропозицію не можна (409)", async () => {
-    const id = await inArbitration();
-    await resolvePropose(await act(USERS.customer, { decision: "close_plain" }), ctx(id));
-    const res = await readResponse(await withdrawPost(await act(USERS.performer), ctx(id)));
-    assert.equal(res.status, 403);
-  });
-
-  it("після закриття заказу підтверджене рішення не відкликається (409)", async () => {
-    const id = await inArbitration();
-    await resolvePropose(await act(USERS.customer, { decision: "close_plain" }), ctx(id));
-    await approvePost(await act(USERS.performer), ctx(id));
-    const res = await readResponse(await withdrawPost(await act(USERS.customer), ctx(id)));
-    assert.notEqual(res.status, 200);
   });
 });

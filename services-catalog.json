@@ -55,7 +55,7 @@
           "types": [],
           "requiredSpecs": [
             { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [18, 30] },
-            { "name": "Кліренс (см)", "type": "select", "required": true, "options": [300, 105, 125, 135, 155, 175, 180, 190, 210] }
+            { "name": "Кліренс (см)", "type": "select", "required": true, "options": [105, 125, 135, 155, 175, 180, 190, 210, 300] }
           ]
         },
         {
@@ -64,7 +64,7 @@
           "types": [],
           "requiredSpecs": [
             { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [24, 28, 32, 36] },
-            { "name": "Кліренс (см)", "type": "select", "required": true, "options": [300, 105, 125, 135, 155, 175, 180, 190, 210] }
+            { "name": "Кліренс (см)", "type": "select", "required": true, "options": [105, 125, 135, 155, 175, 180, 190, 210, 300] }
           ]
         }
       ]

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { fail, getRequestId, ok } from "@/lib/apiResponse";
 import { requirePanelAdmin } from "@/lib/adminAuth";
 import { ApiError, notifyUser, orderRef, prisma, publishDomainEvent } from "@/shared";
+import { responseDueAt } from "@/lib/arbitrationDeadlines";
 
 export const runtime = "nodejs";
 
@@ -34,9 +35,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
     }
 
     const message = await prisma.$transaction(async (tx) => {
+      // Відповідь адміна ставить строк відповіді адресатам (24 год).
+      const due = responseDueAt();
       await tx.arbitrationCase.update({
         where: { id: caseId },
-        data: { status: "admin_assigned", assigneeAdminId: admin.id },
+        data: {
+          status: "admin_assigned",
+          assigneeAdminId: admin.id,
+          ...(channel !== "performer" ? { customerResponseDueAt: due } : {}),
+          ...(channel !== "customer" ? { performerResponseDueAt: due } : {}),
+        },
       });
       return tx.arbitrationMessage.create({
         data: { arbitrationCaseId: caseId, adminId: admin.id, text, channel },

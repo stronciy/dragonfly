@@ -23,3 +23,12 @@ test("заказ з клиренсом 300 см проходить валіда�
   });
   assert.deepEqual(errors, []);
 });
+
+test("опції клиренсу йдуть від меншого до більшого (300 — останнє)", () => {
+  for (const id of ["3.2", "3.3"]) {
+    const options = (getSubcategoryById(id)?.specs?.find((s) => s.name === CLEARANCE)?.options ?? []) as number[];
+    assert.deepEqual(options, [...options].sort((a, b) => a - b));
+    assert.equal(options[options.length - 1], 300);
+    assert.equal(options[0], 105);
+  }
+});

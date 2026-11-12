@@ -24,7 +24,7 @@ export async function getOrderRatingState(orderId: string, userId: string) {
       select: { id: true },
     }),
     prisma.arbitrationCase.findFirst({
-      where: { orderId, status: "resolved" },
+      where: { orderId, status: { in: ["resolved", "closed"] } },
       select: { id: true },
     }),
     prisma.review.findFirst({ where: { orderId, authorUserId: userId }, select: { id: true, rating: true } }),
