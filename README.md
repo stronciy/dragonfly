@@ -66,6 +66,35 @@ server.js              # Custom server: Next.js + WebSocket
 
 Спільний код (lib/prisma, lib/errors, lib/deposit, lib/orderStatus, lib/matching, queues, realtime, services) — **дубльований** окремо в `worker/`-проєкті. Зміни в цих файлах треба переносити в обидва проєкти вручну.
 
+## Telegram-сповіщення адміністраторів
+
+Події платформи (реєстрації, замовлення, оплати, запити на виведення, арбітраж) надсилаються адміністраторам у Telegram.
+
+- `src/instrumentation.ts` запускає опитування (`src/lib/adminNotifications/poller.ts`) кожні 15 с. Джерела — таблиці БД з курсорами (`admin_event_cursors`), тому події не губляться при перезапуску і не потребують змін у маршрутах.
+- Тип події додається в `src/lib/adminNotifications/catalog.ts` і в `sources.ts`. Копія каталогу для UI не потрібна: панель отримує список з API.
+- Вибірка зберігається в `admin_notification_settings` (за замовчуванням увімкнено все). Змінити можна в панелі («Сповіщення») або в боті командою `/settings`.
+- Опитування запускається тільки коли задано `TELEGRAM_BOT_TOKEN`.
+
+Змінні середовища:
+
+- `TELEGRAM_BOT_TOKEN` — токен від @BotFather.
+- `TELEGRAM_BOT_USERNAME` — імʼя бота без `@` (для посилання прив'язки).
+- `TELEGRAM_WEBHOOK_SECRET` — довільний рядок (1–256 символів `A-Za-z0-9_-`), перевіряється в заголовку вебхука.
+- `ADMIN_PANEL_URL` — адреса адмін-панелі для посилань у повідомленнях (необов'язково).
+
+Підключення вебхука (один раз після деплою):
+
+```bash
+curl -sS "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
+  -d "url=https://api.dragonfly.ua/api/v1/telegram/webhook" \
+  -d "secret_token=$TELEGRAM_WEBHOOK_SECRET" \
+  -d 'allowed_updates=["message","callback_query"]'
+```
+
+Команди бота: `/start КОД` (прив'язка), `/settings` (кнопки вибірки), `/stop` (відключити), `/help`.
+
+Обмеження: опитування працює в одному екземплярі бекенду. При горизонтальному масштабуванні потрібен лок (наприклад, Redis `SET NX`).
+
 ## Prisma
 
 Prisma 7 + `@prisma/adapter-pg` (driver adapter, НЕ engine). Схема: `prisma/schema.prisma`, output `../generated/prisma` → `generated/prisma/`. `npm run prisma:generate` також створює симлінк `node_modules/.prisma/client → ../../generated/prisma`, щоб `import { Prisma } from "@prisma/client"` бачив типи.

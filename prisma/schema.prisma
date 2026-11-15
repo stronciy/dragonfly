@@ -88,8 +88,61 @@ model Admin {
   assignedArbitrationCases ArbitrationCase[] @relation("AssignedArbitrationCases")
   authoredRulings     ArbitrationRuling[]
   authoredArbitrationMessages ArbitrationMessage[] @relation("AdminArbitrationMessages")
+  telegramLink             AdminTelegramLink?
+  telegramLinkCodes        AdminTelegramLinkCode[]
+  notificationSettings     AdminNotificationSetting[]
 
   @@map("admins")
+}
+
+/// Telegram-чат адміністратора для сповіщень. Один адмін — один чат.
+model AdminTelegramLink {
+  adminId  String   @id @map("admin_id")
+  chatId   String   @unique @map("chat_id")
+  username String?
+  linkedAt DateTime @default(now()) @map("linked_at")
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_telegram_links")
+}
+
+/// Одноразовий код прив'язки Telegram (зберігається SHA-256 від коду, живе 15 хв).
+model AdminTelegramLinkCode {
+  id        String    @id @default(cuid())
+  adminId   String    @map("admin_id")
+  codeHash  String    @unique @map("code_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+  @@map("admin_telegram_link_codes")
+}
+
+/// Вибірка сповіщень адміна по типу події. Немає рядка — діє значення за замовчуванням з каталогу.
+model AdminNotificationSetting {
+  adminId   String   @map("admin_id")
+  eventType String   @map("event_type")
+  enabled   Boolean
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@id([adminId, eventType])
+  @@map("admin_notification_settings")
+}
+
+/// Курсор опитування джерел подій. `ids` — вже розіслані події з вікна перевірки (хвіст часу).
+model AdminEventCursor {
+  source    String   @id
+  at        DateTime
+  ids       Json     @default("[]")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("admin_event_cursors")
 }
 
 /// Одноразовые коды восстановления пароля администратора панели.
