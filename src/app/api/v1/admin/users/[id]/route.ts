@@ -20,7 +20,7 @@ const schema = z.object({
 /** USR-3: правка имени/телефона пользователя администратором. */
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const admin = await requirePanelAdmin(req);
+    const admin = await requirePanelAdmin(req, "users.manage");
     const { id } = await ctx.params;
 
     const parsed = schema.parse(await req.json().catch(() => null));

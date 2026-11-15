@@ -37,7 +37,7 @@ const OPERATIONAL_TARGETS = new Set([
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const admin = await requirePanelAdmin(req);
+    const admin = await requirePanelAdmin(req, "orders.manage");
     const requestId = getRequestId(req);
     const { id } = await ctx.params;
     const { to, reason } = schema.parse(await req.json().catch(() => null));

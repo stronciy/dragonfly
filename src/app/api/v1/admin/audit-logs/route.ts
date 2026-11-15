@@ -27,7 +27,7 @@ function parseCursor(raw: string | null): AuditCursor | null {
 /** AUD-1/AUD-2: журнал действий администраторов. Курсорная пагинация. */
 export async function GET(req: Request) {
   try {
-    await requirePanelAdmin(req);
+    await requirePanelAdmin(req, "audit.read");
 
     const url = new URL(req.url);
     const limitRaw = Number(url.searchParams.get("limit"));

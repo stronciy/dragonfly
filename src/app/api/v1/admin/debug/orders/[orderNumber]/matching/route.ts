@@ -13,7 +13,7 @@ export const runtime = "nodejs";
  */
 export async function GET(req: Request, ctx: { params: Promise<{ orderNumber: string }> }) {
   try {
-    await requirePanelAdmin(req);
+    await requirePanelAdmin(req, "orders.read");
     const { orderNumber: raw } = await ctx.params;
     const digits = decodeURIComponent(raw).replace(/\D/g, "");
     if (digits.length !== 9) {

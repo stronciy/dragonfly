@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 /** Черга заявок на виведення для панелі адміністратора. */
 export async function GET(req: Request) {
   try {
-    await requirePanelAdmin(req);
+    await requirePanelAdmin(req, "finance.read");
     const url = new URL(req.url);
     const status = url.searchParams.get("status") ?? "requested";
     const payouts = await prisma.payout.findMany({

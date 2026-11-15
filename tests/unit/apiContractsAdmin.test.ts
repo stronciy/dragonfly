@@ -16,6 +16,7 @@ import { DELETE as notificationDelete } from "../../src/app/api/v1/notifications
 
 const ADMIN_KEY = "test-panel-secret";
 const ADMIN_ID = "admin_1";
+const SUPERADMIN_ID = "superadmin_1";
 process.env.ADMIN_PANEL_SECRET = ADMIN_KEY;
 
 const admin = (method: string, body?: unknown, extra: Record<string, string> = {}) => new Request("http://localhost/x", {
@@ -28,6 +29,7 @@ const idCtx = (id: string) => ({ params: Promise.resolve({ id }) });
 beforeEach(() => {
   resetWorld();
   db.insert("admin", { id: ADMIN_ID, email: "admin@test.local", passwordHash: "x", role: "admin", active: true });
+  db.insert("admin", { id: SUPERADMIN_ID, email: "super@test.local", passwordHash: "x", role: "superadmin", active: true });
 });
 
 describe("адмін: редагування користувача", () => {
@@ -121,8 +123,15 @@ describe("адмін: черги і захист скидання даних", (
 
   it("скидання даних без точної фрази підтвердження відхиляється (400) і нічого не робить", async () => {
     const id = createOrder({ days: 1 });
-    const res = await readResponse(await resetPost(admin("POST", { confirm: "так" })));
+    const res = await readResponse(await resetPost(admin("POST", { confirm: "так" }, { "x-admin-id": SUPERADMIN_ID })));
     assert.equal(res.status, 400);
+    assert.equal(order(id).status, "published", "дані не змінені");
+  });
+
+  it("скидання даних звичайним адміном заборонено (403), навіть з точною фразою", async () => {
+    const id = createOrder({ days: 1 });
+    const res = await readResponse(await resetPost(admin("POST", { confirm: "RESET ALL DATA" })));
+    assert.equal(res.status, 403);
     assert.equal(order(id).status, "published", "дані не змінені");
   });
 

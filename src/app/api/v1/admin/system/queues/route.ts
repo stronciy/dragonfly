@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 /** OPS: read-only queue counters for the admin system page. */
 export async function GET(req: Request) {
   try {
-    await requirePanelAdmin(req);
+    await requirePanelAdmin(req, "system.read");
     const queues = await getQueuesSnapshot();
     return ok(req, { queues });
   } catch (err) {
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
  */
 export async function POST(req: Request) {
   try {
-    const admin = await requirePanelAdmin(req);
+    const admin = await requirePanelAdmin(req, "system.manage");
 
     const result = await clearQueues();
     if (!result.ok) {

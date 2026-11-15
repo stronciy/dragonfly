@@ -19,7 +19,7 @@ const schema = z.object({
  */
 export async function POST(req: Request, ctx: { params: Promise<{ userId: string }> }) {
   try {
-    const admin = await requirePanelAdmin(req);
+    const admin = await requirePanelAdmin(req, "users.manage");
     const { userId } = await ctx.params;
     const body = schema.parse(await req.json().catch(() => ({})));
     const reason = body.reason?.trim() || null;

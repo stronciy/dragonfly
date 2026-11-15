@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 /** Кейс з листуванням (сторони + адмін), замовленням, заставами і рішенням. */
 export async function GET(req: Request, ctx: { params: Promise<{ caseId: string }> }) {
   try {
-    await requirePanelAdmin(req);
+    await requirePanelAdmin(req, "arbitration.read");
     const { caseId } = await ctx.params;
 
     const arbitrationCase = await prisma.arbitrationCase.findUnique({

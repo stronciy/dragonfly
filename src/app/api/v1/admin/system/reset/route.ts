@@ -32,7 +32,7 @@ const schema = z.object({
  */
 export async function POST(req: Request) {
   try {
-    const admin = await requirePanelAdmin(req);
+    const admin = await requirePanelAdmin(req, "system.manage");
     const body = schema.parse(await req.json().catch(() => null));
     if (body.confirm.trim() !== RESET_CONFIRMATION) {
       throw new ApiError(

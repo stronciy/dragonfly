@@ -19,7 +19,7 @@ const actionSchema = z.discriminatedUnion("action", [
  */
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const admin = await requirePanelAdmin(req);
+    const admin = await requirePanelAdmin(req, "finance.manage");
     const { id } = await ctx.params;
     const body = actionSchema.parse(await req.json());
 

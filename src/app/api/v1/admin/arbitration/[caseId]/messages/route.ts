@@ -15,7 +15,7 @@ const schema = z.object({
 /** Повідомлення адміністратора в кейсі: бачать обидві сторони. */
 export async function POST(req: Request, ctx: { params: Promise<{ caseId: string }> }) {
   try {
-    const admin = await requirePanelAdmin(req);
+    const admin = await requirePanelAdmin(req, "arbitration.manage");
     const requestId = getRequestId(req);
     const { caseId } = await ctx.params;
     const { text, channel } = schema.parse(await req.json().catch(() => null));

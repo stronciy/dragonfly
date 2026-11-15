@@ -9,7 +9,7 @@ const OPEN_STATUSES = ["open", "admin_assigned"];
 /** Список арбітражних кейсів для адмін-панелі. ?status=open (за замовч.) | resolved | all */
 export async function GET(req: Request) {
   try {
-    await requirePanelAdmin(req);
+    await requirePanelAdmin(req, "arbitration.read");
     const status = new URL(req.url).searchParams.get("status") ?? "open";
     const where =
       status === "all"

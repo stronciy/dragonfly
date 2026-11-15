@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { ApiError, prisma } from "@/shared";
+import { hasPermission, type AdminPermission } from "@/lib/adminPermissions";
 
 /**
  * Аутентификация админ-панели.
@@ -29,7 +30,7 @@ function secretsMatch(a: string, b: string): boolean {
 
 export type PanelAdmin = { id: string; email: string; role: string };
 
-export async function requirePanelAdmin(req: Request): Promise<PanelAdmin> {
+export async function requirePanelAdmin(req: Request, permission?: AdminPermission): Promise<PanelAdmin> {
   const provided = req.headers.get(ADMIN_KEY_HEADER);
   if (!provided || !secretsMatch(provided, panelSecret())) {
     throw new ApiError(401, "UNAUTHORIZED", "Недійсний ключ адмін-панелі");
@@ -43,6 +44,9 @@ export async function requirePanelAdmin(req: Request): Promise<PanelAdmin> {
     select: { id: true, email: true, role: true, active: true },
   });
   if (!admin || !admin.active) throw new ApiError(403, "FORBIDDEN", "Адміністратора вимкнено");
+  if (permission && !hasPermission(admin.role, permission)) {
+    throw new ApiError(403, "FORBIDDEN", "Недостатньо прав для цієї дії");
+  }
 
   return { id: admin.id, email: admin.email, role: admin.role };
 }
