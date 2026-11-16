@@ -168,6 +168,8 @@ export function buildOrderDetailPayload(args: {
   intents: OrderDetailIntent[];
   timeline: OrderDetailTimelineItem[];
   confirmationReview: OrderDetailReviewInput | null;
+  /** Момент підтвердження замовником (подія статусу). Має пріоритет над датою відгуку. */
+  completionConfirmedAt?: Date | null;
   counterpartyContact?: OrderDetailCounterpartyContact | null;
   part2Paid?: boolean;
   hasPaymentRequest?: boolean;
@@ -218,7 +220,7 @@ export function buildOrderDetailPayload(args: {
     ...escrow,
     performerUserId: order.performerUserId,
     comment: order.comment,
-    completionConfirmedAt: args.confirmationReview?.createdAt ?? null,
+    completionConfirmedAt: args.completionConfirmedAt ?? args.confirmationReview?.createdAt ?? null,
     rating: args.confirmationReview?.rating ?? null,
     completionComment: args.confirmationReview?.text ?? null,
     timeline: args.timeline.map((t) => ({ status: t.status, at: t.createdAt, note: t.note })),

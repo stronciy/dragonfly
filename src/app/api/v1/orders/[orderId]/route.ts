@@ -6,6 +6,7 @@ import { prisma } from "@/shared";
 import { enqueueMatchNewOrder } from "@/shared";
 import { publishDomainEvent } from "@/shared";
 import { notifyUser } from "@/services/notify";
+import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 import {
   ESCROW_OPEN_STATUSES,
   ORDER_DETAIL_GEO_REVEALED_STATUSES,
@@ -134,7 +135,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
 
     const ownLock = viewerRole === "customer" ? customerLock : performerLock;
 
-    const [ownIntents, part2PaidIntent, pendingPaymentRequest] = await Promise.all([
+    const [ownIntents, part2PaidIntent, pendingPaymentRequest, completionEvent] = await Promise.all([
       prisma.paymentIntent.findMany({
         where: { orderId, role: viewerRole },
         select: { part: true, status: true },
@@ -146,6 +147,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       prisma.paymentRequest.findFirst({
         where: { orderId, status: "pending" },
         select: { id: true },
+      }),
+      prisma.orderStatusEvent.findFirst({
+        where: { orderId, note: COMPLETION_CONFIRMED_NOTE },
+        orderBy: { createdAt: "asc" },
+        select: { createdAt: true },
       }),
     ]);
 
@@ -175,6 +181,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
           intents: ownIntents,
           timeline,
           confirmationReview,
+          completionConfirmedAt: completionEvent?.createdAt ?? null,
           counterpartyContact,
           part2Paid: isPart2Paid,
           hasPaymentRequest: hasPendingPaymentRequest,

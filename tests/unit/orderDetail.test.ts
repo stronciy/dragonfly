@@ -197,3 +197,49 @@ test("customer always sees exact geo, even pre-confirm", () => {
   assert.equal(payload.location.lng, 34.5514);
   assert.equal(payload.location.addressLabel, "Поле біля Полтави");
 });
+
+test("completionConfirmedAt: береться з події підтвердження, навіть без відгуку", () => {
+  const confirmedAt = new Date("2026-01-05T10:00:00Z");
+  const payload = buildOrderDetailPayload({
+    order: makeOrder("completed"),
+    viewerRole: "customer",
+    lock: null,
+    intents: [],
+    timeline: [],
+    confirmationReview: null,
+    completionConfirmedAt: confirmedAt,
+  }) as unknown as { completionConfirmedAt: Date | null };
+  assert.equal(payload.completionConfirmedAt, confirmedAt);
+});
+
+test("completionConfirmedAt: подія має пріоритет над датою відгуку", () => {
+  const confirmedAt = new Date("2026-01-05T10:00:00Z");
+  const reviewedAt = new Date("2026-01-06T10:00:00Z");
+  const payload = buildOrderDetailPayload({
+    order: makeOrder("completed"),
+    viewerRole: "customer",
+    lock: null,
+    intents: [],
+    timeline: [],
+    confirmationReview: { rating: 5, text: "ok", createdAt: reviewedAt },
+    completionConfirmedAt: confirmedAt,
+  }) as unknown as { completionConfirmedAt: Date | null; rating: number | null };
+  assert.equal(payload.completionConfirmedAt, confirmedAt);
+  assert.equal(payload.rating, 5);
+});
+
+test("completionConfirmedAt: без події береться з відгуку, а без обох — null", () => {
+  const reviewedAt = new Date("2026-01-06T10:00:00Z");
+  const withReview = buildOrderDetailPayload({
+    order: makeOrder("completed"),
+    viewerRole: "customer",
+    lock: null,
+    intents: [],
+    timeline: [],
+    confirmationReview: { rating: 4, text: null, createdAt: reviewedAt },
+  }) as unknown as { completionConfirmedAt: Date | null };
+  assert.equal(withReview.completionConfirmedAt, reviewedAt);
+
+  const none = build({ viewerRole: "customer", status: "completed", lock: null });
+  assert.equal((none as unknown as { completionConfirmedAt: unknown }).completionConfirmedAt, null);
+});
