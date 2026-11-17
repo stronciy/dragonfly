@@ -46,7 +46,7 @@
           "serviceSubCategoryName": "Дрони",
           "types": [],
           "requiredSpecs": [
-            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [4, 6, 7, 10] }
+            { "name": "Ширина внесення штанги (м)", "type": "select", "required": true, "options": [4, 6, 8, 10] }
           ]
         },
         {

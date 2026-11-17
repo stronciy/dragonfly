@@ -175,7 +175,7 @@ test("validatePerformerServiceSpecs rejects an empty set", () => {
 });
 
 test("validatePerformerServiceSpecs accepts a scalar for an order-style payload", () => {
-  assert.deepEqual(validatePerformerServiceSpecs("3.1", { "Ширина внесення штанги (м)": 7 }), []);
+  assert.deepEqual(validatePerformerServiceSpecs("3.1", { "Ширина внесення штанги (м)": 8 }), []);
 });
 
 test("validatePerformerServiceSpecs accepts valid specs", () => {

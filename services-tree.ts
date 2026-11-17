@@ -155,7 +155,7 @@ export const servicesTree: ServicesTree = {
               name: "Ширина внесення штанги (м)", 
               type: "select", 
               required: true, 
-              options: [4, 6, 7, 10] 
+              options: [4, 6, 8, 10] 
             },
           ],
         },
