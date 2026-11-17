@@ -27,14 +27,15 @@ process.env.ADMIN_PANEL_SECRET = ADMIN_KEY;
 const VALID_IBAN = "UA213223130000026007233566001";
 
 function seedLegalProfile(userId: string, iban: string | null) {
-  db.insert("legalProfile", {
-    id: `lp_${userId}`,
-    userId,
-    companyName: "ФОП Тестовий Виконавець",
-    edrpou: "12345678",
-    iban,
-    legalAddress: "м. Полтава",
-    vatPayer: false,
+  db.updateMany("legalProfile", {
+    where: { userId },
+    data: {
+      companyName: "ФОП Тестовий Виконавець",
+      edrpou: "12345678",
+      iban,
+      legalAddress: "м. Полтава",
+      vatPayer: true,
+    },
   });
 }
 

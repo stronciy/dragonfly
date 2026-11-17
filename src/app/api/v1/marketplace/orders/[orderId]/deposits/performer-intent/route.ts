@@ -4,7 +4,7 @@ import { ApiError } from "@/shared";
 import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { publishDomainEvent } from "@/shared";
-import { claimOrderForPerformer, createDepositIntent, ensureIntentServerUrl, findPendingIntent, serializePaymentIntent, buildDepositCallbackUrl } from "@/shared";
+import { assertVatPayer, claimOrderForPerformer, createDepositIntent, ensureIntentServerUrl, findPendingIntent, serializePaymentIntent, buildDepositCallbackUrl } from "@/shared";
 
 const schema = z.object({
   method: z.enum(["card", "apple-pay", "google-pay", "bank-transfer"]).optional(),
@@ -21,6 +21,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const body = schema.parse(await req.json());
 
     const { order, freshClaim, intent } = await prisma.$transaction(async (tx) => {
+      await assertVatPayer(tx, user.id);
       const claim = await claimOrderForPerformer(tx, {
         orderId,
         performerUserId: user.id,

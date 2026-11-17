@@ -5,6 +5,7 @@ import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { publishDomainEvent } from "@/shared";
 import {
+  assertVatPayer,
   buildDepositCallbackUrl,
   createDepositIntent,
   ensureIntentServerUrl,
@@ -27,6 +28,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
+    await assertVatPayer(prisma, user.id);
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.customerUserId !== user.id) {
       throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");

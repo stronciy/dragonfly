@@ -10,7 +10,7 @@ import { notifyUser } from "@/shared";
 import { nextOrderNumber } from "@/shared";
 import { validateSpecs, isValidServiceId } from "@/../services-tree";
 import { Prisma } from "@prisma/client";
-import { safeDepositAmount, customerPaymentPlan, ESCROW_OPEN_STATUSES, isWithinUkraine } from "@/shared";
+import { safeDepositAmount, customerPaymentPlan, ESCROW_OPEN_STATUSES, isWithinUkraine, assertVatPayer } from "@/shared";
 
 const postSchema = z.object({
   serviceCategoryId: z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().min(1)),
@@ -208,6 +208,7 @@ export async function POST(req: Request) {
     if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
 
     const requestId = getRequestId(req);
+    await assertVatPayer(prisma, user.id);
     const rawBody = await req.json().catch(() => ({}));
     const body = postSchema.parse(rawBody);
     const status = body.status ?? "published";

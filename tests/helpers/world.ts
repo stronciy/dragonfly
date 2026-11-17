@@ -53,6 +53,17 @@ export function resetWorld() {
     });
   }
   db.insert("customerProfile", { id: "cp_1", userId: USERS.customer, riskScore: 0 });
+  for (const legalUserId of [USERS.customer, USERS.otherCustomer, USERS.performer, USERS.otherPerformer]) {
+    db.insert("legalProfile", {
+      id: `lp_${legalUserId}`,
+      userId: legalUserId,
+      companyName: "ТОВ Тест",
+      edrpou: "12345678",
+      iban: null,
+      legalAddress: "м. Полтава",
+      vatPayer: true,
+    });
+  }
   orderSeq = 0;
 }
 
