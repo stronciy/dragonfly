@@ -2,12 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { formatOrderNumber } from "../../src/lib/orderNumber";
 
-test("formatOrderNumber groups a 9-digit number as SS-YY-NNNNN", () => {
+test("formatOrderNumber formats DF-01042 style order numbers", () => {
+  assert.equal(formatOrderNumber("DF-01042"), "DF-01042");
+  assert.equal(formatOrderNumber("df-01042"), "DF-01042");
+  assert.equal(formatOrderNumber("01042"), "DF-01042");
+});
+
+test("formatOrderNumber preserves legacy 9-digit numbers as SS-YY-NNNNN", () => {
   assert.equal(formatOrderNumber("012600010"), "№ 01-26-00010");
 });
 
-test("formatOrderNumber rejects values that are not 9 digits", () => {
-  assert.equal(formatOrderNumber("cmv1hl48f000201qxygkrwdda"), null);
-  assert.equal(formatOrderNumber("12345"), null);
+test("formatOrderNumber handles null or empty input", () => {
   assert.equal(formatOrderNumber(null), null);
+  assert.equal(formatOrderNumber(""), null);
 });

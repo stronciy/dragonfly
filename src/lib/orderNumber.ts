@@ -7,22 +7,33 @@ function pad(value: number | string, width: number) {
   return String(value).padStart(width, "0");
 }
 
-export async function nextOrderNumber(tx: Tx, serviceCategoryId: string, at: Date): Promise<string> {
-  const serviceCode = pad(serviceCategoryId, 2);
-  const yy = at.getUTCFullYear() % 100;
+export async function nextOrderNumber(tx: Tx, _serviceCategoryId?: string, _at?: Date): Promise<string> {
   const rows = await tx.$queryRaw<{ last_seq: number }[]>`
     INSERT INTO "order_number_counters" ("service_code", "yy", "last_seq")
-    VALUES (${serviceCode}, ${yy}, 1)
+    VALUES ('DF', 0, 1001)
     ON CONFLICT ("service_code", "yy")
     DO UPDATE SET "last_seq" = "order_number_counters"."last_seq" + 1
     RETURNING "last_seq"
   `;
-  return `${serviceCode}${pad(yy, 2)}${pad(Number(rows[0].last_seq), 5)}`;
+  const seq = Number(rows[0].last_seq);
+  return `DF-${pad(seq, 5)}`;
 }
 
 export function formatOrderNumber(code: string | null | undefined): string | null {
-  if (!code || !/^\d{9}$/.test(code)) return null;
-  return `№ ${code.slice(0, 2)}-${code.slice(2, 4)}-${code.slice(4)}`;
+  if (!code) return null;
+  const trimmed = String(code).trim();
+  if (!trimmed) return null;
+  if (/^DF-\d+$/i.test(trimmed)) return trimmed.toUpperCase();
+  if (/^\d{9}$/.test(trimmed)) {
+    return `№ ${trimmed.slice(0, 2)}-${trimmed.slice(2, 4)}-${trimmed.slice(4)}`;
+  }
+  if (/^\d{5}$/.test(trimmed)) {
+    return `DF-${trimmed}`;
+  }
+  if (/^\d+$/.test(trimmed)) {
+    return `№ ${trimmed}`;
+  }
+  return trimmed;
 }
 
 export async function orderRef(orderId: string): Promise<string> {

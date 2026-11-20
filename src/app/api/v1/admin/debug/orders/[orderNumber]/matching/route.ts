@@ -15,13 +15,20 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderNumber: st
   try {
     await requirePanelAdmin(req, "orders.read");
     const { orderNumber: raw } = await ctx.params;
-    const digits = decodeURIComponent(raw).replace(/\D/g, "");
-    if (digits.length !== 9) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Номер заказу має 9 цифр, наприклад 012600007");
+    const rawVal = decodeURIComponent(raw).trim();
+    const digits = rawVal.replace(/\D/g, "");
+    if (!rawVal) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Номер замовлення не може бути порожнім");
     }
 
-    const order = await prisma.order.findUnique({
-      where: { orderNumber: digits },
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { orderNumber: rawVal },
+          { orderNumber: rawVal.toUpperCase() },
+          ...(digits ? [{ orderNumber: `DF-${digits.padStart(5, '0')}` }, { orderNumber: digits }] : []),
+        ],
+      },
       select: {
         id: true,
         orderNumber: true,
