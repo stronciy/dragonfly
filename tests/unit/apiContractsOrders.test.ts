@@ -21,6 +21,7 @@ import { POST as blockPost } from "../../src/app/api/v1/admin/users/[id]/block/r
 import { POST as verifyPost } from "../../src/app/api/v1/admin/legal-profiles/[userId]/verify/route";
 import { PATCH as statusPatch } from "../../src/app/api/v1/orders/[orderId]/status/route";
 import { POST as confirmRoute } from "../../src/app/api/v1/orders/[orderId]/confirm-completion/route";
+import { notifyUser } from "../../src/services/notify";
 
 const ADMIN_KEY = "test-panel-secret";
 const ADMIN_ID = "admin_1";
@@ -323,5 +324,29 @@ describe("адмін-панель: блокування та перевірка"
   it("верифікація без адмін-ключа відхиляється (401)", async () => {
     const res = await readResponse(await verifyPost(new Request("http://localhost/x", { method: "POST", body: "{}" }), { params: Promise.resolve({ userId: USERS.performer }) }));
     assert.equal(res.status, 401);
+  });
+
+  it("notifyUser: дедуплікує повторні сповіщення для того самого користувача й замовлення протягом вікна", async () => {
+    const res1 = await notifyUser({
+      userId: USERS.performer,
+      type: "order",
+      title: "Тестове сповіщення",
+      message: "Текст 1",
+      data: { orderId: "order_dedupe_1" },
+    });
+    assert.equal(res1.deduplicated, undefined);
+
+    const res2 = await notifyUser({
+      userId: USERS.performer,
+      type: "order",
+      title: "Тестове сповіщення",
+      message: "Текст 1 повтор",
+      data: { orderId: "order_dedupe_1" },
+    });
+    assert.equal(res2.deduplicated, true);
+    assert.equal(res2.delivered, 0);
+
+    const allNotes = db.findMany("notification", { where: { userId: USERS.performer, title: "Тестове сповіщення" } });
+    assert.equal(allNotes.length, 1);
   });
 });

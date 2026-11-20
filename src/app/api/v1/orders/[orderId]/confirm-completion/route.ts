@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError, orderRef } from "@/shared";
+import { ApiError, orderRef, notifyUser } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -109,43 +109,19 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     });
 
 
-    // Відправляємо Push виконавцю
+    // Сповіщення виконавцю через централізований notifyUser з дедуплікацією
     if (order.performerUserId) {
-      const performerDevices = await prisma.device.findMany({
-        where: { userId: order.performerUserId, revokedAt: null },
-        select: { expoPushToken: true },
-      });
-
-      for (const device of performerDevices) {
-        await expo.sendPush({
-          toUserId: order.performerUserId,
-          toExpoToken: device.expoPushToken,
-          title: "Замовлення підтверджено",
-          body: `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
-          data: {
-            orderId,
-            type: "order_confirmed_completed",
-            role: "performer",
-            accepted: true,
-            rating: body.rating,
-          },
-        });
-      }
-
-      // Створюємо notification виконавцю
-      await prisma.notification.create({
+      await notifyUser({
+        userId: order.performerUserId,
+        type: "order",
+        title: "Замовлення підтверджено",
+        message: `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
         data: {
-          userId: order.performerUserId,
-          type: "order",
-          title: "Замовлення підтверджено",
-          message: `Замовлення ${await orderRef(orderId)}. Замовник підтвердив завершення роботи. Гарантійні суми розблоковано.${body.rating ? ` Оцінка: ${body.rating}/5` : ''}`,
-          data: {
-            orderId,
-            type: "order_confirmed_completed",
-            role: "performer",
-            accepted: true,
-            rating: body.rating,
-          } as unknown as Prisma.InputJsonValue,
+          orderId,
+          type: "order_confirmed_completed",
+          role: "performer",
+          accepted: true,
+          rating: body.rating,
         },
       });
 

@@ -9,6 +9,7 @@ export type NotifyUserResult = {
   delivered: number;
   failed: number;
   error: string | null;
+  deduplicated?: boolean;
 };
 
 /**
@@ -18,6 +19,9 @@ export type NotifyUserResult = {
  * недоступный Expo валит бизнес-действие (смену статуса, депозит, сообщение
  * админа), хотя уведомление в приложении уже создано. Вызывающий получает
  * счётчики доставки и сам решает, что показать пользователю/админу.
+ *
+ * Вбудована дедуплікація запобігає дублюванню сповіщень при повторних запитах
+ * мережі або повторних спробах виконання задач у воркерах.
  */
 export async function notifyUser(args: {
   userId: string;
@@ -25,7 +29,44 @@ export async function notifyUser(args: {
   title: string;
   message: string;
   data: Record<string, unknown>;
+  dedupeWindowMs?: number;
 }): Promise<NotifyUserResult> {
+  const windowMs = args.dedupeWindowMs ?? 10_000;
+  if (windowMs > 0) {
+    const since = new Date(Date.now() - windowMs);
+    const existing = await prisma.notification.findFirst({
+      where: {
+        userId: args.userId,
+        title: args.title,
+        createdAt: { gte: since },
+      },
+      select: { id: true, message: true, data: true },
+    });
+
+    if (existing) {
+      const existingOrderId = (existing.data as Record<string, unknown> | null)?.orderId;
+      const newOrderId = args.data?.orderId;
+      if (!newOrderId || !existingOrderId || existingOrderId === newOrderId) {
+        process.stdout.write(
+          JSON.stringify({
+            level: "info",
+            msg: "notify_duplicate_suppressed",
+            userId: args.userId,
+            title: args.title,
+            existingId: existing.id,
+          }) + "\n"
+        );
+        return {
+          devices: 0,
+          delivered: 0,
+          failed: 0,
+          error: null,
+          deduplicated: true,
+        };
+      }
+    }
+  }
+
   await prisma.notification.create({
     data: {
       userId: args.userId,
