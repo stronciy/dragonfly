@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError, orderRef } from "@/shared";
+import { ApiError, orderRef, customerPaymentPlan, part2DeadlineFor, captureCustomerInitialDeposit } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -47,11 +47,19 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       }
     }
 
+    const plan = customerPaymentPlan(order.budget, order.dateFrom, order.dateTo);
+    const isSplit = plan.mode === "split";
+    let part2Deadline: Date | null = null;
+    if (body.status === "started" && isSplit) {
+      part2Deadline = part2DeadlineFor(new Date());
+    }
+
     const { order: updated, completedProgress } = await prisma.$transaction(async (tx) => {
       const u = await tx.order.update({
         where: { id: orderId },
         data: {
           status: body.status,
+          ...(part2Deadline ? { customerPart2Deadline: part2Deadline } : {}),
           ...(body.status === "completed" ? { completedAt: new Date() } : {}),
         },
       });
@@ -139,6 +147,53 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         message,
       },
     });
+
+    if (part2Deadline) {
+      await captureCustomerInitialDeposit(orderId).catch(() => {});
+      const deadlineLabel = part2Deadline.toLocaleString("uk-UA", {
+        timeZone: "Europe/Kyiv",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      // Повідомляємо замовника про 24-годинний строк на внесення залишку 70%
+      notifyUser({
+        userId: order.customerUserId,
+        type: "payment",
+        title: "Внесення залишку 70%",
+        message: `Замовлення ${ref}. Виконавець розпочав виконання робіт. Внесіть залишок 70% (${Number(plan.part2Amount)} ₴) в ескроу протягом 24 годин (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, виконавець має право припинити роботи та покинути об'єкт.`,
+        data: {
+          orderId,
+          amount: Number(plan.part2Amount),
+          deadline: part2Deadline.toISOString(),
+          role: "customer",
+          action: "pay_part2",
+        },
+      }).catch(() => {});
+
+      // Повідомляємо виконавця про 24-годинний строк для замовника
+      notifyUser({
+        userId: user.id,
+        type: "order.started",
+        title: "Роботи розпочато",
+        message: `Ви розпочали виконання робіт. Замовнику надано 24 години на внесення залишку 70% (до ${deadlineLabel}). При досягненні 30% готовності робіт вам буде зараховано 30% вартості замовлення на баланс гаманця (доступно до виведення).`,
+        data: { orderId, orderNumber: order.orderNumber, action: "view_order" },
+      }).catch(() => {});
+
+      await publishDomainEvent({
+        type: "deposit.customer_part2_required",
+        requestId,
+        targets: { userIds: [order.customerUserId, user.id] },
+        data: {
+          orderId,
+          amount: Number(plan.part2Amount),
+          deadline: part2Deadline.toISOString(),
+        },
+      });
+    }
 
     if (completedProgress) {
       console.info(

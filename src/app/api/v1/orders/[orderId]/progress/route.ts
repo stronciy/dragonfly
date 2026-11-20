@@ -302,7 +302,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         userId: order.customerUserId,
         type: "payment",
         title: "Внесення залишку 70%",
-        message: `Замовлення ${ref}. Виконавець зафіксував 30% готовності робіт. Внесіть залишок 70% (${Number(plan.part2Amount)} ₴) в ескроу протягом 24 годин (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, виконавець має право припинити роботи та покинути об'єкт.`,
+        message: `Замовлення ${ref}. Виконавець розпочав роботу. Внесіть залишок 70% (${Number(plan.part2Amount)} ₴) в ескроу протягом 24 годин (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, виконавець має право припинити роботи та покинути об'єкт.`,
         data: {
           orderId,
           amount: Number(plan.part2Amount),
@@ -310,16 +310,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
           role: "customer",
           action: "pay_part2",
         },
-      }).catch(() => {});
-
-      // Повідомляємо виконавця про зарахування 30% та 24-годинний строк
-      await publishWalletChanged({ userId: user.id, orderId });
-      notifyUser({
-        userId: user.id,
-        type: "progress.30_percent_reached",
-        title: "Досягнуто 30% виконання",
-        message: `Робота досягла 30% готовності. 30% вартості замовлення зараховано на баланс гаманця (доступно до виведення). Замовнику надано 24 години на внесення залишку 70% (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, ви маєте право зупинити виконання робіт та покинути об'єкт.`,
-        data: { orderId, orderNumber: order.orderNumber, percent, canArbitrate: true },
       }).catch(() => {});
 
       await publishDomainEvent({
@@ -332,15 +322,21 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
           deadline: part2Deadline.toISOString(),
         },
       });
-    } else if (firstTime30 && needsPart2Request) {
+    }
+
+    if (firstTime30 && needsPart2Request) {
       await publishWalletChanged({ userId: user.id, orderId });
+      const deadline = order.customerPart2Deadline || part2Deadline;
+      const isOverdue = deadline ? new Date(deadline).getTime() < Date.now() : false;
       notifyUser({
         userId: user.id,
         type: "progress.30_percent_reached",
         title: "Досягнуто 30% виконання",
         message: isPart2Paid
-          ? "Робота досягла 30% готовності. 30% вартості замовлення доступні до виведення в гаманці. Залишок 70% уже внесено в ескроу — ви можете виконувати роботи до 100%."
-          : "Робота досягла 30% готовності. 30% вартості замовлення доступні до виведення в гаманці.",
+          ? "Робота досягла 30% готовності. 30% вартості замовлення зараховано на баланс гаманця (доступно до виведення). Залишок 70% уже внесено в ескроу — ви можете виконувати роботи до 100%."
+          : isOverdue
+            ? "Робота досягла 30% готовності. 30% вартості замовлення зараховано на баланс гаманця (доступно до виведення). Замовник не вніс залишок 70% у встановлений строк — ви маєте право покинути об'єкт та завершити замовлення через арбітраж."
+            : "Робота досягла 30% готовності. 30% вартості замовлення зараховано на баланс гаманця (доступно до виведення). Очікується внесення замовником залишку 70%.",
         data: { orderId, orderNumber: order.orderNumber, percent, canArbitrate: !isPart2Paid },
       }).catch(() => {});
     }

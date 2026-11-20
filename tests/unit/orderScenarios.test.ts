@@ -316,13 +316,8 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
     assert.equal(order(id).customerPart2Deadline, null);
   });
 
-  it("старт роботи не виставляє дедлайн залишку 70%, прогрес 30% виставляє дедлайн на 24 години", async () => {
+  it("старт роботи виставляє дедлайн залишку 70% — 24 години від старту", async () => {
     const id = await startedSplitOrder(3);
-    assert.equal(order(id).customerPart2Deadline, null, "при старті дедлайн ще не виставляється");
-
-    const progRes = await progress(id, 30);
-    assert.equal(progRes.status, 200);
-
     const deadline = new Date(order(id).customerPart2Deadline);
     const start = new Date();
     const diffHours = (deadline.getTime() - start.getTime()) / (60 * 60 * 1000);
