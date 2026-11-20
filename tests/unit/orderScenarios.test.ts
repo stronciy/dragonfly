@@ -14,6 +14,10 @@ import { POST as arbitrationPost, GET as arbitrationGet } from "../../src/app/ap
 import { POST as arbitrationMediaPost } from "../../src/app/api/v1/orders/[orderId]/arbitration/media/route";
 import { POST as refusePost } from "../../src/app/api/v1/orders/[orderId]/refuse/route";
 import { POST as requestPaymentPost } from "../../src/app/api/v1/orders/[orderId]/request-payment/route";
+import { POST as progressPost } from "../../src/app/api/v1/orders/[orderId]/progress/route";
+
+const progress = (orderId: string, percent: number) =>
+  call(USERS.performer, "POST", { percent }).then((req) => progressPost(req, ctx(orderId))).then(readResponse);
 
 const status = (orderId: string, userId: string, to: string) =>
   call(userId, "PATCH", { status: to }).then((req) => statusPatch(req, ctx(orderId))).then(readResponse);
@@ -312,8 +316,13 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
     assert.equal(order(id).customerPart2Deadline, null);
   });
 
-  it("старт роботи виставляє дедлайн залишку 70% — 24 години від старту", async () => {
+  it("старт роботи не виставляє дедлайн залишку 70%, прогрес 30% виставляє дедлайн на 24 години", async () => {
     const id = await startedSplitOrder(3);
+    assert.equal(order(id).customerPart2Deadline, null, "при старті дедлайн ще не виставляється");
+
+    const progRes = await progress(id, 30);
+    assert.equal(progRes.status, 200);
+
     const deadline = new Date(order(id).customerPart2Deadline);
     const start = new Date();
     const diffHours = (deadline.getTime() - start.getTime()) / (60 * 60 * 1000);
@@ -323,6 +332,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
 
   it("заказчик вносить 70% після старту — escrow 100%, дедлайн знято, заказ завершується", async () => {
     const id = await startedSplitOrder(3);
+    await progress(id, 30);
     const pay = await customerPays(id, 2);
     assert.equal(pay.status, 200);
     const part2 = rowsWhere("paymentIntent", { orderId: id, role: "customer", part: 2 })[0];
@@ -338,6 +348,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
 
   it("заказчик вносить 70% після дедлайну — оплата приймається, виконавець може відкрити арбітраж", async () => {
     const id = await startedSplitOrder(3);
+    await progress(id, 30);
     db.updateMany("order", { where: { id }, data: { customerPart2Deadline: new Date(Date.now() - 1000) } });
     const pay = await customerPays(id, 2);
     assert.equal(pay.status, 200);
@@ -355,6 +366,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
 
   it("повторна оплата 70% відхиляється (409)", async () => {
     const id = await startedSplitOrder(3);
+    await progress(id, 30);
     assert.equal((await customerPays(id, 2)).status, 200);
     assert.equal((await customerPays(id, 2)).status, 409);
   });
@@ -376,6 +388,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
 
   it("заказчик відхиляє роботу після часткової оплати — арбітраж, кошти заблоковані", async () => {
     const id = await startedSplitOrder(3);
+    await progress(id, 30);
     await customerPays(id, 2);
     await status(id, USERS.performer, "completed");
     assert.equal((await openArbitration(id, USERS.customer, "Не встигли до кінця 3 дня")).status, 201);
@@ -385,6 +398,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
 
   it("арбітраж під час робіт при неоплаченому 70%: виконавець відкриває, заказчик не може доплатити", async () => {
     const id = await startedSplitOrder(3);
+    await progress(id, 30);
     assert.equal((await openArbitration(id, USERS.performer, "Заказчик не вносить залишок")).status, 201);
     assert.equal(order(id).status, "arbitration");
     const res = await customerPays(id, 2);

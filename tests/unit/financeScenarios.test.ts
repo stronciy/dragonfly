@@ -137,6 +137,7 @@ describe("журнал заказчика", () => {
     await customerPays(id);
     await status(id, USERS.performer, "en_route");
     await status(id, USERS.performer, "started");
+    await progress(id, 30);
     assert.equal((await customerPays(id, 2)).status, 200);
 
     const { summary, entries } = await transactions(USERS.customer);

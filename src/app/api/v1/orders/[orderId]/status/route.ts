@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError, customerPaymentPlan, orderRef, part2DeadlineFor, captureCustomerInitialDeposit } from "@/shared";
+import { ApiError, orderRef } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -47,18 +47,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       }
     }
 
-    const startPlan =
-      body.status === "started" ? customerPaymentPlan(order.budget, order.dateFrom, order.dateTo) : null;
-    const part2Deadline =
-      startPlan?.mode === "split" ? part2DeadlineFor(new Date()) : null;
-
     const { order: updated, completedProgress } = await prisma.$transaction(async (tx) => {
       const u = await tx.order.update({
         where: { id: orderId },
         data: {
           status: body.status,
           ...(body.status === "completed" ? { completedAt: new Date() } : {}),
-          ...(part2Deadline ? { customerPart2Deadline: part2Deadline } : {}),
         },
       });
       await tx.orderStatusEvent.create({
@@ -91,10 +85,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       return { order: u, completedProgress };
     });
 
-    if (body.status === "started" && startPlan?.mode === "split") {
-      await captureCustomerInitialDeposit(orderId).catch(() => {});
-    }
-
     // Відправляємо Push та In-App сповіщення замовнику через notifyUser
     const statusTitles: Record<string, string> = {
       en_route: "Виконавець виїхав до поля",
@@ -108,17 +98,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       message = `Замовлення ${ref}. Виконавець вирушив до місця виконання робіт.`;
     } else if (body.status === "started") {
       message = `Замовлення ${ref}. Виконавець розпочав виконання робіт.`;
-      if (part2Deadline && startPlan) {
-        const deadlineLabel = part2Deadline.toLocaleString("uk-UA", {
-          timeZone: "Europe/Kyiv",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        message += ` 30% оплати списано на баланс компанії. Внесіть залишок 70% (${Number(startPlan.part2Amount)} ₴) протягом 24 годин (до ${deadlineLabel}).`;
-      }
     } else if (body.status === "completed") {
       message = `Замовлення ${ref}. Виконавець завершив виконання робіт. Перевірте та підтвердіть.`;
     }
@@ -137,22 +116,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         actorId: user.id,
       },
     });
-
-    if (body.status === "started" && part2Deadline && startPlan && order.performerUserId) {
-      await notifyUser({
-        userId: order.performerUserId,
-        type: "order",
-        title: "Замовнику надано 24 години на залишок 70%",
-        message: `Замовлення ${ref}. Замовнику надано 24 години на внесення залишку 70%. При досягненні 30% прогресу, якщо замовник не внесе залишок, ви матимете право завершити замовлення через арбітраж.`,
-        data: {
-          orderId,
-          type: "order_part2_waiting",
-          role: "performer",
-          action: "view_order",
-          actorId: user.id,
-        },
-      }).catch(() => {});
-    }
 
     // WebSocket для оновлення екрану
     await publishDomainEvent({

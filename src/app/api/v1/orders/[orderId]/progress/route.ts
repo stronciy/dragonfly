@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError, customerPaymentPlan } from "@/shared";
+import { ApiError, customerPaymentPlan, part2DeadlineFor, captureCustomerInitialDeposit, orderRef } from "@/shared";
 import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { notifyUser } from "@/services/notify";
@@ -278,8 +278,61 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       `[api] POST /api/v1/orders/${orderId}/progress created requestId=${requestId} progressId=${createdProgress.id} userId=${user.id} percent=${percent} photos=${createdProgress.media.length} first30=${firstTime30} durationMs=${Date.now() - startedAt}`
     );
 
-    // Notify performer about 30% milestone and arbitration right if 70% is not paid
-    if (firstTime30 && needsPart2Request) {
+    let part2Deadline: Date | null = null;
+    if (hasReached30 && needsPart2Request && !order.customerPart2Deadline && !isPart2Paid) {
+      part2Deadline = part2DeadlineFor(new Date());
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { customerPart2Deadline: part2Deadline },
+      });
+      await captureCustomerInitialDeposit(orderId).catch(() => {});
+
+      const ref = await orderRef(orderId);
+      const deadlineLabel = part2Deadline.toLocaleString("uk-UA", {
+        timeZone: "Europe/Kyiv",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      // Повідомляємо замовника про 24-годинний строк на внесення залишку 70%
+      notifyUser({
+        userId: order.customerUserId,
+        type: "payment",
+        title: "Внесення залишку 70%",
+        message: `Замовлення ${ref}. Виконавець зафіксував 30% готовності робіт. Внесіть залишок 70% (${Number(plan.part2Amount)} ₴) в ескроу протягом 24 годин (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, виконавець має право припинити роботи та покинути об'єкт.`,
+        data: {
+          orderId,
+          amount: Number(plan.part2Amount),
+          deadline: part2Deadline.toISOString(),
+          role: "customer",
+          action: "pay_part2",
+        },
+      }).catch(() => {});
+
+      // Повідомляємо виконавця про зарахування 30% та 24-годинний строк
+      await publishWalletChanged({ userId: user.id, orderId });
+      notifyUser({
+        userId: user.id,
+        type: "progress.30_percent_reached",
+        title: "Досягнуто 30% виконання",
+        message: `Робота досягла 30% готовності. 30% вартості замовлення зараховано на баланс гаманця (доступно до виведення). Замовнику надано 24 години на внесення залишку 70% (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, ви маєте право зупинити виконання робіт та покинути об'єкт.`,
+        data: { orderId, orderNumber: order.orderNumber, percent, canArbitrate: true },
+      }).catch(() => {});
+
+      await publishDomainEvent({
+        type: "deposit.customer_part2_required",
+        requestId,
+        targets: { userIds: [order.customerUserId, user.id] },
+        data: {
+          orderId,
+          amount: Number(plan.part2Amount),
+          deadline: part2Deadline.toISOString(),
+        },
+      });
+    } else if (firstTime30 && needsPart2Request) {
       await publishWalletChanged({ userId: user.id, orderId });
       notifyUser({
         userId: user.id,
@@ -287,7 +340,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         title: "Досягнуто 30% виконання",
         message: isPart2Paid
           ? "Робота досягла 30% готовності. 30% вартості замовлення доступні до виведення в гаманці. Залишок 70% уже внесено в ескроу — ви можете виконувати роботи до 100%."
-          : "Робота досягла 30% готовності. 30% вартості замовлення доступні до виведення в гаманці. Замовник ще не вніс залишок 70%. Якщо кошти не надійдуть до дедлайну, ви вправі завершити замовлення через арбітраж.",
+          : "Робота досягла 30% готовності. 30% вартості замовлення доступні до виведення в гаманці.",
         data: { orderId, orderNumber: order.orderNumber, percent, canArbitrate: !isPart2Paid },
       }).catch(() => {});
     }
@@ -320,9 +373,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
     return ok(req, { 
       progress: percent,
-      canRequestPayment: needsPart2Request && hasReached30 && !order.customerPart2Deadline,
+      canRequestPayment: needsPart2Request && hasReached30 && !(order.customerPart2Deadline || part2Deadline),
       part2Paid: isPart2Paid,
       canArbitrate: needsPart2Request && !isPart2Paid,
+      customerPart2Deadline: (part2Deadline || order.customerPart2Deadline)?.toISOString() ?? null,
       /** How many photos were actually linked to this progress update. */
       savedPhotos: createdProgress.media.length,
       photoCount: createdProgress.media.length,

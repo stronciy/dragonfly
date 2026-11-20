@@ -43,6 +43,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (isPart2 && order.status !== "started") {
       throw new ApiError(400, "VALIDATION_ERROR", "Доплата 70% доступна лише для розпочатих робіт");
     }
+    const alreadyPaidPart2 = isPart2
+      ? await prisma.paymentIntent.findFirst({
+          where: { orderId, role: "customer", part: 2, status: "paid" },
+          select: { id: true },
+        })
+      : null;
+    if (alreadyPaidPart2) {
+      throw new ApiError(409, "CONFLICT", "Залишок 70% вже сплачено");
+    }
+    if (isPart2 && !order.customerPart2Deadline) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Доплата 70% доступна лише після фіксації 30% робіт виконавцем");
+    }
     if (!order.performerUserId) {
       throw new ApiError(400, "VALIDATION_ERROR", "Виконавця ще не призначено");
     }
