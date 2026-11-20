@@ -150,6 +150,19 @@ export async function GET(req: Request) {
             where: { status: { in: [...ESCROW_OPEN_STATUSES] }, role: "customer" },
             select: { amount: true },
           },
+          progressUpdates: {
+            orderBy: { createdAt: "desc" },
+            take: 5,
+            select: {
+              id: true,
+              percent: true,
+              comment: true,
+              createdAt: true,
+              media: {
+                select: { id: true, url: true },
+              },
+            },
+          },
         },
       }),
       prisma.order.count({ where }),
@@ -190,6 +203,13 @@ export async function GET(req: Request) {
           Math.round(Number(o.budget) * 0.085 * 100) / 100,
         escrowAmount: o.escrowLocks.reduce((sum, l) => sum + Number(l.amount), 0),
         specs: o.specs,
+        progressUpdates: o.progressUpdates?.map((p) => ({
+          id: p.id,
+          percent: p.percent,
+          comment: p.comment,
+          createdAt: p.createdAt.toISOString(),
+          media: p.media?.map((m) => ({ id: m.id, url: m.url })) ?? [],
+        })) ?? [],
         createdAt: o.createdAt,
       })),
       page: makePage(limit, offset, totalCount),

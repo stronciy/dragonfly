@@ -46,6 +46,19 @@ export async function GET(req: Request) {
           select: { id: true },
           take: 1,
         },
+        progressUpdates: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          select: {
+            id: true,
+            percent: true,
+            comment: true,
+            createdAt: true,
+            media: {
+              select: { id: true, url: true },
+            },
+          },
+        },
         createdAt: true,
         updatedAt: true,
       },
@@ -89,6 +102,13 @@ export async function GET(req: Request) {
             phone: customerMap.get(order.customerUserId)!.phone 
           } 
         : null,
+      progressUpdates: order.progressUpdates?.map((p) => ({
+        id: p.id,
+        percent: p.percent,
+        comment: p.comment,
+        createdAt: p.createdAt.toISOString(),
+        media: p.media?.map((m) => ({ id: m.id, url: m.url })) ?? [],
+      })) ?? [],
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
     }));
