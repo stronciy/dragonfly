@@ -4,6 +4,7 @@ import { ApiError, customerPaymentPlan } from "@/shared";
 import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { notifyUser } from "@/services/notify";
+import { publishWalletChanged } from "@/services/payoutEvents";
 import { publishDomainEvent } from "@/shared";
 import { readFormFilesAsDataUrl } from "@/lib/uploads";
 
@@ -279,13 +280,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
     // Notify performer about 30% milestone and arbitration right if 70% is not paid
     if (firstTime30 && needsPart2Request) {
+      await publishWalletChanged({ userId: user.id, orderId });
       notifyUser({
         userId: user.id,
         type: "progress.30_percent_reached",
         title: "Досягнуто 30% виконання",
         message: isPart2Paid
-          ? "Робота досягла 30% готовності. Залишок 70% уже внесено в ескроу — ви можете виконувати роботи до 100%."
-          : "Робота досягла 30% готовності. Замовник ще не вніс залишок 70%. Якщо кошти не надійдуть до дедлайну, ви вправі завершити замовлення через арбітраж.",
+          ? "Робота досягла 30% готовності. 30% вартості замовлення доступні до виведення в гаманці. Залишок 70% уже внесено в ескроу — ви можете виконувати роботи до 100%."
+          : "Робота досягла 30% готовності. 30% вартості замовлення доступні до виведення в гаманці. Замовник ще не вніс залишок 70%. Якщо кошти не надійдуть до дедлайну, ви вправі завершити замовлення через арбітраж.",
         data: { orderId, orderNumber: order.orderNumber, percent, canArbitrate: !isPart2Paid },
       }).catch(() => {});
     }

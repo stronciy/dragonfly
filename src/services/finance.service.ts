@@ -40,6 +40,9 @@ export async function loadLedgerInput(
       budget: true,
       dateFrom: true,
       dateTo: true,
+      progressUpdates: {
+        select: { percent: true, createdAt: true },
+      },
     },
   });
   const orderIds = orders.map((o) => o.id);
@@ -88,16 +91,23 @@ export async function loadLedgerInput(
   return {
     role,
     userId,
-    orders: orders.map((o) => ({
-      id: o.id,
-      status: o.status,
-      orderNumber: o.orderNumber,
-      customerUserId: o.customerUserId,
-      performerUserId: o.performerUserId,
-      budget: Number(o.budget),
-      dateFrom: o.dateFrom,
-      dateTo: o.dateTo,
-    })),
+    orders: orders.map((o) => {
+      const updates = (o as unknown as { progressUpdates?: Array<{ percent: number | null; createdAt: Date }> }).progressUpdates ?? [];
+      const maxPercent = updates.length > 0 ? Math.max(0, ...updates.map((u) => u.percent ?? 0)) : (o.status === "completed" ? 100 : 0);
+      const updateAt = updates.find((u) => u.percent === maxPercent)?.createdAt ?? null;
+      return {
+        id: o.id,
+        status: o.status,
+        orderNumber: o.orderNumber,
+        customerUserId: o.customerUserId,
+        performerUserId: o.performerUserId,
+        budget: Number(o.budget),
+        dateFrom: o.dateFrom,
+        dateTo: o.dateTo,
+        progressPercent: maxPercent,
+        progressCreatedAt: updateAt,
+      };
+    }),
     intents: intents.map((i) => ({
       id: i.id,
       orderId: i.orderId,

@@ -55,6 +55,8 @@ export type LedgerOrder = {
   budget: number;
   dateFrom: Date | null;
   dateTo: Date | null;
+  progressPercent?: number | null;
+  progressCreatedAt?: Date | null;
 };
 
 export type LedgerIntent = {
@@ -291,22 +293,109 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
     }
 
     if (input.role === "performer" && lock.role === "customer" && isMyPerformerOrder(order.id)) {
-      if (lock.status === "released" || lock.status === "release_pending") {
-        entries.push({
-          id: `payout:${lock.id}`,
-          occurredAt,
-          kind: "order_payout",
-          direction: "in",
-          amount,
-          currency: "UAH",
-          status: lock.status === "released" ? "completed" : "settling",
-          ...meta,
-          title: "Оплата за роботу",
-          reason:
-            lock.status === "released"
-              ? "Заказчик підтвердив завершення роботи (або арбітраж визнав роботу виконаною). Кошти зараховано на баланс."
-              : "Оплата передається на баланс після завершення переказу компанією-гарантом.",
-        });
+      const plan = customerPaymentPlan(order.budget, order.dateFrom, order.dateTo);
+      const isSplit = plan.mode === "split";
+
+      if (isSplit) {
+        const part1Amount = round2(Number(plan.immediateAmount));
+        const part2Amount = round2(Number(plan.part2Amount));
+        const progressPercent = order.progressPercent ?? (order.status === "completed" ? 100 : 0);
+        const reached30 =
+          progressPercent >= 30 ||
+          order.status === "completed" ||
+          lock.status === "released" ||
+          lock.status === "release_pending";
+
+        if (lock.status !== "refunded") {
+          // Part 1 (30%)
+          if (reached30) {
+            entries.push({
+              id: `payout:${lock.id}:part1`,
+              occurredAt: iso(order.progressCreatedAt ?? lock.releasedAt, now),
+              kind: "order_payout",
+              direction: "in",
+              amount: part1Amount,
+              currency: "UAH",
+              status: "completed",
+              ...meta,
+              title: "Оплата за 30% робіт",
+              reason: "Виконано та зафіксовано 30% робіт. Кошти зараховано на баланс та доступні для виведення.",
+            });
+          } else {
+            entries.push({
+              id: `payout:${lock.id}:part1`,
+              occurredAt,
+              kind: "order_payout",
+              direction: "none",
+              amount: part1Amount,
+              currency: "UAH",
+              status: "in_escrow",
+              ...meta,
+              title: "Оплата за перший етап (30%)",
+              reason: "Кошти заблоковані на рахунку компанії-гаранта до фіксації 30% готовності робіт.",
+            });
+          }
+
+          // Part 2 (70%)
+          const hasCustomerPart2 =
+            input.intents.some((i) => i.orderId === order.id && i.role === "customer" && i.part === 2) ||
+            lock.amount >= order.budget;
+          const reached100 =
+            order.status === "completed" ||
+            lock.status === "released" ||
+            lock.status === "release_pending";
+
+          if (hasCustomerPart2) {
+            if (reached100) {
+              entries.push({
+                id: `payout:${lock.id}:part2`,
+                occurredAt,
+                kind: "order_payout",
+                direction: "in",
+                amount: part2Amount,
+                currency: "UAH",
+                status: lock.status === "released" ? "completed" : "settling",
+                ...meta,
+                title: "Оплата за завершення робіт (70%)",
+                reason:
+                  lock.status === "released"
+                    ? "Замовник підтвердив завершення роботи (або арбітраж визнав роботу виконаною). Залишок зараховано на баланс."
+                    : "Оплата передається на баланс після завершення переказу компанією-гарантом.",
+              });
+            } else {
+              entries.push({
+                id: `payout:${lock.id}:part2`,
+                occurredAt,
+                kind: "order_payout",
+                direction: "none",
+                amount: part2Amount,
+                currency: "UAH",
+                status: "in_escrow",
+                ...meta,
+                title: "Оплата за залишок робіт (70%)",
+                reason: "Замовник вніс залишок 70%. Кошти заблоковані в ескроу до повного завершення робіт.",
+              });
+            }
+          }
+        }
+      } else {
+        if (lock.status === "released" || lock.status === "release_pending") {
+          entries.push({
+            id: `payout:${lock.id}`,
+            occurredAt,
+            kind: "order_payout",
+            direction: "in",
+            amount,
+            currency: "UAH",
+            status: lock.status === "released" ? "completed" : "settling",
+            ...meta,
+            title: "Оплата за роботу",
+            reason:
+              lock.status === "released"
+                ? "Заказчик підтвердив завершення роботи (або арбітраж визнав роботу виконаною). Кошти зараховано на баланс."
+                : "Оплата передається на баланс після завершення переказу компанією-гарантом.",
+          });
+        }
       }
     }
 

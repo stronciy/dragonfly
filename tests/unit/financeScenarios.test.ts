@@ -10,6 +10,7 @@ import {
 import { db } from "../helpers/fakePrisma";
 import { PATCH as statusPatch } from "../../src/app/api/v1/orders/[orderId]/status/route";
 import { POST as confirmPost } from "../../src/app/api/v1/orders/[orderId]/confirm-completion/route";
+import { POST as progressPost } from "../../src/app/api/v1/orders/[orderId]/progress/route";
 import { POST as refusePost } from "../../src/app/api/v1/orders/[orderId]/refuse/route";
 import { GET as transactionsGet } from "../../src/app/api/v1/finance/transactions/route";
 import { GET as payoutsGet, POST as payoutsPost } from "../../src/app/api/v1/finance/payouts/route";
@@ -75,6 +76,9 @@ const status = (orderId: string, userId: string, to: string) =>
 
 const confirm = (orderId: string, body: Record<string, unknown>) =>
   call(USERS.customer, "POST", body).then((req) => confirmPost(req, ctx(orderId))).then(readResponse);
+
+const progress = (orderId: string, percent: number) =>
+  call(USERS.performer, "POST", { percent }).then((req) => progressPost(req, ctx(orderId))).then(readResponse);
 
 async function completedOneDay(budget = 10000) {
   const id = createOrder({ days: 1, budget });
@@ -512,5 +516,87 @@ describe("обробка заявок адміністратором", () => {
     assert.equal(res.body.data.payouts[0].amount, 1000);
     assert.equal(res.body.data.payouts[0].user.id, USERS.performer);
     assert.equal(res.body.data.payouts[0].iban, VALID_IBAN, "IBAN потрібен адміністратору для переказу");
+  });
+});
+
+describe("split-замовлення (> 2 діб) та виведення 30% після прогресу", () => {
+  it("до фіксації 30% прогресу: 30% оплати в ескроу, доступно для виведення 0 ₴", async () => {
+    const id = createOrder({ days: 3, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await customerPays(id, 1);
+    await status(id, USERS.performer, "started");
+
+    const { summary, entries } = await transactions(USERS.performer);
+    assert.equal(summary.availableUah, 0);
+    assert.equal(summary.inEscrowUah, 6000, "3000 застава виконавця + 3000 перший етап замовника");
+    const part1 = kindOf(entries, "order_payout");
+    assert.equal(part1.status, "in_escrow");
+    assert.equal(part1.amount, 3000);
+  });
+
+  it("після фіксації 30% прогресу: 30% стає доступним для виведення і виконавець успішно виводить кошти", async () => {
+    const id = createOrder({ days: 3, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await customerPays(id, 1);
+    await status(id, USERS.performer, "started");
+
+    const progRes = await progress(id, 30);
+    assert.equal(progRes.status, 200);
+
+    const { summary, entries } = await transactions(USERS.performer);
+    assert.equal(summary.availableUah, 3000, "30% вартості замовлення (3000 ₴) тепер доступні для виведення");
+    assert.equal(summary.earnedOrPaidUah, 3000);
+    const part1 = kindOf(entries, "order_payout");
+    assert.equal(part1.status, "completed");
+    assert.equal(part1.amount, 3000);
+    assert.equal(part1.direction, "in");
+
+    // Виконавець створює заявку на виведення зароблених 30% (3000 ₴)
+    const payoutRes = await requestPayout(USERS.performer, 3000);
+    assert.equal(payoutRes.status, 201);
+    assert.equal(payoutRes.body.data.payout.amount, 3000);
+    assert.equal(payoutRes.body.data.payout.status, "requested");
+
+    const afterPayout = await transactions(USERS.performer);
+    assert.equal(afterPayout.summary.availableUah, 0);
+    assert.equal(afterPayout.summary.pendingWithdrawalUah, 3000);
+  });
+
+  it("повний цикл split-замовлення: виведення 30% на етапі 30%, сплата замовником 70%, завершення і виведення залишку 70%", async () => {
+    const id = createOrder({ days: 3, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await customerPays(id, 1);
+    await status(id, USERS.performer, "started");
+
+    // 1. Досягнуто 30%
+    await progress(id, 30);
+    const p1 = await requestPayout(USERS.performer, 3000);
+    assert.equal(p1.status, 201);
+    // Адмін проводить виплату перших 30%
+    await processPayout(p1.body.data.payout.id, { action: "mark_paid" });
+
+    // 2. Замовник сплачує залишок 70%
+    await customerPays(id, 2);
+    const mid = await transactions(USERS.performer);
+    assert.equal(mid.summary.withdrawnUah, 3000);
+    assert.equal(mid.summary.availableUah, 0);
+    assert.equal(mid.summary.inEscrowUah, 10000, "3000 застава + 7000 залишок в ескроу");
+
+    // 3. Завершення робіт і підтвердження замовником
+    await status(id, USERS.performer, "completed");
+    await confirm(id, { accepted: true, rating: 5 });
+
+    const finalTxs = await transactions(USERS.performer);
+    assert.equal(finalTxs.summary.earnedOrPaidUah, 10000);
+    assert.equal(finalTxs.summary.withdrawnUah, 3000);
+    assert.equal(finalTxs.summary.availableUah, 7000, "10000 зароблено − 3000 вже виведено = 7000 доступно");
+    assert.equal(finalTxs.summary.inEscrowUah, 0, "застава розблокована");
+
+    // 4. Виведення решти 7000 ₴
+    const p2 = await requestPayout(USERS.performer, 7000);
+    assert.equal(p2.status, 201);
+    const afterP2 = await transactions(USERS.performer);
+    assert.equal(afterP2.summary.availableUah, 0);
+    assert.equal(afterP2.summary.pendingWithdrawalUah, 7000);
   });
 });
