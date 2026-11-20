@@ -425,6 +425,64 @@ export async function heldEscrowTotal(tx: Tx, orderId: string) {
   return locks.reduce((sum, l) => sum + Number(l.amount), 0);
 }
 
+/**
+ * Списання 30% гарантійної суми замовника з холду на рахунок компанії при
+ * старті робіт виконавцем (замовлення > 2 днів).
+ */
+export async function captureCustomerInitialDeposit(
+  orderId: string,
+  client?: Prisma.TransactionClient
+): Promise<boolean> {
+  const db = client ?? (await import("../lib/prisma")).prisma;
+  const intent = await db.paymentIntent.findFirst({
+    where: { orderId, role: "customer", part: 1, status: "paid" },
+    select: { id: true, providerOrderId: true, providerRaw: true },
+  });
+  if (!intent || !intent.providerOrderId) return false;
+
+  const raw =
+    intent.providerRaw && typeof intent.providerRaw === "object"
+      ? (intent.providerRaw as Record<string, unknown>)
+      : null;
+  const isHold = raw?.action === "hold";
+  const liqpayPaymentId = raw?.payment_id;
+
+  if (isHold && liqpayPaymentId != null) {
+    try {
+      await captureHold(intent.providerOrderId);
+      process.stdout.write(
+        JSON.stringify({
+          level: "info",
+          msg: "customer_initial_deposit_captured",
+          orderId,
+          intentId: intent.id,
+          providerOrderId: intent.providerOrderId,
+        }) + "\n"
+      );
+    } catch (e) {
+      process.stdout.write(
+        JSON.stringify({
+          level: "error",
+          msg: "customer_initial_deposit_capture_failed",
+          orderId,
+          intentId: intent.id,
+          providerOrderId: intent.providerOrderId,
+          error: e instanceof Error ? e.message : String(e),
+        }) + "\n"
+      );
+    }
+  }
+
+  await db.orderStatusEvent.create({
+    data: {
+      orderId,
+      status: "started",
+      note: "30% гарантійної суми замовника списано на рахунок компанії-гаранта",
+    },
+  });
+  return true;
+}
+
 // Рух реальних грошей в LiqPay після зміни escrow-статусу.
 // Викликається ПІСЛЯ коміту транзакції: помилки провайдера логуються
 // і НЕ ламають стан замовлення (повтор — вручну через кабінет LiqPay).

@@ -189,12 +189,12 @@ describe("прогрес робіт і відгуки", () => {
     await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "en_route" }), ctx(id)));
     await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id)));
 
-    const post = await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 40, note: "Половина поля" }), ctx(id)));
+    const post = await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 30, note: "Половина поля" }), ctx(id)));
     assert.equal(post.status, 200);
 
     const forCustomer = await get(progressGet, USERS.customer, id);
     assert.equal(forCustomer.status, 200);
-    assert.ok(forCustomer.body.data.progress.some((p: any) => p.percent === 40));
+    assert.ok(forCustomer.body.data.progress.some((p: any) => p.percent === 30));
 
     const forStranger = await get(progressGet, USERS.otherPerformer, id);
     assert.equal(forStranger.status, 403);
@@ -227,6 +227,30 @@ describe("прогрес робіт і відгуки", () => {
     await new Promise((r) => setTimeout(r, 20));
     const notes = db.findMany("notification", { where: { userId: USERS.performer } }) as any[];
     assert.equal(notes.filter((n) => n.type === "progress.30_percent_reached").length, 1);
+  });
+
+  it("прогрес: довільні відсотки відхиляються — дозволені лише 30% або 100%", async () => {
+    const id = createOrder({ days: 3 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id)));
+
+    const bad1 = await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 25 }), ctx(id)));
+    assert.equal(bad1.status, 400);
+
+    const bad2 = await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 50 }), ctx(id)));
+    assert.equal(bad2.status, 400);
+  });
+
+  it("прогрес: 100% на split-замовленні блокується, якщо 70% не внесено замовником", async () => {
+    const id = createOrder({ days: 3 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id)));
+
+    const post100 = await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 100 }), ctx(id)));
+    assert.equal(post100.status, 409);
+    assert.match(post100.body.message, /не вніс залишок 70%/);
   });
 
   it("відгук виконавця на замовника можна лише після завершення робіт", async () => {

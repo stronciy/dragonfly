@@ -491,9 +491,9 @@
 - **Auth:** Bearer
 - **Role:** `performer` (assigned)
 - **Preconditions:** статус `started` И заказ не на паузе (`paymentPaused = false`)
-- **Body:** multipart form — `percent` (optional, целое 0–100), `comment` (optional, ≤2000), `files` (≤5 фото; нужен `comment` или хотя бы одно фото)
-- **Errors:** `409 CONFLICT` — статус не `started`, ИЛИ прогресс призупинено (замовник не внес вторую часть гарантійної суми после авто-паузы `order.payment_paused`)
-- **Side effects:** создаёт `work_progress_update` (+ media), уведомляет замовника и шлёт `order.progress_updated`. При `percent >= 30` идемпотентно открывает этап второй части гарантійної суми замовника: атомарно ставит `customerPart2Deadline = now + PART2_DEADLINE_HOURS` и создаёт part-2 `paymentIntent` ровно один раз (повторные ≥30% отчёты — no-op; latch на `customerPart2Deadline IS NULL`), шлёт `deposit.customer_part2_required` + уведомления обеим сторонам
+- **Body:** multipart form — `percent` (целое: строго `30` или `100`), `comment` (optional, ≤2000), `files` (≤5 фото; нужен `comment` или хотя бы одно фото)
+- **Errors:** `400 VALIDATION_ERROR` — `percent` не равен 30 или 100; `409 CONFLICT` — статус не `started`, ИЛИ попытка отправить `percent = 100` для заказов > 2 дней, когда замовник еще не внес 70% гарантии (исполнитель вправе завершить заказ через арбитраж)
+- **Side effects:** создаёт `work_progress_update` (+ media), уведомляет замовника и шлёт `order.progress_updated`. При `percent = 30` проверяет внесение 70% замовником: если не внесено — уведомляет исполнителя о праве завершить заказ через арбитраж.
 - **Returns:** `201 { progress: { id } }`
 
 ---
@@ -522,7 +522,7 @@
 
 ## Deposits & Payments (escrow 30%, поэтапно)
 
-Гарантійна сума = 30% от бюджета (`DEPOSIT_RATE = 0.3`), вносится каждой стороной. Исполнитель вносит полную сумму сразу (`part 1`); замовник — поэтапно 30/70: `part 1` (30% от его гарантійної суми) при подтверждении заказа, `part 2` (70%, остаток) — этап открывается при ≥30% прогресса работ (см. `POST /orders/:orderId/progress`).
+Для заказов более двух суток (`durationDays > 2`) действует поэтапный эскроу: при подтверждении замовник вносит 30% (+ 8.5% fee). При старте работ (`status: started`) эти 30% списываются на баланс компании (`captureHold`), а замовнику дается 24 часа (`customerPart2Deadline = now + 24h`) на внесение оставшихся 70% в эскроу-гарантию. При достижении прогресса 30% исполнитель проверяет внесение 70%: если не внесено — исполнитель вправе завершить заказ через арбитраж, а переход к 100% блокируется.
 Подтверждение оплаты идемпотентно: повторный `confirm` с тем же `paymentIntentId` возвращает текущий статус без повторного перехода.
 
 ### POST `/api/v1/marketplace/orders/:orderId/deposits/performer-intent`

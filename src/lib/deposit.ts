@@ -46,6 +46,7 @@ export function safeDepositAmount(budget: Prisma.Decimal.Value): Prisma.Decimal 
 // paid 100% upfront. Longer orders pay DEPOSIT_RATE upfront and the remaining
 // balance by the end of PART2_DEADLINE_DAY counted from the day work started.
 export const FULL_PAYMENT_MAX_DAYS = 2;
+export const PART2_DEADLINE_HOURS = 24;
 export const PART2_DEADLINE_DAY = 3;
 
 const PAYMENT_TZ = "Europe/Kyiv";
@@ -112,10 +113,7 @@ export function customerPaymentPlan(
   };
 }
 
-/** End of the PART2_DEADLINE_DAY-th Kyiv calendar day, counting the start day as day 1. */
-export function part2DeadlineFor(workStartedAt: Date): Date {
-  const [y, m, d] = kyivDateKey(workStartedAt).split("-").map(Number);
-  const lastDayUtc = Date.UTC(y, m - 1, d + PART2_DEADLINE_DAY - 1);
-  const guess = lastDayUtc + (23 * 3600 + 59 * 60 + 59) * 1000;
-  return new Date(guess - kyivOffsetMs(guess));
+/** 24 hours from the moment work started. */
+export function part2DeadlineFor(workStartedAt: Date = new Date()): Date {
+  return new Date(workStartedAt.getTime() + PART2_DEADLINE_HOURS * 60 * 60 * 1000);
 }

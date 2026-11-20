@@ -10,7 +10,9 @@ import { readFormFilesAsDataUrl } from "@/lib/uploads";
 export const runtime = "nodejs";
 
 const progressSchema = z.object({
-  percent: z.number().min(0).max(100),
+  percent: z.number().refine((val) => val === 30 || val === 100, {
+    message: "Дозволені тільки етапи 30% або 100%",
+  }),
   note: z.string().max(500).optional(),
   images: z
     .array(
@@ -179,8 +181,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       }
     }
 
-    if (isNaN(percent) || percent < 0 || percent > 100) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Відсоток виконання має бути числом від 0 до 100");
+    if (isNaN(percent) || (percent !== 30 && percent !== 100)) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Дозволені тільки етапи 30% або 100%");
     }
 
     const order = await prisma.order.findUnique({
@@ -202,6 +204,25 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       throw new ApiError(400, "VALIDATION_ERROR", "Роботу ще не розпочато");
     }
 
+    const plan = customerPaymentPlan(order.budget, order.dateFrom, order.dateTo);
+    const isSplit = plan.mode === "split";
+    const part2PaidIntent = isSplit
+      ? await prisma.paymentIntent.findFirst({
+          where: { orderId, role: "customer", part: 2, status: "paid" },
+          select: { id: true },
+        })
+      : null;
+    const isPart2Paid = !isSplit || !!part2PaidIntent;
+
+    // Якщо замовлення триває > 2 діб, фіксувати 100% дозволено ТІЛЬКИ після внесення замовником 70%
+    if (percent === 100 && isSplit && !isPart2Paid) {
+      throw new ApiError(
+        409,
+        "CONFLICT",
+        "Неможливо зафіксувати 100% виконання: замовник ще не вніс залишок 70% в ескроу-гарантію. Ви маєте право завершити замовлення через арбітраж."
+      );
+    }
+
     // Check previous maximum progress: progress cannot decrease
     const previousMax = await prisma.workProgressUpdate.findFirst({
       where: { orderId, percent: { not: null } },
@@ -217,7 +238,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       );
     }
 
-    const firstTime30 = percent >= 30 && (!previousMax || previousMax.percent === null || previousMax.percent < 30);
+    const firstTime30 = percent === 30 && (!previousMax || previousMax.percent === null || previousMax.percent < 30);
 
     // Create progress update with media
     const createdProgress = await prisma.workProgressUpdate.create({
@@ -250,22 +271,22 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     });
 
     const hasReached30 = percent >= 30;
-    // Залишок 70% запитується лише для заказів від 3 діб (режим split). До 2 діб включно
-    // оплата повна наперед, тож про запит залишку виконавця не сповіщаємо.
-    const needsPart2Request = customerPaymentPlan(order.budget, order.dateFrom, order.dateTo).mode === "split";
+    const needsPart2Request = isSplit;
 
     console.info(
       `[api] POST /api/v1/orders/${orderId}/progress created requestId=${requestId} progressId=${createdProgress.id} userId=${user.id} percent=${percent} photos=${createdProgress.media.length} first30=${firstTime30} durationMs=${Date.now() - startedAt}`
     );
 
-    // Notify performer that they can request payment if first time 30%
+    // Notify performer about 30% milestone and arbitration right if 70% is not paid
     if (firstTime30 && needsPart2Request) {
       notifyUser({
         userId: user.id,
         type: "progress.30_percent_reached",
         title: "Досягнуто 30% виконання",
-        message: `Робота досягла 30% готовності. Ви можете запросити у замовника внесення оставшейся суми (70%).`,
-        data: { orderId, orderNumber: order.orderNumber, percent },
+        message: isPart2Paid
+          ? "Робота досягла 30% готовності. Залишок 70% уже внесено в ескроу — ви можете виконувати роботи до 100%."
+          : "Робота досягла 30% готовності. Замовник ще не вніс залишок 70%. Якщо кошти не надійдуть до дедлайну, ви вправі завершити замовлення через арбітраж.",
+        data: { orderId, orderNumber: order.orderNumber, percent, canArbitrate: !isPart2Paid },
       }).catch(() => {});
     }
 
@@ -298,6 +319,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     return ok(req, { 
       progress: percent,
       canRequestPayment: needsPart2Request && hasReached30 && !order.customerPart2Deadline,
+      part2Paid: isPart2Paid,
+      canArbitrate: needsPart2Request && !isPart2Paid,
       /** How many photos were actually linked to this progress update. */
       savedPhotos: createdProgress.media.length,
       photoCount: createdProgress.media.length,
@@ -307,7 +330,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         comment: createdProgress.comment,
         createdAt: createdProgress.createdAt,
       },
-      message: hasReached30 && needsPart2Request ? "Досягнуто 30%! Ви можете запросити оплату оставшейся суми" : "Прогрес оновлено",
+      message: hasReached30 && needsPart2Request
+        ? (isPart2Paid ? "Досягнуто 30%! Гарантію 70% внесено" : "Досягнуто 30%! Очікується сплата залишку 70%")
+        : "Прогрес оновлено",
     });
 
   } catch (err) {

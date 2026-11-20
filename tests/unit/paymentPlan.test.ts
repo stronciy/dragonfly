@@ -30,12 +30,8 @@ test("orders longer than 2 days pay 30% upfront and 70% later", () => {
   assert.equal(plan.part2Amount.toString(), "7000");
 });
 
-test("part 2 deadline is the end of the third Kyiv day counting the start day", () => {
-  const deadline = part2DeadlineFor(d("2026-11-09T10:00:00+02:00"));
-  assert.equal(deadline.toISOString(), d("2026-11-11T23:59:59+02:00").toISOString());
-});
-
-test("part 2 deadline respects the DST switch in Kyiv", () => {
-  const deadline = part2DeadlineFor(d("2026-10-24T10:00:00+03:00"));
-  assert.equal(deadline.toISOString(), d("2026-10-26T23:59:59+02:00").toISOString());
+test("part 2 deadline is 24 hours from work start", () => {
+  const start = d("2026-11-09T10:00:00+02:00");
+  const deadline = part2DeadlineFor(start);
+  assert.equal(deadline.getTime() - start.getTime(), 24 * 60 * 60 * 1000);
 });

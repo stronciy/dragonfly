@@ -17,7 +17,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     const user = await requireUser(req);
     const { orderId } = await ctx.params;
     const { state } = await getOrderRatingState(orderId, user.id);
-    return ok(req, { rating: state });
+    // Стан оцінки не кешується: після оцінки повторний запит мусить бачити
+    // `ratedByMe: true`, інакше картка знову просить поставити оцінку.
+    return ok(req, { rating: state }, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     return fail(req, err);
   }
@@ -33,8 +35,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
     const result = await submitOrderRating({ orderId, userId: user.id, rating: body.rating, comment: body.comment });
 
-    // Видимість оцінки залежить від взаємності: після будь-якої оцінки перераховуємо рейтинг виконавця.
-    if (result.performerUserId) await recomputePerformerRating(result.performerUserId);
+    // Відгук уже збережено — побічні ефекти не повинні перетворювати успішну
+    // оцінку на помилку, інакше клієнт показує «не вдалося» і просить оцінити ще раз.
+    if (result.performerUserId) {
+      await recomputePerformerRating(result.performerUserId).catch(() => {});
+    }
     const number = await orderRef(orderId);
     await notifyUser({
       userId: result.counterpartyUserId,
@@ -42,13 +47,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       title: "Вас оцінили",
       message: `Замовлення ${number}. Вас оцінено: ${body.rating}/5.`,
       data: { orderId, type: "order_rated", role: result.role === "customer" ? "performer" : "customer", rating: body.rating },
-    });
+    }).catch(() => {});
     await publishDomainEvent({
       type: "order.updated",
       requestId,
       targets: { userIds: [user.id, result.counterpartyUserId] },
       data: { orderId },
-    });
+    }).catch(() => {});
 
     const { state } = await getOrderRatingState(orderId, user.id);
     return ok(req, { rating: state }, { status: 201, message: "Оцінку збережено" });

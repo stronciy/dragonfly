@@ -312,16 +312,13 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
     assert.equal(order(id).customerPart2Deadline, null);
   });
 
-  it("старт роботи виставляє дедлайн залишку — кінець 3-го дня від старту", async () => {
+  it("старт роботи виставляє дедлайн залишку 70% — 24 години від старту", async () => {
     const id = await startedSplitOrder(3);
     const deadline = new Date(order(id).customerPart2Deadline);
     const start = new Date();
-    const dayDiff = Math.round(
-      (Date.UTC(...ymd(deadline)) - Date.UTC(...ymd(start))) / DAY
-    );
-    assert.equal(dayDiff, 2, "третій день рахуючи день старту як перший");
-    assert.equal(kyivHourMinute(deadline), "23:59", "дедлайн — кінець дня за Києвом");
-    assert.ok(notificationsFor(USERS.customer).some((n) => /Внесіть залишок 7000/.test(n.message)));
+    const diffHours = (deadline.getTime() - start.getTime()) / (60 * 60 * 1000);
+    assert.ok(Math.abs(diffHours - 24) < 0.1, "дедлайн рівно 24 години");
+    assert.ok(notificationsFor(USERS.customer).some((n) => /Внесіть залишок/.test(n.message)));
   });
 
   it("заказчик вносить 70% після старту — escrow 100%, дедлайн знято, заказ завершується", async () => {
