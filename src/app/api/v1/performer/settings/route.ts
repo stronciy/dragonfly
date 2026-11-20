@@ -166,6 +166,7 @@ export async function PUT(req: Request) {
           specErrors.push(`${serviceId}: немає у services`);
           continue;
         }
+        if (!specs || Object.keys(specs).length === 0) continue;
         for (const e of validatePerformerServiceSpecs(serviceId, specs ?? {})) {
           specErrors.push(`${serviceId}: ${e}`);
         }

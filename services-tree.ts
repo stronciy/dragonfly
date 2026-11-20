@@ -372,12 +372,14 @@ export function validatePerformerServiceSpecs(
   const value = specs ?? {};
   const type = getTypeById(serviceId);
   if (type) {
+    if (Object.keys(value).length === 0) return [];
     const subcategory = getSubcategoryById(type.subcategoryId);
     if (!subcategory) return [`Unknown service ID: ${serviceId}`];
     return validateSpecs(type.id, subcategory.id, value);
   }
   const subcategory = getSubcategoryById(serviceId);
   if (subcategory) {
+    if (Object.keys(value).length === 0) return [];
     return validateSpecs(null, subcategory.id, value);
   }
   const category = getCategoryById(serviceId);
