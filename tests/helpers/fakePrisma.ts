@@ -26,6 +26,7 @@ const RELATIONS: Record<string, Record<string, Relation>> = {
   order: {
     paymentIntents: { table: "paymentIntent", fk: "orderId", side: "hasMany" },
     escrowLocks: { table: "escrowLock", fk: "orderId", side: "hasMany" },
+    statusEvents: { table: "orderStatusEvent", fk: "orderId", side: "hasMany" },
     progressUpdates: { table: "workProgressUpdate", fk: "orderId", side: "hasMany" },
     customer: { table: "user", fk: "id", side: "belongsTo", localKey: "customerUserId" },
     performer: { table: "user", fk: "id", side: "belongsTo", localKey: "performerUserId" },

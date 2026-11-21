@@ -58,7 +58,7 @@ export async function loadLedgerInput(
   const orderIds = orders.map((o) => o.id);
 
   const confirmedCompletedOrderIds = orders
-    .filter((o) => o.status === "completed" && (o as any).statusEvents?.length > 0)
+    .filter((o) => o.status === "completed" && o.statusEvents.length > 0)
     .map((o) => o.id);
   if (confirmedCompletedOrderIds.length > 0) {
     client.escrowLock
@@ -145,7 +145,7 @@ export async function loadLedgerInput(
       const order = orders.find((o) => o.id === l.orderId);
       const isConfirmedDone =
         order?.status === "completed" &&
-        ((order as any).statusEvents?.length ?? 0) > 0;
+        (order.statusEvents.length ?? 0) > 0;
       const effectiveStatus =
         isConfirmedDone && l.status === "held" ? "released" : l.status;
       return {
