@@ -56,11 +56,27 @@ if (process.env.NODE_ENV !== "production" && localIPs.length > 0) {
 }
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   outputFileTracingRoot: process.cwd(),
   allowedDevOrigins: [...STATIC_ORIGINS, ...dynamicOrigins],
   experimental: {
     // Low-memory build hosts: static generation in a single worker.
     cpus: 1,
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-XSS-Protection", value: "0" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=()" },
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+        ],
+      },
+    ];
   },
 };
 

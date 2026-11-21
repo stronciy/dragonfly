@@ -86,7 +86,11 @@ function rejectProbe(req, res, kind, detail) {
       `[probe-blocked] ${kind} ${req.method} ${req.url} ip=${ip}${extra} ua=${clip(req.headers["user-agent"], 120)}`
     );
   }
-  res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+  res.writeHead(404, {
+    "content-type": "text/plain; charset=utf-8",
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+  });
   res.end("Not Found");
 }
 
@@ -103,6 +107,7 @@ async function main() {
   const redisSub = new Redis(getRedisUrl(), { enableReadyCheck: true, maxRetriesPerRequest: null });
 
   const server = http.createServer((req, res) => {
+    res.removeHeader("x-powered-by");
     // Security: the app defines zero Server Actions, so any `next-action`
     // header is a vulnerability scanner probe (CVE-2025-55182 "react2shell",
     // Next.js discussion #87851: bots send garbage like "x", "0", "action").
@@ -122,6 +127,13 @@ async function main() {
     }
     handle(req, res);
   });
+
+  // Security & Desync hardening: keepAliveTimeout must exceed upstream proxy (Nginx 60s)
+  server.keepAliveTimeout = 65_000;
+  server.headersTimeout = 66_000;
+  server.requestTimeout = 30_000;
+  server.maxHeadersCount = 100;
+
   const wss = new WebSocketServer({ noServer: true });
 
   const connectionsByUserId = new Map();

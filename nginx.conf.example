@@ -24,7 +24,13 @@ map $http_upgrade $connection_upgrade {
     ''      close;
 }
 
+# --- Безпека: приховування версії Nginx ---
+server_tokens off;
+
+# --- Rate limiting (захист від брутфорсу та DoS) ---
 limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=api_limit:10m rate=30r/s;
+limit_req_status 429;
 
 # --- HTTP: редирект на HTTPS + certbot challenge ---
 server {
@@ -51,12 +57,43 @@ server {
     ssl_certificate     /etc/letsencrypt/live/api.dragonfly.ua/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/api.dragonfly.ua/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
     ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
 
+    # --- Захист від Buffer Overflow & DoS ---
     client_max_body_size 10m;
+    client_body_buffer_size 128k;
+    client_header_buffer_size 1k;
+    large_client_header_buffers 4 8k;
+
+    # --- Безпекові HTTP-заголовки (Defense in Depth) ---
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "0" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), browsing-topics=()" always;
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+
+    # Приховуємо внутрішні заголовки бекенду
+    proxy_hide_header X-Powered-By;
+
+    # Блокування небезпечних / неочікуваних HTTP-методів
+    if ($request_method !~ ^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$) {
+        return 405;
+    }
 
     access_log /var/log/nginx/api.dragonfly.ua.access.log combined;
     error_log  /var/log/nginx/api.dragonfly.ua.error.log warn;
+
+    # Заборона доступу до прихованих файлів (.git, .env тощо)
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
 
     # --- WebSocket: /ws та /api/v1/ws (реальні шляхи з server.js) ---
     location = /ws {
@@ -92,7 +129,7 @@ server {
         proxy_buffering off;
     }
 
-    # --- Auth: легкий rate-limit проти брутфорсу ---
+    # --- Auth: rate-limit проти брутфорсу облікових записів ---
     location /api/v1/auth/ {
         limit_req zone=auth_limit burst=20 nodelay;
         proxy_pass http://dragonfly_api;
@@ -106,8 +143,9 @@ server {
         proxy_send_timeout 30s;
     }
 
-    # --- Решта API + Next.js ---
+    # --- Решта API + Next.js (з загальним захистом від перевантаження) ---
     location /api/ {
+        limit_req zone=api_limit burst=50 nodelay;
         proxy_pass http://dragonfly_api;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
