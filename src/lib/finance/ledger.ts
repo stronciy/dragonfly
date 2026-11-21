@@ -506,7 +506,7 @@ export function summarizeLedger(role: LedgerRole, entries: LedgerEntry[]): Ledge
   const forfeited = sum(
     (e) =>
       e.kind === "performer_deposit" &&
-      (e.status === "forfeited" || e.status === "forfeit_pending"),
+      e.status === "forfeited",
   );
   return {
     availableUah: round2(earned - withdrawn - pending),
