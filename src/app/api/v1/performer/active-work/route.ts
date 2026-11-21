@@ -2,6 +2,7 @@ import { ok, fail } from "@/lib/apiResponse";
 import { ApiError } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
+import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 
 export async function GET(req: Request) {
   try {
@@ -40,6 +41,12 @@ export async function GET(req: Request) {
         acceptedAt: true,
         depositDeadline: true,
         customerPart2Deadline: true,
+        reportSubmittedAt: true,
+        statusEvents: {
+          where: { note: COMPLETION_CONFIRMED_NOTE },
+          select: { createdAt: true },
+          take: 1,
+        },
         paymentRequests: {
           where: { requestedBy: user.id, status: "pending" },
           select: { id: true, requestedAmount: true, createdAt: true, status: true },
@@ -97,6 +104,8 @@ export async function GET(req: Request) {
       acceptedAt: order.acceptedAt,
       depositDeadline: order.depositDeadline,
       customerPart2Deadline: order.customerPart2Deadline,
+      reportSubmittedAt: order.reportSubmittedAt ? order.reportSubmittedAt.toISOString() : null,
+      completionConfirmedAt: order.statusEvents?.[0]?.createdAt ? order.statusEvents[0].createdAt.toISOString() : null,
       hasPaymentRequest: (order.paymentRequests?.length ?? 0) > 0 || !!order.customerPart2Deadline,
       part2Paid: (order.paymentIntents?.length ?? 0) > 0,
       customer: customerMap.get(order.customerUserId) 
