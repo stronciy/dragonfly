@@ -67,7 +67,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
     }
     const { order } = arbitrationCase;
     if (order.status !== "arbitration") throw new ApiError(409, "CONFLICT", "Замовлення не в арбітражі");
-    if (!order.performerUserId) throw new ApiError(409, "CONFLICT", "У замовлення немає виконавця");
+    if (!order.performerUserId) throw new ApiError(409, "CONFLICT", "У замовлення немає Виконавця");
 
     // Той самий інваріант, що й у арбітражі за згодою сторін: довгий заказ
     // закривається лише після внесення залишку 70%.
@@ -88,8 +88,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
     const winnerLabel = isDraw
       ? "без переможця (спір закрито за згодою)"
       : body.winner === "customer"
-        ? "на боці замовника"
-        : "на боці виконавця";
+        ? "на боці Замовника"
+        : "на боці Виконавця";
     const now = new Date();
 
     await prisma.$transaction(async (tx) => {

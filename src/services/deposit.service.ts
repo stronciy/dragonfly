@@ -477,7 +477,7 @@ export async function captureCustomerInitialDeposit(
     data: {
       orderId,
       status: "started",
-      note: "30% гарантійної суми замовника списано на рахунок компанії-гаранта",
+      note: "30% гарантійної суми Замовника списано на рахунок компанії-гаранта",
     },
   });
   return true;
@@ -779,7 +779,7 @@ export async function emitDepositPaidNotifications(args: {
         userId: args.order.performerUserId,
         type: "deposit",
         title: "Гарантійну суму внесено",
-        message: `Замовлення ${shortRef}. Ви внесли гарантійну суму — ${sum}. Очікуємо внесення замовником його гарантійної суми.`,
+        message: `Замовлення ${shortRef}. Ви внесли гарантійну суму — ${sum}. Очікуємо внесення Замовником його гарантійної суми.`,
         data: { orderId: args.order.id, type: "deposit_performer_paid", role: "performer", action: "view_order", actorId: actorUserId },
       });
     }
@@ -797,7 +797,7 @@ export async function emitDepositPaidNotifications(args: {
       userId: args.order.customerUserId,
       type: "deposit",
       title: "Замовлення прийнято",
-      message: `Замовлення ${shortRef} прийнято. Обидві застави внесені, виконавець розпочинає роботу.`,
+      message: `Замовлення ${shortRef} прийнято. Обидві застави внесені, Виконавець розпочинає роботу.`,
       data: { orderId: args.order.id, type: "order_confirmed", role: "customer", action: "view_order", actorId: actorUserId },
     });
   }

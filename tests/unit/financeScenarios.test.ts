@@ -126,7 +126,7 @@ describe("журнал заказчика", () => {
     const { summary, entries } = await transactions(USERS.customer);
     const deposit = kindOf(entries, "customer_deposit");
     assert.equal(deposit.status, "completed");
-    assert.match(deposit.reason, /передано виконавцю/);
+    assert.match(deposit.reason, /передано Виконавцю/i);
     assert.ok(deposit.occurredAt, "є час події");
     assert.equal(summary.inEscrowUah, 0);
     assert.equal(summary.earnedOrPaidUah, 10850, "після підтвердження кошти виконавцю і комісія сервісу входять у сплачені");
@@ -204,7 +204,7 @@ describe("журнал заказчика", () => {
     const forfeit = kindOf(entries, "performer_deposit_forfeit");
     assert.equal(forfeit.amount, 3000);
     assert.equal(forfeit.direction, "in");
-    assert.equal(forfeit.title, "Штраф з виконавця");
+    assert.equal(forfeit.title, "Штраф з Виконавця");
     assert.equal(summary.refundedUah, 13000);
   });
 

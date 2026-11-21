@@ -74,7 +74,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       );
     }
     if (!order.performerUserId) {
-      throw new ApiError(409, "CONFLICT", "У замовлення немає виконавця");
+      throw new ApiError(409, "CONFLICT", "У замовлення немає Виконавця");
     }
 
     const updated = await prisma.$transaction(async (tx) => {

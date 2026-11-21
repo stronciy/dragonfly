@@ -43,7 +43,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
           select: { id: true },
         });
         if (wasSentToMe && order.status !== "cancelled")
-          throw new ApiError(409, "ORDER_TAKEN", "Це замовлення вже взяв інший виконавець");
+          throw new ApiError(409, "ORDER_TAKEN", "Це замовлення вже взяв інший Виконавець");
         throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
       }
     }

@@ -26,7 +26,7 @@ function orderLines(data: OrderStatusPayload): string[] {
 }
 
 const ORDER_TITLES: Record<string, string> = {
-  "order.accepted": "✅ Замовлення прийнято виконавцем",
+  "order.accepted": "✅ Замовлення прийнято Виконавцем",
   "order.confirmed": "🤝 Замовлення підтверджено",
   "order.started": "🚜 Роботи розпочато",
   "order.completed": "🏁 Замовлення завершено",
@@ -91,7 +91,7 @@ function formatBody(event: AdminEvent, panelUrl?: string): Array<string | null> 
       ];
     case "payment.paid": {
       const d = event.data;
-      const who = d.role === "performer" ? "виконавець" : "замовник";
+      const who = d.role === "performer" ? "Виконавець" : "Замовник";
       const stage = d.part === 2 ? "залишок" : "застава";
       return [
         "💳 <b>Оплата отримана</b>",
