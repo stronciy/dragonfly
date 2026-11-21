@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   RESET_PRESERVED_TABLES,
+  RESET_EXCEPT_USERS_PRESERVED_TABLES,
   buildResetTruncateSql,
   quotePgIdentifier,
   selectResetTables,
@@ -18,6 +19,15 @@ test("reset keeps migrations, admins and the bootstrap catalog", () => {
   ]);
 });
 
+test("reset except users preserves users, profiles, devices and credentials", () => {
+  assert.ok(RESET_EXCEPT_USERS_PRESERVED_TABLES.includes("users"));
+  assert.ok(RESET_EXCEPT_USERS_PRESERVED_TABLES.includes("customer_profiles"));
+  assert.ok(RESET_EXCEPT_USERS_PRESERVED_TABLES.includes("performer_profiles"));
+  assert.ok(RESET_EXCEPT_USERS_PRESERVED_TABLES.includes("legal_profiles"));
+  assert.ok(RESET_EXCEPT_USERS_PRESERVED_TABLES.includes("fields"));
+  assert.ok(RESET_EXCEPT_USERS_PRESERVED_TABLES.includes("wallets"));
+});
+
 test("reset selects every public business table and drops duplicates", () => {
   assert.deepEqual(
     selectResetTables([
@@ -29,6 +39,25 @@ test("reset selects every public business table and drops duplicates", () => {
       "_prisma_migrations",
     ]),
     ["orders", "users"]
+  );
+});
+
+test("reset except users selects orders and finance but preserves users", () => {
+  assert.deepEqual(
+    selectResetTables(
+      [
+        "orders",
+        "order_matches",
+        "payment_intents",
+        "users",
+        "customer_profiles",
+        "legal_profiles",
+        "wallets",
+        "admins",
+      ],
+      "except_users"
+    ),
+    ["order_matches", "orders", "payment_intents"]
   );
 });
 

@@ -116,7 +116,7 @@ describe("журнал заказчика", () => {
 
     assert.equal(summary.inEscrowUah, 10000);
     assert.equal(summary.feesPaidUah, 850);
-    assert.equal(summary.earnedOrPaidUah, 10000);
+    assert.equal(summary.earnedOrPaidUah, 850, "поки робота в процесі, у сплачених лише комісія сервісу, а застава в ескроу");
     assert.equal(summary.refundedUah, 0);
   });
 
@@ -129,6 +129,7 @@ describe("журнал заказчика", () => {
     assert.match(deposit.reason, /передано виконавцю/);
     assert.ok(deposit.occurredAt, "є час події");
     assert.equal(summary.inEscrowUah, 0);
+    assert.equal(summary.earnedOrPaidUah, 10850, "після підтвердження кошти виконавцю і комісія сервісу входять у сплачені");
   });
 
   it("заказ на 3 дні: 30% + комісія одразу, 70% — окремий запис з часом внесення", async () => {
@@ -192,6 +193,21 @@ describe("журнал заказчика", () => {
     assert.equal(kindOf(entries, "customer_deposit").status, "refunded");
   });
 
+  it("штраф з виконавця зараховується замовнику у журнал та підсумок", async () => {
+    const id = createOrder({ days: 1, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    db.updateMany("escrowLock", { where: { orderId: id, role: "performer" }, data: { status: "forfeited" } });
+    db.updateMany("escrowLock", { where: { orderId: id, role: "customer" }, data: { status: "refunded" } });
+
+    const { summary, entries } = await transactions(USERS.customer);
+    const forfeit = kindOf(entries, "performer_deposit_forfeit");
+    assert.equal(forfeit.amount, 3000);
+    assert.equal(forfeit.direction, "in");
+    assert.equal(forfeit.title, "Штраф з виконавця");
+    assert.equal(summary.refundedUah, 13000);
+  });
+
   it("журнал містить лише власні платежі: інший заказчик нічого не бачить", async () => {
     const id = await completedOneDay();
     assert.equal((await transactions(USERS.otherCustomer)).entries.length, 0);
@@ -210,6 +226,17 @@ describe("журнал виконавця", () => {
     assert.equal(deposit.status, "in_escrow");
     assert.equal(summary.availableUah, 0);
     assert.equal(summary.inEscrowUah, 3000);
+  });
+
+  it("утриманий штраф (forfeited) відображається у підсумку штрафів виконавця", async () => {
+    const id = createOrder({ days: 1 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    db.updateMany("escrowLock", { where: { orderId: id, role: "performer" }, data: { status: "forfeited" } });
+    const { summary, entries } = await transactions(USERS.performer);
+    const deposit = kindOf(entries, "performer_deposit");
+    assert.equal(deposit.status, "forfeited");
+    assert.equal(summary.refundedUah, 3000);
   });
 
   it("після завершення і підтвердження: оплата за роботу на балансі, застава розблокована на картці", async () => {

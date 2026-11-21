@@ -8,6 +8,9 @@
  *  - `admins` — otherwise the panel locks itself out;
  *  - service catalog + crops — required for a usable fresh flow.
  */
+export const RESET_CONFIRMATION_ALL = "RESET ALL DATA";
+export const RESET_CONFIRMATION_EXCEPT_USERS = "RESET EXCEPT USERS";
+
 export const RESET_PRESERVED_TABLES = [
   "_prisma_migrations",
   "admins",
@@ -17,11 +20,40 @@ export const RESET_PRESERVED_TABLES = [
   "service_types",
 ] as const;
 
-const PRESERVED = new Set<string>(RESET_PRESERVED_TABLES);
+export const RESET_EXCEPT_USERS_PRESERVED_TABLES = [
+  ...RESET_PRESERVED_TABLES,
+  "users",
+  "refresh_tokens",
+  "password_reset_tokens",
+  "customer_profiles",
+  "performer_profiles",
+  "performer_services",
+  "legal_profiles",
+  "fields",
+  "devices",
+  "wallets",
+  "admin_telegram_links",
+  "admin_telegram_link_codes",
+  "admin_notification_settings",
+  "admin_event_cursors",
+  "admin_password_reset_tokens",
+  "admin_audit_logs",
+  "client_diagnostic_reports",
+] as const;
 
-export function selectResetTables(allTables: readonly string[]): string[] {
+export type ResetScope = "all" | "except_users";
+
+export function selectResetTables(
+  allTables: readonly string[],
+  scope: ResetScope = "all"
+): string[] {
+  const preserved = new Set<string>(
+    scope === "except_users"
+      ? RESET_EXCEPT_USERS_PRESERVED_TABLES
+      : RESET_PRESERVED_TABLES
+  );
   return [...new Set(allTables)]
-    .filter((table) => table.length > 0 && !table.includes("\0") && !PRESERVED.has(table))
+    .filter((table) => table.length > 0 && !table.includes("\0") && !preserved.has(table))
     .sort();
 }
 

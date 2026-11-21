@@ -201,7 +201,7 @@ export const servicesTree: ServicesTree = {
     },
     {
       id: "4",
-      name: "Збір врожаю",
+      name: "Збір врожаю / Комбайни",
       icon: "🌾",
       children: [
         {

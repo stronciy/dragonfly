@@ -139,6 +139,20 @@ describe("адмін: черги і захист скидання даних", (
     const res = await readResponse(await resetPost(new Request("http://localhost/x", { method: "POST", body: JSON.stringify({ confirm: "RESET ALL DATA" }) })));
     assert.equal(res.status, 401);
   });
+
+  it("скидання крім користувачів вимагає точної фрази RESET EXCEPT USERS", async () => {
+    const id = createOrder({ days: 1 });
+    const res = await readResponse(await resetPost(admin("POST", { confirm: "RESET ALL DATA", scope: "except_users" }, { "x-admin-id": SUPERADMIN_ID })));
+    assert.equal(res.status, 400);
+    assert.equal(order(id).status, "published", "дані не змінені");
+  });
+
+  it("скидання крім користувачів звичайним адміном заборонено (403)", async () => {
+    const id = createOrder({ days: 1 });
+    const res = await readResponse(await resetPost(admin("POST", { confirm: "RESET EXCEPT USERS", scope: "except_users" })));
+    assert.equal(res.status, 403);
+    assert.equal(order(id).status, "published", "дані не змінені");
+  });
 });
 
 describe("адмін: відновлення пароля", () => {

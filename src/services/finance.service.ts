@@ -9,6 +9,7 @@ import {
 } from "../lib/finance/ledger";
 import { normalizeUAIban, validateUAIban } from "../lib/validators";
 import { publishPayoutUpdated } from "./payoutEvents";
+import { COMPLETION_CONFIRMED_NOTE } from "../lib/completionConfirmation";
 
 type Client = Prisma.TransactionClient | typeof prisma;
 
@@ -40,12 +41,33 @@ export async function loadLedgerInput(
       budget: true,
       dateFrom: true,
       dateTo: true,
+      statusEvents: {
+        where: {
+          OR: [
+            { note: COMPLETION_CONFIRMED_NOTE },
+            { note: { startsWith: "Адмін:" } },
+          ],
+        },
+        select: { id: true },
+      },
       progressUpdates: {
         select: { percent: true, createdAt: true },
       },
     },
   });
   const orderIds = orders.map((o) => o.id);
+
+  const confirmedCompletedOrderIds = orders
+    .filter((o) => o.status === "completed" && (o as any).statusEvents?.length > 0)
+    .map((o) => o.id);
+  if (confirmedCompletedOrderIds.length > 0) {
+    client.escrowLock
+      .updateMany({
+        where: { orderId: { in: confirmedCompletedOrderIds }, status: "held" },
+        data: { status: "released" },
+      })
+      .catch(() => {});
+  }
 
   const [intents, locks, payouts] = await Promise.all([
     orderIds.length
@@ -119,15 +141,23 @@ export async function loadLedgerInput(
       currency: i.currency,
       paidAt: i.paidAt,
     })),
-    locks: locks.map((l) => ({
-      id: l.id,
-      orderId: l.orderId,
-      role: l.role,
-      userId: l.userId,
-      amount: Number(l.amount),
-      status: l.status,
-      releasedAt: l.releasedAt,
-    })),
+    locks: locks.map((l) => {
+      const order = orders.find((o) => o.id === l.orderId);
+      const isConfirmedDone =
+        order?.status === "completed" &&
+        ((order as any).statusEvents?.length ?? 0) > 0;
+      const effectiveStatus =
+        isConfirmedDone && l.status === "held" ? "released" : l.status;
+      return {
+        id: l.id,
+        orderId: l.orderId,
+        role: l.role,
+        userId: l.userId,
+        amount: Number(l.amount),
+        status: effectiveStatus,
+        releasedAt: l.releasedAt,
+      };
+    }),
     payouts: payouts.map((p) => ({
       id: p.id,
       amount: Number(p.amount),

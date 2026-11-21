@@ -5,11 +5,14 @@ import { writeAuditLog } from "@/lib/adminAudit";
 import {
   ApiError,
   canTransition,
+  emitEscrowChanged,
   isOrderStatus,
   notifyUser,
   orderRef,
   prisma,
   publishDomainEvent,
+  releaseEscrowForOrder,
+  settleProviderHolds,
 } from "@/shared";
 
 export const runtime = "nodejs";
@@ -88,6 +91,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       });
       if (to === "completed") {
         await tx.orderMatch.deleteMany({ where: { orderId: id } });
+        await releaseEscrowForOrder(tx, { orderId: id, to: "released" });
       }
       await writeAuditLog(tx, req, {
         admin,
@@ -100,6 +104,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       });
       return result;
     });
+
+    if (to === "completed") {
+      await settleProviderHolds({ orderId: id, to: "released" }).catch(() => {});
+      await emitEscrowChanged({
+        requestId,
+        orderId: id,
+        customerUserId: order.customerUserId,
+        performerUserId: order.performerUserId,
+        roles: ["performer", "customer"],
+        orderStatus: "completed",
+      }).catch(() => {});
+    }
 
     await publishDomainEvent({
       type: "order.status_changed",

@@ -5,7 +5,10 @@ import { requirePanelAdmin } from "@/lib/adminAuth";
 import { writeAuditLog } from "@/lib/adminAudit";
 import { clearQueues } from "@/shared";
 import {
+  RESET_CONFIRMATION_ALL,
+  RESET_CONFIRMATION_EXCEPT_USERS,
   RESET_PRESERVED_TABLES,
+  RESET_EXCEPT_USERS_PRESERVED_TABLES,
   buildResetTruncateSql,
   selectResetTables,
 } from "@/lib/adminDataReset";
@@ -14,35 +17,43 @@ import { createDatabaseBackup } from "@/lib/dbBackup";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const RESET_CONFIRMATION = "RESET ALL DATA";
-
 const schema = z.object({
   confirm: z.string(),
+  scope: z.enum(["all", "except_users"]).default("all"),
   reason: z.string().trim().max(500).optional(),
 });
 
 /**
- * OPS: full reset of business data from the admin panel.
+ * OPS: reset of business data from the admin panel.
  *
- * This is intentionally a destructive, non-reversible operation. It wipes every
- * public table except migrations, admin credentials, and the reference catalog
- * needed to bootstrap a fresh flow. The reset itself is written to the audit
- * log after all old audit rows have been removed, so there is always evidence
- * that the database was reset.
+ * Supports two scopes:
+ * - "all": Wipes every public table except migrations, admin credentials, and catalog.
+ * - "except_users": Wipes orders, escrow, payments, chats, reviews, notifications,
+ *   and resets wallet balances to 0, while keeping users, profiles, legal info,
+ *   devices, and login sessions intact for seamless re-testing.
  */
 export async function POST(req: Request) {
   try {
     const admin = await requirePanelAdmin(req, "system.manage");
     const body = schema.parse(await req.json().catch(() => null));
-    if (body.confirm.trim() !== RESET_CONFIRMATION) {
+    const isExceptUsers = body.scope === "except_users";
+    const expectedConfirm = isExceptUsers
+      ? RESET_CONFIRMATION_EXCEPT_USERS
+      : RESET_CONFIRMATION_ALL;
+
+    if (body.confirm.trim() !== expectedConfirm) {
       throw new ApiError(
         400,
         "VALIDATION_ERROR",
-        `Для підтвердження введіть «${RESET_CONFIRMATION}»`
+        `Для підтвердження введіть «${expectedConfirm}»`
       );
     }
 
-    const reason = body.reason || "Повний скид даних через адмін-панель";
+    const reason =
+      body.reason ||
+      (isExceptUsers
+        ? "Скидання замовлень та фінансових даних (крім користувачів) через адмін-панель"
+        : "Повний скид даних через адмін-панель");
 
     // Dump the database before anything destructive happens. If pg_dump fails
     // the reset is aborted: a wipe without a fallback copy is not worth one
@@ -58,7 +69,7 @@ export async function POST(req: Request) {
       FROM pg_catalog.pg_tables
       WHERE schemaname = 'public'
     `;
-    const tables = selectResetTables(tableRows.map((row) => row.tablename));
+    const tables = selectResetTables(tableRows.map((row) => row.tablename), body.scope);
     if (tables.length === 0) {
       throw new ApiError(500, "INTERNAL_ERROR", "Не знайдено таблиць для скидання");
     }
@@ -84,17 +95,19 @@ export async function POST(req: Request) {
       prisma.review.count(),
       prisma.adminAuditLog.count(),
     ]);
-    const deleted = {
-      users,
+    const deleted: Record<string, number> = {
       orders,
       orderMatches,
       paymentIntents,
       escrowLocks,
       notifications,
-      devices,
       reviews,
-      auditLogs,
     };
+    if (!isExceptUsers) {
+      deleted.users = users;
+      deleted.devices = devices;
+      deleted.auditLogs = auditLogs;
+    }
 
     const startedAt = Date.now();
 
@@ -107,22 +120,31 @@ export async function POST(req: Request) {
       errors: [{ name: "all", error: err instanceof Error ? err.message : String(err) }],
     }));
 
+    const preservedList = isExceptUsers
+      ? [...RESET_EXCEPT_USERS_PRESERVED_TABLES]
+      : [...RESET_PRESERVED_TABLES];
+
     const result = await prisma.$transaction(
       async (tx) => {
         await tx.$executeRawUnsafe(buildResetTruncateSql(tables));
 
+        if (isExceptUsers) {
+          await tx.$executeRawUnsafe('UPDATE "wallets" SET "balance" = 0, "hold_amount" = 0');
+        }
+
         const resetAt = new Date().toISOString();
         await writeAuditLog(tx, req, {
           admin,
-          action: "system.reset",
+          action: isExceptUsers ? "system.reset_except_users" : "system.reset",
           entityType: "database",
-          entityId: "all-business-data",
+          entityId: isExceptUsers ? "orders-finance-data" : "all-business-data",
           reason,
           before: deleted,
           after: {
             resetAt,
+            scope: body.scope,
             truncatedTables: tables.length,
-            preservedTables: [...RESET_PRESERVED_TABLES],
+            preservedTables: preservedList,
             backup,
             queuesBeforeCleared: queuesBefore.cleared,
             queueErrors: queuesBefore.errors,
@@ -131,9 +153,10 @@ export async function POST(req: Request) {
 
         return {
           resetAt,
+          scope: body.scope,
           deleted,
           truncatedTables: tables.length,
-          preservedTables: [...RESET_PRESERVED_TABLES],
+          preservedTables: preservedList,
           backup,
         };
       },
@@ -177,7 +200,9 @@ export async function POST(req: Request) {
         },
       },
       {
-        message: "Усі бізнес-дані скинуто. Можна починати тестовий флоу з нуля.",
+        message: isExceptUsers
+          ? "Замовлення та фінансові дані скинуто. Користувачів збережено для тестування з чистого аркуша."
+          : "Усі бізнес-дані скинуто. Можна починати тестовий флоу з нуля.",
       }
     );
   } catch (err) {

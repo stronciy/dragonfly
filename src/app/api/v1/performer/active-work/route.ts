@@ -10,18 +10,22 @@ export async function GET(req: Request) {
 
     const now = new Date();
 
-    // Повертати ВСІ замовлення виконавця з відповідними статусами
-    // Для requires_confirmation/accepted — тільки якщо depositDeadline ще не минув
+    // Повертати ВСІ замовлення виконавця з відповідними статусами:
+    // requires_confirmation (очікують оплату), accepted, confirmed, en_route, started, completed, arbitration
     const orders = await prisma.order.findMany({
       where: {
         performerUserId: user.id,
-        OR: [
-          { status: { in: ["confirmed", "en_route", "started", "completed", "arbitration"] } },
-          {
-            status: { in: ["requires_confirmation", "accepted"] },
-            depositDeadline: { gte: now }, // ще не просрочено
-          },
-        ],
+        status: {
+          in: [
+            "requires_confirmation",
+            "accepted",
+            "confirmed",
+            "en_route",
+            "started",
+            "completed",
+            "arbitration",
+          ],
+        },
       },
       orderBy: { updatedAt: "desc" },
       select: {

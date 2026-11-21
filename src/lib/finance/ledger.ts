@@ -292,6 +292,23 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
       }
     }
 
+    if (input.role === "customer" && lock.role === "performer" && isMyCustomerOrder(order.id)) {
+      if (lock.status === "forfeited" || lock.status === "forfeit_pending") {
+        entries.push({
+          id: `forfeit:${lock.id}`,
+          occurredAt,
+          kind: "performer_deposit_forfeit",
+          direction: "in",
+          amount,
+          currency: "UAH",
+          status: "completed",
+          ...meta,
+          title: "Штраф з виконавця",
+          reason: "Сума застави, утримана з Виконавця за скасування підтвердженого замовлення або за рішенням арбітражу.",
+        });
+      }
+    }
+
     if (input.role === "performer" && lock.role === "customer" && isMyPerformerOrder(order.id)) {
       const plan = customerPaymentPlan(order.budget, order.dateFrom, order.dateTo);
       const isSplit = plan.mode === "split";
@@ -466,12 +483,16 @@ export function summarizeLedger(role: LedgerRole, entries: LedgerEntry[]): Ledge
         );
 
   if (role === "customer") {
+    const paidToPerformers = sum(
+      (e) => (e.kind === "customer_deposit" || e.kind === "customer_balance") && e.status === "completed",
+    );
+    const feesPaid = sum((e) => e.kind === "service_fee");
     return {
       availableUah: 0,
       inEscrowUah,
-      earnedOrPaidUah: sum((e) => e.kind === "customer_deposit" || e.kind === "customer_balance"),
-      feesPaidUah: sum((e) => e.kind === "service_fee"),
-      refundedUah: sum((e) => e.kind === "customer_refund"),
+      earnedOrPaidUah: round2(paidToPerformers + feesPaid),
+      feesPaidUah: feesPaid,
+      refundedUah: sum((e) => e.kind === "customer_refund" || e.kind === "performer_deposit_forfeit"),
       withdrawnUah: 0,
       pendingWithdrawalUah: 0,
     };
@@ -482,12 +503,17 @@ export function summarizeLedger(role: LedgerRole, entries: LedgerEntry[]): Ledge
   const earned = sum((e) => e.kind === "order_payout" && e.status === "completed");
   const withdrawn = sum((e) => e.kind === "withdrawal" && e.status === "paid");
   const pending = sum((e) => e.kind === "withdrawal" && e.status === "requested");
+  const forfeited = sum(
+    (e) =>
+      e.kind === "performer_deposit" &&
+      (e.status === "forfeited" || e.status === "forfeit_pending"),
+  );
   return {
     availableUah: round2(earned - withdrawn - pending),
     inEscrowUah,
     earnedOrPaidUah: earned,
     feesPaidUah: 0,
-    refundedUah: 0,
+    refundedUah: forfeited,
     withdrawnUah: withdrawn,
     pendingWithdrawalUah: pending,
   };
