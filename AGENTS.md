@@ -117,7 +117,7 @@ tsconfig.json                # paths "@/*" → src/*
 
 10. **Order status state machine (string, не enum):**
     `draft → published → accepted → requires_confirmation → confirmed → started → completed → arbitration | cancelled`
-    - `requires_confirmation` має поле `depositDeadline` (12 год). Scheduler (`depositDeadlineTimeout.scheduler.ts`, у worker) кожні 5 хв перевіряє прострочені.
+    - `requires_confirmation` має поле `depositDeadline` (24 год). Scheduler (`depositDeadlineTimeout.scheduler.ts`, у worker) кожні 5 хв перевіряє прострочені.
     - Якщо `accepted`/`requires_confirmation` з `depositDeadline < now` → `expiredOrders.worker` → `cancelled` (refund).
     - Якщо `requires_confirmation` з `depositDeadline < now` → `depositDeadlineTimeout.worker` → `published` (release performer, повернути в біржу).
     - `specs` — JSONB на order, validated через `services-tree.ts` `validateSpecs()` (див. `POST /api/v1/orders`).

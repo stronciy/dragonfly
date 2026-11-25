@@ -426,7 +426,7 @@ test("Full Happy Path Flow: Register → Profile → Order → Accept → Both D
   assert.equal(claimResult.freshClaim, true);
   assert.equal(claimResult.order.status, "accepted");
   assert.equal(claimResult.order.performerUserId, performerUser.id);
-  assert.ok(claimResult.order.depositDeadline, "Performer has 12h deposit deadline");
+  assert.ok(claimResult.order.depositDeadline, "Performer has 24h deposit deadline");
 
   // 5. Performer creates deposit intent & pays guarantee deposit via LiqPay (test card 4242 4242 4242 4242)
   const performerExpectedDeposit = depositAmountFor(budget); // 30,000 UAH

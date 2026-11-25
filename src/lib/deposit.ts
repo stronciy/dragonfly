@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 // Guarantee deposit = 30% of the order budget, locked per side (customer and
 // performer each hold the same full per-side amount — no staging).
 export const DEPOSIT_RATE = 0.3;
-export const DEPOSIT_DEADLINE_HOURS = 12;
+export const DEPOSIT_DEADLINE_HOURS = 24;
 
 // The customer's counter-deposit of the performer's paid deposit must be paid
 // in a single full payment within 24h of the performer paying

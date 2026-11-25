@@ -529,7 +529,7 @@
 - **Auth:** Bearer
 - **Role:** `performer`
 - **Body:** `{ method?: "card" | "apple-pay" | "google-pay" | "bank-transfer", wallet?: string, resultUrl?: string }`
-- **Side effects (атомарно):** claim заказа условным `UPDATE ... WHERE status = 'published'` → `accepted` (`performerUserId`, `acceptedAt`, `depositDeadline = now + 12h`); повторный вызов тем же исполнителем возвращает существующий pending intent; чужой claim → `409 CONFLICT`
+- **Side effects (атомарно):** claim заказа условным `UPDATE ... WHERE status = 'published'` → `accepted` (`performerUserId`, `acceptedAt`, `depositDeadline = now + 24h`); повторный вызов тем же исполнителем возвращает существующий pending intent; чужой claim → `409 CONFLICT`
 - **Events:** `agreement.assigned`, `order.status_changed` (`published → accepted`), `order.accepted`, `order:accepted` + Push замовнику
 - **Returns:** `200 { paymentIntent: { id, orderId, role, amount, currency, status, data, signature, checkoutUrl, liqpay: { data, signature, checkoutUrl, checkout: { data, signature } } } }`
 
