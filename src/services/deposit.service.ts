@@ -185,6 +185,9 @@ export async function ensureIntentServerUrl(tx: Tx, intent: PaymentIntent, req?:
   return created.intent;
 }
 
+/** Застава Виконавця, яку ще не повернуто/не утримано остаточно. */
+const UNSETTLED_PERFORMER_LOCK_STATUSES = ["decision_pending", "release_pending", "refund_pending", "forfeit_pending"] as const;
+
 export async function claimOrderForPerformer(
   tx: Tx,
   args: { orderId: string; performerUserId: string }
@@ -195,6 +198,24 @@ export async function claimOrderForPerformer(
   });
   if (located && !isWithinUkraine(Number(located.lat), Number(located.lng))) {
     throw new ApiError(409, "CONFLICT", "Виконання замовлень дозволене лише в межах України");
+  }
+  // Застава попереднього прийняття ще не розрахована (повернення в LiqPay не
+  // завершено або Замовник ще вирішує її долю). Нова оплата перезаписала б це
+  // блокування — стара застава могла б так і не повернутись.
+  const unsettled = await tx.escrowLock.findFirst({
+    where: { orderId: args.orderId, role: "performer", status: { in: [...UNSETTLED_PERFORMER_LOCK_STATUSES] } },
+    select: { userId: true, status: true },
+  });
+  if (unsettled) {
+    throw new ApiError(
+      409,
+      "CONFLICT",
+      unsettled.userId === args.performerUserId && unsettled.status !== "decision_pending"
+        ? "Ваша попередня застава за цим замовленням ще повертається на картку. Взяти замовлення знову можна після її повернення — зазвичай це кілька хвилин."
+        : unsettled.userId === args.performerUserId
+          ? "Замовник ще вирішує долю вашої попередньої застави за цим замовленням. Взяти його знову можна після рішення."
+          : "Замовлення тимчасово недоступне: розрахунок із попереднім Виконавцем ще не завершено. Спробуйте пізніше."
+    );
   }
   const now = new Date();
   const claimed = await tx.order.updateMany({

@@ -2,7 +2,7 @@
 // аудиту, деталі біржі, активна робота і звіти виконавця, котирування, здоров'я.
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { resetWorld, createOrder, call, ctx, readResponse, performerClaimsAndPays, USERS } from "../helpers/world";
+import { resetWorld, createOrder, call, ctx, readResponse, performerClaimsAndPays, customerPays, USERS } from "../helpers/world";
 import { db } from "../helpers/fakePrisma";
 import { POST as blockPost } from "../../src/app/api/v1/admin/users/[id]/block/route";
 import { POST as unblockPost } from "../../src/app/api/v1/admin/users/[id]/unblock/route";
@@ -110,6 +110,28 @@ describe("активна робота і звіти Виконавця", () => {
     const reviews = await readResponse(await reviewsGet(await call(USERS.performer, "GET")));
     assert.equal(reviews.status, 200);
     assert.equal((await readResponse(await ratingGet(await call(USERS.customer, "GET")))).status, 403);
+  });
+
+  it("«Очікують оплату»: Виконавець не бачить адресу і контакти Замовника до внесення обох застав", async () => {
+    const id = createOrder({ days: 1 });
+    await performerClaimsAndPays(id);
+    const ADDRESS = "Полтавська обл., тестове поле";
+
+    const before = await readResponse(await activeWorkGet(await call(USERS.performer, "GET")));
+    const item = before.body.data.items.find((o: any) => o.id === id);
+    assert.equal(item.status, "requires_confirmation");
+    assert.ok(!JSON.stringify(item).includes(ADDRESS), "адреса не має потрапити у відповідь");
+    assert.ok(!("lat" in (item.location ?? {})), "координати приховано");
+    assert.equal(item.customer, null, "контакти Замовника приховано");
+    const billing = await readResponse(await billingGet(await call(USERS.performer, "GET")));
+    assert.ok(!JSON.stringify(billing.body.data).includes(ADDRESS), "адреса прихована і в історії виплат");
+
+    await customerPays(id);
+    const after = await readResponse(await activeWorkGet(await call(USERS.performer, "GET")));
+    const revealed = after.body.data.items.find((o: any) => o.id === id);
+    assert.equal(revealed.status, "confirmed");
+    assert.equal(revealed.locationLabel, ADDRESS, "після обох застав адреса видна");
+    assert.ok(revealed.customer, "і контакти Замовника");
   });
 
   it("історія виплат Виконавця віддається з фільтром за роллю", async () => {

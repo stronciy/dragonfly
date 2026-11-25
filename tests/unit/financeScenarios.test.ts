@@ -5,7 +5,7 @@ import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import {
   resetWorld, createOrder, call, ctx, readResponse, performerClaimsAndPays, customerPays,
-  USERS,
+  USERS, order,
 } from "../helpers/world";
 import { db } from "../helpers/fakePrisma";
 import { PATCH as statusPatch } from "../../src/app/api/v1/orders/[orderId]/status/route";
@@ -396,6 +396,34 @@ describe("журнал Виконавця", () => {
       after.entries.filter((e) => e.kind === "performer_deposit").map((d) => d.status),
       ["returned", "returned"],
     );
+  });
+
+  it("не можна взяти заказ знову, поки попередня застава ще повертається", async () => {
+    const id = createOrder({ days: 1, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await refusePost(await call(USERS.performer, "POST", { reason: "Помилково взяв" }), ctx(id));
+    // LiqPay ще не підтвердив розблокування.
+    const lock = db.findFirst("escrowLock", { where: { orderId: id, role: "performer" } }) as any;
+    db.update("escrowLock", { where: { id: lock.id }, data: { status: "release_pending" } });
+
+    await assert.rejects(performerClaimsAndPays(id), (e: any) => e.status === 409 && /ще повертається на картку/.test(e.message));
+    assert.equal(order(id).status, "published", "заказ лишається на біржі");
+    await assert.rejects(
+      performerClaimsAndPays(id, USERS.otherPerformer),
+      (e: any) => e.status === 409 && /тимчасово недоступне/.test(e.message),
+    );
+
+    settleLikeLiqPay(id);
+    await performerClaimsAndPays(id);
+    assert.equal(order(id).status, "requires_confirmation", "після повернення застави — можна");
+  });
+
+  it("не можна взяти заказ знову, поки Замовник вирішує долю застави", async () => {
+    const id = createOrder({ days: 1, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    await refusePost(await call(USERS.performer, "POST", { reason: "Хвороба" }), ctx(id));
+    await assert.rejects(performerClaimsAndPays(id), (e: any) => e.status === 409 && /вирішує долю/.test(e.message));
   });
 
   it("Замовнику повернули оплату після відмови Виконавця, потім він оплатив знову: в ескроу одна оплата", async () => {

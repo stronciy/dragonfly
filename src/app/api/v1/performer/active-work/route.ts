@@ -3,6 +3,7 @@ import { ApiError } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
+import { isPerformerLocationRevealed, maskOrderLocationForMarketplace } from "@/lib/marketplaceVisibility";
 
 export async function GET(req: Request) {
   try {
@@ -33,6 +34,9 @@ export async function GET(req: Request) {
         id: true,
         status: true,
         locationLabel: true,
+        regionName: true,
+        lat: true,
+        lng: true,
         orderNumber: true,
         areaHa: true,
         budget: true,
@@ -91,13 +95,19 @@ export async function GET(req: Request) {
     });
     const customerMap = new Map(customers.map(c => [c.id, c]));
 
-    const items = orders.map(order => ({
+    const items = orders.map(order => {
+      // Адресу і контакти Замовника Виконавець бачить лише після внесення
+      // обох застав (статус confirmed і далі), як і в картці замовлення.
+      const revealed = isPerformerLocationRevealed(order.status);
+      const location = maskOrderLocationForMarketplace(order, { assigned: true });
+      const customer = revealed ? customerMap.get(order.customerUserId) : undefined;
+      return {
       orderId: order.id,
       id: order.id,
       status: order.status,
-      title: order.locationLabel,
+      title: location.locationLabel,
       areaHa: Number(order.areaHa),
-      locationLabel: order.locationLabel,
+      ...location,
       orderNumber: order.orderNumber,
       budget: Number(order.budget),
       currency: order.currency,
@@ -108,13 +118,7 @@ export async function GET(req: Request) {
       completionConfirmedAt: order.statusEvents?.[0]?.createdAt ? order.statusEvents[0].createdAt.toISOString() : null,
       hasPaymentRequest: (order.paymentRequests?.length ?? 0) > 0 || !!order.customerPart2Deadline,
       part2Paid: (order.paymentIntents?.length ?? 0) > 0,
-      customer: customerMap.get(order.customerUserId) 
-        ? { 
-            id: customerMap.get(order.customerUserId)!.id, 
-            name: customerMap.get(order.customerUserId)!.name, 
-            phone: customerMap.get(order.customerUserId)!.phone 
-          } 
-        : null,
+      customer: customer ? { id: customer.id, name: customer.name, phone: customer.phone } : null,
       progressUpdates: order.progressUpdates?.map((p) => ({
         id: p.id,
         percent: p.percent,
@@ -124,7 +128,8 @@ export async function GET(req: Request) {
       })) ?? [],
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
-    }));
+      };
+    });
 
     return ok(req, { 
       items,

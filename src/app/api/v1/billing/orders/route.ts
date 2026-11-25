@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { isPerformerLocationRevealed, MASKED_LOCATION_LABEL_FALLBACK } from "@/lib/marketplaceVisibility";
 import { ok, fail } from "@/lib/apiResponse";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma, customerPaymentPlan } from "@/shared";
@@ -159,8 +160,9 @@ export async function GET(req: Request) {
       return {
         orderId: o.id,
         orderNumber: o.orderNumber,
-        title: o.locationLabel,
-        locationLabel: o.locationLabel,
+        // Виконавцю адреса — лише після внесення обох застав.
+        title: role === "performer" && !isPerformerLocationRevealed(o.status) ? MASKED_LOCATION_LABEL_FALLBACK : o.locationLabel,
+        locationLabel: role === "performer" && !isPerformerLocationRevealed(o.status) ? MASKED_LOCATION_LABEL_FALLBACK : o.locationLabel,
         status: o.status,
         currency: o.currency,
         budget,

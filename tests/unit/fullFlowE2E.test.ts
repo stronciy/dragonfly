@@ -209,6 +209,17 @@ function createInMemoryStore() {
             (!where.role || l.role === where.role)
         );
       },
+      findFirst: async ({ where }: any) => {
+        const statusOk = (s: string) =>
+          !where.status || (typeof where.status === "object" ? where.status.in.includes(s) : s === where.status);
+        const lock = [...escrowLocks.values()].find(
+          (l) =>
+            (!where.orderId || l.orderId === where.orderId) &&
+            (!where.role || l.role === where.role) &&
+            statusOk(l.status)
+        );
+        return lock ? { ...lock } : null;
+      },
       updateMany: async ({ where, data }: any) => {
         let count = 0;
         for (const l of escrowLocks.values()) {
