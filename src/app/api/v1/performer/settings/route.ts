@@ -3,6 +3,7 @@ import { ok, fail } from "@/lib/apiResponse";
 import { ApiError } from "@/shared";
 import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
+import { isWithinUkraine } from "@/lib/ukraineBorder";
 import { enqueueMatchNewExecutor } from "@/shared";
 import { getSubcategoryById, getCategoryById, getTypeById, validatePerformerServiceSpecs } from "@/../services-tree";
 import type { Prisma } from "@prisma/client";
@@ -116,6 +117,14 @@ export async function PUT(req: Request) {
     }
     const hasBaseLocation = body.baseLocationLabel !== undefined && body.baseLocationLabel !== null;
     const hasBaseCoordinate = body.baseCoordinate !== undefined && body.baseCoordinate !== null;
+    // 0/0 — «база не задана» (покриття по всій країні).
+    if (
+      hasBaseCoordinate &&
+      !(body.baseCoordinate!.lat === 0 && body.baseCoordinate!.lng === 0) &&
+      !isWithinUkraine(body.baseCoordinate!.lat, body.baseCoordinate!.lng)
+    ) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Базове місцезнаходження має бути в межах України");
+    }
     const hasCoverage = body.coverage !== undefined && body.coverage !== null;
     const hasServices = body.services !== undefined && body.services !== null;
 

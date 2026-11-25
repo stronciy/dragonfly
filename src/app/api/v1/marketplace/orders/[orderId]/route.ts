@@ -8,6 +8,7 @@ import {
   marketplaceDistanceKm,
 } from "@/lib/marketplaceVisibility";
 import { performerBlockingEscrowWhere } from "@/lib/marketplaceEligibility";
+import { isWithinUkraine } from "@/lib/ukraineBorder";
 
 export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
@@ -57,6 +58,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
         });
     if (!isAssigned && !match) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
     if (!isAssigned && order.status !== "published")
+      throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
+    if (!isAssigned && !isWithinUkraine(Number(order.lat), Number(order.lng)))
       throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
 
     const deposit = safeDepositAmount(order.budget);

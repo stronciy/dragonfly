@@ -9,6 +9,7 @@ import {
   marketplaceDistanceKm,
 } from "@/lib/marketplaceVisibility";
 import { performerMarketplaceOrderWhere } from "@/lib/marketplaceEligibility";
+import { isWithinUkraine } from "@/lib/ukraineBorder";
 
 const querySchema = z.object({
   serviceCategoryId: z.string().optional(),
@@ -93,7 +94,11 @@ export async function GET(req: Request) {
       baseLongitude: profile?.baseLongitude ?? null,
     };
 
-    const items = matches.map((m) => {
+    // Замовлення поза межами України виконавцям не показуємо (старі записи,
+    // створені до перевірки за кордоном).
+    const items = matches
+      .filter((m) => isWithinUkraine(Number(m.order.lat), Number(m.order.lng)))
+      .map((m) => {
         // Masked location only — the marketplace is discovery, never the
         // assigned performer's view. `title` reuses the masked placeholder so
         // the exact address is not smuggled in via the title field.

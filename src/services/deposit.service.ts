@@ -1,4 +1,5 @@
 import { Prisma, type PaymentIntent } from "@prisma/client";
+import { isWithinUkraine } from "../lib/ukraineBorder";
 import { ApiError } from "../lib/errors";
 import { CUSTOMER_COUNTER_DEPOSIT_DEADLINE_HOURS, customerPaymentPlan, depositAmountFor, nextDepositDeadline, nextCustomerCounterDepositDeadline } from "../lib/deposit";
 import { SERVICE_FEE_RATE, serviceFeeAmount } from "../lib/fees";
@@ -188,6 +189,13 @@ export async function claimOrderForPerformer(
   tx: Tx,
   args: { orderId: string; performerUserId: string }
 ) {
+  const located = await tx.order.findUnique({
+    where: { id: args.orderId },
+    select: { lat: true, lng: true },
+  });
+  if (located && !isWithinUkraine(Number(located.lat), Number(located.lng))) {
+    throw new ApiError(409, "CONFLICT", "Виконання замовлень дозволене лише в межах України");
+  }
   const now = new Date();
   const claimed = await tx.order.updateMany({
     where: { id: args.orderId, status: "published" },
