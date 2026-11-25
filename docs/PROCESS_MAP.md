@@ -174,14 +174,14 @@ App: «Сплачено Виконавцю» у заказчика = `earnedOrPa
 | I-3 | Part 1 списан (`captureCustomerInitialDeposit`), но intent остаётся `action=hold` → потом `reverseHold` по уже списанному платежу → вероятно ошибка LiqPay и бесконечный retry `release_pending`; part 2 в этом цикле не обрабатывается. Capture может выполниться дважды (progress 30% в en_route + started). | `deposit.service.ts` capture/settle, `API/orders/[orderId]/progress`, `.../status` | open |
 | I-4 | **Ledger читает только intents `paid`**, а settlement переводит их в `released/refunded/forfeited` → после расчёта платежи, комиссии и штрафы исчезают из кошелька; «Сплачено Виконавцю» → ~0; доход компании в админке падает. | `BE/services/finance.service.ts` (`status: "paid"`), `adminFinance.service.ts` | open |
 | I-5 | **Upsert EscrowLock не обновляет `userId`** → залог и выплата нового исполнителя приписываются предыдущему (он может их вывести). У PaymentIntent нет `userId`. | `deposit.service.ts` upsert lock, `finance.service.ts`, `ledger.ts` `isMyPerformerOrder` | open |
-| I-6 | **Заказчик не может подтвердить выполнение в app** (кнопку убрали в `40571c5`), автоподтверждения нет → escrow не освобождается, рейтинг недоступен. | `APP/app/active-work.tsx`, `API/orders/[orderId]/confirm-completion` | open |
+| I-6 | **Заказчик не может подтвердить выполнение в app** (кнопку убрали в `40571c5`), автоподтверждения нет → escrow не освобождается, рейтинг недоступен. | `APP/app/active-work.tsx`, `API/orders/[orderId]/confirm-completion` | fixed |
 | I-7 | **GET финансов пишет в БД**: `loadLedgerInput` переводит `held → released` без settlement, если у завершённого заказа есть любое событие «Адмін:» → исполнитель получает доступный баланс без подтверждения заказчика. | `BE/services/finance.service.ts` | open |
 
 ### P1
 
 | ID | Проблема | Где | Статус |
 |---|---|---|---|
-| I-8 | Split: исполнитель может `started → completed` без оплаты 70% (`PATCH status` не проверяет, `progress` проверяет) → заказ в тупике: оплатить part 2 нельзя (нужен started), подтвердить нельзя, ruling требует part 2. | `API/orders/[orderId]/status`, `progress`, `customer-intent`, `admin/arbitration/.../ruling` | open |
+| I-8 | Split: исполнитель может `started → completed` без оплаты 70% (`PATCH status` не проверяет, `progress` проверяет) → заказ в тупике: оплатить part 2 нельзя (нужен started), подтвердить нельзя, ruling требует part 2. Частично исправлено: part 2 теперь можно оплатить и в `completed` (до подтверждения), app показывает «Оплатити залишок» → «Підтвердити виконання». Ruling без part 2 — open. | `API/orders/[orderId]/status`, `progress`, `customer-intent`, `admin/arbitration/.../ruling` | partial |
 | I-9 | `decision_pending`: нет UI в app, нет таймаута; заказ published, но скрыт с биржи, при этом matching его рассылает; новый claim возможен → оплата нового исполнителя помечается `duplicate`; DELETE каскадно удаляет lock. | `refuse`, `performerDepositDecision.ts`, `marketplaceEligibility.ts`, `WK/lib/matchingQuery.ts` | decision |
 | I-10 | Заказчик может создать платёж в `accepted` (app показывает «Оплатити», route разрешает), но `confirmDeposit` → 409 → hold висит, intent pending. Также поздние платежи после cancel/refuse/expiry. | `API/orders/[orderId]/deposits/customer-intent` (`accepted`), `transitionForConfirm`, `APP/components/CustomerOrderCard.tsx`, `active-work.tsx` | open |
 | I-11 | Безусловные `order.update` по статусу (гонки): depositDeadlineTimeout может перезаписать только что `confirmed` → `cancelled` с held lock заказчика. То же в expiredOrders, cancel, status, arbitration, refuse, edit. | соответствующие роуты/воркеры | open |
@@ -224,6 +224,7 @@ App: «Сплачено Виконавцю» у заказчика = `earnedOrPa
 |---|---|
 | «В ескроу» исполнителя считает только его залог | backend `edafddd`, app `6f74056` / `0e3de77` |
 | Статус `decision_pending` в app (тип, подпись, цвет) | app `4453cd8` / `b2e797a` |
+| Кнопка «Підтвердити виконання» у заказчика (I-6); оплата 70% после `completed` (I-8, частично); одна кнопка вывода у исполнителя | см. git log app/backend |
 | Срок залога исполнителя 12ч → 24ч (код + docs) | backend `9225189`, worker `cedbaa2`, admin `4edc618`, app `7da3ddd` |
 
 ---

@@ -627,4 +627,33 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     assert.equal(afterP2.summary.availableUah, 0);
     assert.equal(afterP2.summary.pendingWithdrawalUah, 7000);
   });
+
+  it("виконавець завершив до оплати 70%: замовник доплачує вже після завершення, підтверджує, і виконавець виводить 70%", async () => {
+    const id = createOrder({ days: 3, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await customerPays(id, 1);
+    await status(id, USERS.performer, "started");
+    await progress(id, 30);
+    const p1 = await requestPayout(USERS.performer, 3000);
+    assert.equal(p1.status, 201);
+    await processPayout(p1.body.data.payout.id, { action: "mark_paid" });
+
+    await status(id, USERS.performer, "completed");
+
+    // Без 70% підтвердити не можна
+    const early = await confirm(id, { accepted: true });
+    assert.equal(early.status, 409);
+
+    // Доплата 70% у статусі completed дозволена
+    const pay2 = await customerPays(id, 2);
+    assert.equal(pay2.status, 200, JSON.stringify(pay2.body));
+    const ok = await confirm(id, { accepted: true });
+    assert.equal(ok.status, 200);
+
+    const finalTxs = await transactions(USERS.performer);
+    assert.equal(finalTxs.summary.withdrawnUah, 3000);
+    assert.equal(finalTxs.summary.availableUah, 7000, "після підтвердження доступний залишок 70%");
+    const p2 = await requestPayout(USERS.performer, 7000);
+    assert.equal(p2.status, 201);
+  });
 });

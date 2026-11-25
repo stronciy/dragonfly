@@ -12,6 +12,7 @@ import {
   findPendingIntent,
   serializePaymentIntent,
 } from "@/shared";
+import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 
 const schema = z.object({
   part: z.number().int().min(1).max(2).optional(),
@@ -40,8 +41,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (!isPart2 && order.status !== "requires_confirmation" && order.status !== "accepted") {
       throw new ApiError(400, "VALIDATION_ERROR", "Замовлення не потребує застави замовника");
     }
-    if (isPart2 && order.status !== "started") {
-      throw new ApiError(400, "VALIDATION_ERROR", "Доплата 70% доступна лише для розпочатих робіт");
+    // Залишок можна внести і після завершення робіт виконавцем — інакше
+    // замовник не зможе підтвердити виконання (confirm-completion вимагає part 2).
+    if (isPart2 && order.status !== "started" && order.status !== "completed") {
+      throw new ApiError(400, "VALIDATION_ERROR", "Доплата 70% доступна лише для розпочатих або завершених робіт");
+    }
+    if (isPart2 && order.status === "completed") {
+      const confirmed = await prisma.orderStatusEvent.findFirst({
+        where: { orderId, note: COMPLETION_CONFIRMED_NOTE },
+        select: { id: true },
+      });
+      if (confirmed) throw new ApiError(409, "CONFLICT", "Замовлення вже закрито");
     }
     const alreadyPaidPart2 = isPart2
       ? await prisma.paymentIntent.findFirst({
@@ -52,7 +62,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (alreadyPaidPart2) {
       throw new ApiError(409, "CONFLICT", "Залишок 70% вже сплачено");
     }
-    if (isPart2 && !order.customerPart2Deadline) {
+    if (isPart2 && order.status === "started" && !order.customerPart2Deadline) {
       throw new ApiError(400, "VALIDATION_ERROR", "Доплата 70% доступна лише після фіксації 30% робіт виконавцем");
     }
     if (!order.performerUserId) {
