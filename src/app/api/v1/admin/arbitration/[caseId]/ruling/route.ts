@@ -82,8 +82,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
     }
 
     const isDraw = body.winner === "none";
-    const loserRole = body.winner === "customer" ? "performer" : "customer";
-    const winnerRole = body.winner === "customer" ? "customer" : "performer";
     const decision = isDraw ? "draw" : `${body.winner}_wins${body.penalty ? "_penalty" : ""}`;
     const winnerLabel = isDraw
       ? "без переможця (спір закрито за згодою)"
@@ -91,6 +89,25 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
         ? "на боці Замовника"
         : "на боці Виконавця";
     const now = new Date();
+
+    // Куди йдуть кошти кожної сторони. Для замовника released = списання на
+    // рахунок компанії (оплата виконавцю), refunded = повернення замовнику.
+    // Для виконавця released = розблокування застави, forfeited = штраф.
+    const settlements: Array<{ role: "customer" | "performer"; to: "released" | "refunded" | "forfeited" }> =
+      body.winner === "customer"
+        ? [
+            { role: "customer", to: "refunded" },
+            { role: "performer", to: body.penalty ? "forfeited" : "released" },
+          ]
+        : body.winner === "performer"
+          ? [
+              { role: "customer", to: body.penalty ? "forfeited" : "released" },
+              { role: "performer", to: "released" },
+            ]
+          : [
+              { role: "customer", to: "released" },
+              { role: "performer", to: "released" },
+            ];
 
     await prisma.$transaction(async (tx) => {
       await tx.arbitrationRuling.create({
@@ -118,11 +135,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
       });
       await tx.orderMatch.deleteMany({ where: { orderId: order.id } });
 
-      if (body.penalty && !isDraw) {
-        await releaseEscrowForOrder(tx, { orderId: order.id, role: loserRole, to: "forfeited" });
-        await releaseEscrowForOrder(tx, { orderId: order.id, role: winnerRole, to: "released" });
-      } else {
-        await releaseEscrowForOrder(tx, { orderId: order.id, to: "released" });
+      for (const s of settlements) {
+        await releaseEscrowForOrder(tx, { orderId: order.id, role: s.role, to: s.to });
       }
 
       await writeAuditLog(tx, req, {
@@ -136,11 +150,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ caseId: string
       });
     });
 
-    if (body.penalty && !isDraw) {
-      await settleProviderHolds({ orderId: order.id, role: loserRole, to: "forfeited" }).catch(() => {});
-      await settleProviderHolds({ orderId: order.id, role: winnerRole, to: "released" }).catch(() => {});
-    } else {
-      await settleProviderHolds({ orderId: order.id, to: "released" }).catch(() => {});
+    for (const s of settlements) {
+      await settleProviderHolds({ orderId: order.id, role: s.role, to: s.to }).catch(() => {});
     }
 
     await recomputePerformerRating(order.performerUserId).catch(() => {});

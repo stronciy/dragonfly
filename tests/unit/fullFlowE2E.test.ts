@@ -589,10 +589,17 @@ test("Full Happy Path Flow: Register → Profile → Order → Accept → Both D
   assert.equal(perfLock.status, "released");
   assert.equal(custLock.status, "released");
 
-  // Provider calls: holds reversed
-  assert.ok(store.providerCalls.length >= 2, "LiqPay hold completion/reversal executed for both parties");
+  // Provider calls: customer's payment is captured to the company (paid to the
+  // performer), performer's guarantee deposit hold is reversed back to the card.
+  assert.ok(store.providerCalls.length >= 2, "LiqPay hold completion executed for both parties");
   for (const call of store.providerCalls) {
-    assert.equal(call.flag, "reversal", "Funds unheld/reversed back without penalty");
+    const intent = [...store.paymentIntents.values()].find((i) => i.providerOrderId === call.orderId);
+    assert.ok(intent, `intent for ${call.orderId}`);
+    if (intent.role === "customer") {
+      assert.equal(call.flag, undefined, "Customer payment captured to the company account");
+    } else {
+      assert.equal(call.flag, "reversal", "Performer deposit unheld back to the card");
+    }
   }
 
   // Performer wallet receives payment (budget 100000 - fee 8500 = 91500)
@@ -749,18 +756,17 @@ test("Arbitration Scenario 1: Started → Arbitration → Resolution in favor of
   const pLock = store.escrowLocks.get(`${orderId}:performer`);
   const cLock = store.escrowLocks.get(`${orderId}:customer`);
   assert.equal(pLock?.status, "released", "Performer guarantee deposit is unheld and returned (no fine)");
-  assert.equal(cLock?.status, "released", "Customer guarantee deposit is unheld and returned");
+  assert.equal(cLock?.status, "released", "Customer payment is settled in favour of the performer");
 
-  // Holds reversed on LiqPay
-  for (const call of store.providerCalls) {
-    assert.equal(call.flag, "reversal");
-  }
+  // Performer wins: customer's hold captured to the company, performer's deposit reversed
+  assert.equal(store.providerCalls.find((c) => c.orderId === "lp-c2")?.flag, undefined);
+  assert.equal(store.providerCalls.find((c) => c.orderId === "lp-p2")?.flag, "reversal");
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test Suite 3: Arbitration in Favor of Customer
 // ─────────────────────────────────────────────────────────────────────────────
-test("Arbitration Scenario 2: Started → Arbitration → Resolution in favor of CUSTOMER (close_fine) → Performer Forfeited & Customer Released", async (t) => {
+test("Arbitration Scenario 2: Started → Arbitration → Resolution in favor of CUSTOMER (close_fine) → Performer Forfeited & Customer Refunded", async (t) => {
   const store = createInMemoryStore();
   t.after(() => store.restore());
 
@@ -886,10 +892,10 @@ test("Arbitration Scenario 2: Started → Arbitration → Resolution in favor of
 
   // Performer deposit forfeited, customer deposit released
   await releaseEscrowForOrder(store.tx, { orderId, role: "performer", to: "forfeited" });
-  await releaseEscrowForOrder(store.tx, { orderId, role: "customer", to: "released" });
+  await releaseEscrowForOrder(store.tx, { orderId, role: "customer", to: "refunded" });
 
   await settleProviderHolds({ orderId, role: "performer", to: "forfeited", client: store.tx });
-  await settleProviderHolds({ orderId, role: "customer", to: "released", client: store.tx });
+  await settleProviderHolds({ orderId, role: "customer", to: "refunded", client: store.tx });
 
   // 4. Assertions
   const updatedOrder = store.orders.get(orderId);
@@ -899,13 +905,13 @@ test("Arbitration Scenario 2: Started → Arbitration → Resolution in favor of
   const pLock = store.escrowLocks.get(`${orderId}:performer`);
   const cLock = store.escrowLocks.get(`${orderId}:customer`);
   assert.equal(pLock?.status, "forfeited", "Performer deposit is forfeited as penalty");
-  assert.equal(cLock?.status, "released", "Customer deposit is released back to customer");
+  assert.equal(cLock?.status, "refunded", "Customer payment is returned to the customer");
 
   // Check payment intents reflect settlement
   const pIntent = store.paymentIntents.get("intent-p3");
   const cIntent = store.paymentIntents.get("intent-c3");
   assert.equal(pIntent?.status, "forfeited");
-  assert.equal(cIntent?.status, "released");
+  assert.equal(cIntent?.status, "refunded");
 
   // Provider calls check: performer hold captured (money kept), customer hold reversed (money returned)
   const perfCaptureCall = store.providerCalls.find((c) => c.orderId === "lp-p3");

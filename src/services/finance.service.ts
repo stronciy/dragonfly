@@ -9,7 +9,7 @@ import {
 } from "../lib/finance/ledger";
 import { normalizeUAIban, validateUAIban } from "../lib/validators";
 import { publishPayoutUpdated } from "./payoutEvents";
-import { COMPLETION_CONFIRMED_NOTE } from "../lib/completionConfirmation";
+import { PART1_CONFIRMED_NOTE } from "../lib/completionConfirmation";
 
 type Client = Prisma.TransactionClient | typeof prisma;
 
@@ -42,13 +42,8 @@ export async function loadLedgerInput(
       dateFrom: true,
       dateTo: true,
       statusEvents: {
-        where: {
-          OR: [
-            { note: COMPLETION_CONFIRMED_NOTE },
-            { note: { startsWith: "Адмін:" } },
-          ],
-        },
-        select: { id: true },
+        where: { note: PART1_CONFIRMED_NOTE },
+        select: { createdAt: true },
       },
       progressUpdates: {
         select: { percent: true, createdAt: true },
@@ -57,22 +52,12 @@ export async function loadLedgerInput(
   });
   const orderIds = orders.map((o) => o.id);
 
-  const confirmedCompletedOrderIds = orders
-    .filter((o) => o.status === "completed" && o.statusEvents.length > 0)
-    .map((o) => o.id);
-  if (confirmedCompletedOrderIds.length > 0) {
-    client.escrowLock
-      .updateMany({
-        where: { orderId: { in: confirmedCompletedOrderIds }, status: "held" },
-        data: { status: "released" },
-      })
-      .catch(() => {});
-  }
-
   const [intents, locks, payouts] = await Promise.all([
     orderIds.length
       ? client.paymentIntent.findMany({
-          where: { orderId: { in: orderIds }, status: "paid" },
+          // Після розрахунку платіж отримує статус released/refunded/forfeited —
+          // він лишається в журналі, а його підсумок визначає статус ескроу.
+          where: { orderId: { in: orderIds }, status: { in: ["paid", "released", "refunded", "forfeited"] } },
           select: {
             id: true,
             orderId: true,
@@ -128,6 +113,7 @@ export async function loadLedgerInput(
         dateTo: o.dateTo,
         progressPercent: maxPercent,
         progressCreatedAt: updateAt,
+        part1ConfirmedAt: o.statusEvents[0]?.createdAt ?? null,
       };
     }),
     intents: intents.map((i) => ({
@@ -142,19 +128,13 @@ export async function loadLedgerInput(
       paidAt: i.paidAt,
     })),
     locks: locks.map((l) => {
-      const order = orders.find((o) => o.id === l.orderId);
-      const isConfirmedDone =
-        order?.status === "completed" &&
-        (order.statusEvents.length ?? 0) > 0;
-      const effectiveStatus =
-        isConfirmedDone && l.status === "held" ? "released" : l.status;
       return {
         id: l.id,
         orderId: l.orderId,
         role: l.role,
         userId: l.userId,
         amount: Number(l.amount),
-        status: effectiveStatus,
+        status: l.status,
         releasedAt: l.releasedAt,
       };
     }),

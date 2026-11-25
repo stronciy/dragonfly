@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError, customerPaymentPlan, part2DeadlineFor, captureCustomerInitialDeposit, orderRef } from "@/shared";
+import { ApiError, customerPaymentPlan, part2DeadlineFor, orderRef } from "@/shared";
 import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { notifyUser } from "@/services/notify";
@@ -285,7 +285,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         where: { id: orderId },
         data: { customerPart2Deadline: part2Deadline },
       });
-      await captureCustomerInitialDeposit(orderId).catch(() => {});
 
       const ref = await orderRef(orderId);
       const deadlineLabel = part2Deadline.toLocaleString("uk-UA", {
@@ -333,11 +332,23 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         type: "progress.30_percent_reached",
         title: "Досягнуто 30% виконання",
         message: isPart2Paid
-          ? "Робота досягла 30% готовності. 30% вартості замовлення зараховано на баланс гаманця (доступно до виведення). Залишок 70% уже внесено в ескроу — ви можете виконувати роботи до 100%."
+          ? "Робота досягла 30% готовності. Після підтвердження Замовником 30% вартості замовлення буде зараховано на баланс гаманця. Залишок 70% уже внесено в ескроу — ви можете виконувати роботи до 100%."
           : isOverdue
-            ? "Робота досягла 30% готовності. 30% вартості замовлення зараховано на баланс гаманця (доступно до виведення). Замовник не вніс залишок 70% у встановлений строк — ви маєте право покинути об'єкт та завершити замовлення через арбітраж."
-            : "Робота досягла 30% готовності. 30% вартості замовлення зараховано на баланс гаманця (доступно до виведення). Очікується внесення замовником залишку 70%.",
+            ? "Робота досягла 30% готовності. Після підтвердження Замовником 30% вартості замовлення буде зараховано на баланс гаманця. Замовник не вніс залишок 70% у встановлений строк — ви маєте право покинути об'єкт та завершити замовлення через арбітраж."
+            : "Робота досягла 30% готовності. Після підтвердження Замовником 30% вартості замовлення буде зараховано на баланс гаманця. Очікується внесення замовником залишку 70%.",
         data: { orderId, orderNumber: order.orderNumber, percent, canArbitrate: !isPart2Paid },
+      }).catch(() => {});
+    }
+
+    // Перші 30% замовник підтверджує окремо — після цього вони списуються на
+    // рахунок компанії і стають доступні виконавцю.
+    if (firstTime30 && needsPart2Request) {
+      notifyUser({
+        userId: order.customerUserId,
+        type: "order",
+        title: "Підтвердіть виконання 30% робіт",
+        message: `Замовлення ${await orderRef(orderId)}. Виконавець зафіксував 30% готовності. Перевірте фотозвіт і підтвердіть 30% робіт — 30% оплати буде перераховано Виконавцю. Якщо роботу виконано неналежно, відкрийте арбітраж.`,
+        data: { orderId, orderNumber: order.orderNumber, percent, role: "customer", action: "confirm_part1" },
       }).catch(() => {});
     }
 

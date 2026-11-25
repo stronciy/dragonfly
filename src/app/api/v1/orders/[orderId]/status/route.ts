@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError, orderRef, customerPaymentPlan, part2DeadlineFor, captureCustomerInitialDeposit } from "@/shared";
+import { ApiError, orderRef, customerPaymentPlan, part2DeadlineFor } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
@@ -149,7 +149,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
     });
 
     if (part2Deadline) {
-      await captureCustomerInitialDeposit(orderId).catch(() => {});
       const deadlineLabel = part2Deadline.toLocaleString("uk-UA", {
         timeZone: "Europe/Kyiv",
         day: "2-digit",

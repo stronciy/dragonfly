@@ -14,6 +14,9 @@ import { GET as adminListGet } from "../../src/app/api/v1/admin/arbitration/rout
 import { GET as adminCaseGet } from "../../src/app/api/v1/admin/arbitration/[caseId]/route";
 import { POST as adminMessagePost } from "../../src/app/api/v1/admin/arbitration/[caseId]/messages/route";
 import { POST as adminRulingPost } from "../../src/app/api/v1/admin/arbitration/[caseId]/ruling/route";
+import { POST as progressPost } from "../../src/app/api/v1/orders/[orderId]/progress/route";
+import { POST as confirmProgressPost } from "../../src/app/api/v1/orders/[orderId]/confirm-progress/route";
+import { GET as transactionsGet } from "../../src/app/api/v1/finance/transactions/route";
 
 const ADMIN_KEY = "test-panel-secret";
 const ADMIN_ID = "admin_1";
@@ -216,7 +219,8 @@ describe("рішення адміністратора", () => {
 
     assert.equal(order(id).status, "completed");
     assert.deepEqual(escrowOf(id, "performer"), { status: "forfeited", amount: 3000 });
-    assert.deepEqual(escrowOf(id, "customer"), { status: "released", amount: 10000 });
+    // Заказчик виграв — його оплата повертається йому, а не списується на виконавця.
+    assert.deepEqual(escrowOf(id, "customer"), { status: "refunded", amount: 10000 });
 
     const kase = casesFor(id)[0];
     assert.equal(kase.status, "resolved");
@@ -237,6 +241,38 @@ describe("рішення адміністратора", () => {
     assert.equal(order(id).status, "completed");
     assert.deepEqual(escrowOf(id, "performer"), { status: "released", amount: 3000 });
     assert.deepEqual(escrowOf(id, "customer"), { status: "released", amount: 10000 });
+  });
+
+  it("заказчик виграє після підтвердження 30%: підтверджені 30% лишаються виконавцю", async () => {
+    const id = createOrder({ days: 3, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await customerPays(id, 1);
+    await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id));
+    await progressPost(await call(USERS.performer, "POST", { percent: 30 }), ctx(id));
+    const confirmed = await readResponse(await confirmProgressPost(await call(USERS.customer, "POST", {}), ctx(id)));
+    assert.equal(confirmed.status, 200);
+    assert.equal((await customerPays(id, 2)).status, 200);
+    await statusPatch(await call(USERS.performer, "PATCH", { status: "completed" }), ctx(id));
+    const opened = await readResponse(await openArb(await call(USERS.customer, "POST", { reason: "Залишок робіт не виконано" }), ctx(id)));
+    assert.equal(opened.status, 201);
+
+    const res = await readResponse(
+      await adminRulingPost(adminReq("POST", { winner: "customer", penalty: false, reason: "70% не виконано" }), caseCtx(opened.body.data.case.id))
+    );
+    assert.equal(res.status, 200);
+
+    const tx = await readResponse(await transactionsGet(await call(USERS.performer, "GET")));
+    assert.equal(tx.body.data.summary.availableUah, 3000, "лише підтверджені 30%");
+  });
+
+  it("заказчик виграє без штрафу: оплата повертається заказчику, застава виконавця розблоковується", async () => {
+    const { id, caseId } = await openedArbitration({ budget: 10000 });
+    const res = await readResponse(
+      await adminRulingPost(adminReq("POST", { winner: "customer", penalty: false, reason: "Роботу не виконано" }), caseCtx(caseId))
+    );
+    assert.equal(res.status, 200);
+    assert.deepEqual(escrowOf(id, "performer"), { status: "released", amount: 3000 });
+    assert.deepEqual(escrowOf(id, "customer"), { status: "refunded", amount: 10000 });
   });
 
   it("виконавець виграє зі штрафом: застава замовника утримується", async () => {

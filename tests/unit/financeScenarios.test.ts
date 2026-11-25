@@ -17,6 +17,7 @@ import { GET as payoutsGet, POST as payoutsPost } from "../../src/app/api/v1/fin
 import { GET as adminPayoutsGet } from "../../src/app/api/v1/admin/payouts/route";
 import { PATCH as adminPayoutPatch } from "../../src/app/api/v1/admin/payouts/[id]/route";
 import { POST as performerDepositDecisionPost } from "../../src/app/api/v1/orders/[orderId]/performer-deposit-decision/route";
+import { POST as confirmProgressPost } from "../../src/app/api/v1/orders/[orderId]/confirm-progress/route";
 
 const decisionPost = (req: Request, orderId: string) => performerDepositDecisionPost(req, ctx(orderId));
 
@@ -76,6 +77,9 @@ const status = (orderId: string, userId: string, to: string) =>
 
 const confirm = (orderId: string, body: Record<string, unknown>) =>
   call(USERS.customer, "POST", body).then((req) => confirmPost(req, ctx(orderId))).then(readResponse);
+
+const confirmProgress = (orderId: string, userId: string = USERS.customer) =>
+  call(userId, "POST", {}).then((req) => confirmProgressPost(req, ctx(orderId))).then(readResponse);
 
 const progress = (orderId: string, percent: number) =>
   call(USERS.performer, "POST", { percent }).then((req) => progressPost(req, ctx(orderId))).then(readResponse);
@@ -562,7 +566,42 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     assert.equal(part1.amount, 3000);
   });
 
-  it("після фіксації 30% прогресу: 30% стає доступним для виведення і виконавець успішно виводить кошти", async () => {
+  it("фіксація 30% без підтвердження замовника: 30% ще не доступні виконавцю", async () => {
+    const id = createOrder({ days: 3, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await customerPays(id, 1);
+    await status(id, USERS.performer, "started");
+    assert.equal((await progress(id, 30)).status, 200);
+
+    const { summary, entries } = await transactions(USERS.performer);
+    assert.equal(summary.availableUah, 0);
+    const part1 = kindOf(entries, "order_payout");
+    assert.equal(part1.status, "in_escrow");
+    assert.match(part1.reason, /після підтвердження Замовником/);
+  });
+
+  it("підтвердження 30%: лише замовник, лише після фіксації 30%, лише один раз", async () => {
+    const id = createOrder({ days: 3, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await customerPays(id, 1);
+    await status(id, USERS.performer, "started");
+
+    assert.equal((await confirmProgress(id)).status, 409, "до фіксації 30% підтверджувати нічого");
+    await progress(id, 30);
+    assert.equal((await confirmProgress(id, USERS.performer)).status, 403);
+    assert.equal((await confirmProgress(id)).status, 200);
+    assert.equal((await confirmProgress(id)).status, 409, "повторне підтвердження");
+  });
+
+  it("підтвердження 30% недоступне для замовлення з оплатою 100%", async () => {
+    const id = createOrder({ days: 1, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await customerPays(id, 1);
+    await status(id, USERS.performer, "started");
+    assert.equal((await confirmProgress(id)).status, 409);
+  });
+
+  it("після фіксації 30% і підтвердження замовником: 30% доступні, виконавець виводить кошти", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id, 1);
@@ -570,6 +609,12 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
 
     const progRes = await progress(id, 30);
     assert.equal(progRes.status, 200);
+    assert.equal((await confirmProgress(id)).status, 200);
+
+    const customerView = await transactions(USERS.customer);
+    const custPart1 = kindOf(customerView.entries, "customer_deposit");
+    assert.equal(custPart1.status, "completed", "у замовника підтверджені 30% — передано виконавцю, не ескроу");
+    assert.equal(customerView.summary.inEscrowUah, 0);
 
     const { summary, entries } = await transactions(USERS.performer);
     assert.equal(summary.availableUah, 3000, "30% вартості замовлення (3000 ₴) тепер доступні для виведення");
@@ -596,8 +641,9 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     await customerPays(id, 1);
     await status(id, USERS.performer, "started");
 
-    // 1. Досягнуто 30%
+    // 1. Досягнуто 30%, замовник підтверджує 30% робіт
     await progress(id, 30);
+    assert.equal((await confirmProgress(id)).status, 200);
     const p1 = await requestPayout(USERS.performer, 3000);
     assert.equal(p1.status, 201);
     // Адмін проводить виплату перших 30%
@@ -628,12 +674,31 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     assert.equal(afterP2.summary.pendingWithdrawalUah, 7000);
   });
 
+  it("замовник не підтверджував 30% окремо: підтвердження всього замовлення відкриває всю суму", async () => {
+    const id = createOrder({ days: 3, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await customerPays(id, 1);
+    await status(id, USERS.performer, "started");
+    await progress(id, 30);
+    assert.equal((await customerPays(id, 2)).status, 200);
+    await status(id, USERS.performer, "completed");
+
+    const before = await transactions(USERS.performer);
+    assert.equal(before.summary.availableUah, 0, "до підтвердження замовником нічого не доступно");
+
+    assert.equal((await confirm(id, { accepted: true })).status, 200);
+    const after = await transactions(USERS.performer);
+    assert.equal(after.summary.availableUah, 10000);
+    assert.equal(after.summary.earnedOrPaidUah, 10000);
+  });
+
   it("виконавець завершив до оплати 70%: замовник доплачує вже після завершення, підтверджує, і виконавець виводить 70%", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id, 1);
     await status(id, USERS.performer, "started");
     await progress(id, 30);
+    assert.equal((await confirmProgress(id)).status, 200);
     const p1 = await requestPayout(USERS.performer, 3000);
     assert.equal(p1.status, 201);
     await processPayout(p1.body.data.payout.id, { action: "mark_paid" });

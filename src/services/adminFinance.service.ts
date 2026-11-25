@@ -10,7 +10,8 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  */
 export async function getCompanyEarnings() {
   const intents = await prisma.paymentIntent.findMany({
-    where: { status: "paid" },
+    // released/forfeited — платіж уже розраховано, але гроші пройшли через LiqPay.
+    where: { status: { in: ["paid", "released", "forfeited"] } },
     select: { amount: true, feeAmount: true },
   });
   const paymentsTotalUah = round2(intents.reduce((acc, i) => acc + Number(i.amount), 0));

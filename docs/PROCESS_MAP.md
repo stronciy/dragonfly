@@ -21,6 +21,9 @@
 | Комиссия LiqPay (для отчётов админки) | 2% | `BE/lib/fees.ts` `LIQPAY_FEE_RATE` |
 | Ответ в арбитраже | 24 ч | `BE/lib/arbitrationDeadlines.ts` |
 | Все платежи LiqPay | `action=hold` | `BE/services/liqpay.service.ts` |
+| **Списание денег заказчика** | только по подтверждению заказчика: 30% — `POST /orders/:id/confirm-progress` (после фиксации исполнителем 30%), 70% и 100%-заказы — `confirm-completion`. Иначе — арбитраж | `deposit.service.ts` `settlePendingLock`, `captureCustomerInitialDeposit` |
+| Смысл `released` для заказчика | **capture** на счёт компании → доступно исполнителю к выводу. Возврат заказчику — только `refunded` | `settlePendingLock` |
+| Подтверждённые 30% | помечаются `providerRaw.captured=true`; не возвращаются заказчику и не списываются повторно (в т.ч. если заказчик потом выиграл арбитраж) | `isIntentCaptured` |
 
 ---
 
@@ -45,7 +48,7 @@ stateDiagram-v2
     requires_confirmation --> published: refuse
     confirmed --> published: refuse → залог исполнителя decision_pending
     confirmed --> en_route: PATCH status
-    confirmed --> started: PATCH status (+early start)\nsplit: part2Deadline=+24h, capture part1
+    confirmed --> started: PATCH status (+early start)\nsplit: part2Deadline=+24h
     en_route --> started: PATCH status
     started --> completed: PATCH status (исполнитель)
     confirmed --> arbitration: POST arbitration
@@ -71,7 +74,8 @@ stateDiagram-v2
 | requires_confirmation → cancelled | `WK/workers/depositDeadlineTimeout.worker.ts` | lock исполнителя refund; `riskScore-1` заказчику |
 | * → published (refuse) | `API/orders/[orderId]/refuse` | из confirmed: lock исполнителя → `decision_pending`, заказчику refund |
 | decision_pending → released / forfeited | `API/orders/[orderId]/performer-deposit-decision` | решение заказчика (вернуть / штраф) |
-| confirmed/en_route → started | `API/orders/[orderId]/status` | split: дедлайн part 2 +24ч, capture part 1 |
+| confirmed/en_route → started | `API/orders/[orderId]/status` | split: дедлайн part 2 +24ч |
+| (split) подтверждение 30% | `API/orders/[orderId]/confirm-progress` (заказчик, после progress ≥30%) | capture part 1 → доступно исполнителю; маркер `PART1_CONFIRMED_NOTE` |
 | started → completed | `API/orders/[orderId]/status` | completedAt, matches удаляются |
 | completed → (закрыт) | `API/orders/[orderId]/confirm-completion` | все locks → release → settlement; маркер `COMPLETION_CONFIRMED_NOTE` |
 | * → arbitration | `API/orders/[orderId]/arbitration` | ArbitrationCase, дедлайн ответа другой стороны 24ч |
@@ -108,7 +112,7 @@ stateDiagram-v2
 flowchart TD
   PInt["Исполнитель: intent 30% (hold)"] -->|callback| PLock[lock performer held]
   CInt1["Заказчик part1: 100% или 30% + fee 8.5% (hold)"] -->|callback| CLock[lock customer held]
-  CLock -->|"split: started / progress≥30%\ncaptureCustomerInitialDeposit"| CCap[part1 списан в компанию]
+  CLock -->|"split: заказчик подтвердил 30%\nconfirm-progress → capture"| CCap[part1 списан в компанию → доступно исполнителю]
   CInt2["Заказчик part2: 70% (hold)"] --> CLock
   PLock -->|refuse до оплаты заказчика / expiry| PRel[reverseHold → released]
   PLock -->|refuse после оплаты заказчика| PDec[decision_pending]
@@ -116,8 +120,10 @@ flowchart TD
   PDec -->|fine| PForf[captureHold → forfeited, деньги у компании]
   PLock -->|таймаут заказчика / cancel| PRef[reverseHold → refunded]
   CLock -->|cancel / refuse исполнителя| CRef[reverseHold или refundCaptured → refunded, вкл. fee]
-  CLock -->|"confirm-completion / ruling / arb timeout"| CRelease["released → ⚠ reverseHold = деньги назад заказчику"]
-  CRelease -.только в ledger.-> PBal[order_payout исполнителю → available]
+  CLock -->|"confirm-completion / ruling (исполнитель прав) / arb timeout"| CRelease["released → captureHold на счёт компании"]
+  CLock -->|"ruling: заказчик прав"| CWin["refunded → reverseHold (кроме уже подтверждённых 30%)"]
+  CRelease --> PBal[order_payout исполнителю → available]
+  CCap --> PBal
   PBal -->|requestPayout| Payout[Payout requested → админ paid/rejected]
 ```
 
@@ -170,12 +176,12 @@ App: «Сплачено Виконавцю» у заказчика = `earnedOrPa
 | ID | Проблема | Где | Статус |
 |---|---|---|---|
 | I-1 | **Подтверждение оплаты без оплаты.** `/payments/:id/confirm` принимает те же `data`, что сервер выдал для checkout (`isCheckoutReplay`), → intent `paid` без `payment_id`. Settlement пропускает, ledger начисляет исполнителю. | `BE/services/deposit.service.ts` (`isCheckoutReplay`), `API/payments/[id]/confirm` | open |
-| I-2 | **Release заказчика = возврат денег заказчику.** Для customer lock `released` → `reverseHold` (hold снимается, деньги на карте заказчика, вкл. комиссию), а ledger показывает исполнителю выплату. Для 100%-заказов ничего не списывается вообще. | `settlePendingLock` в `deposit.service.ts`; вызовы: confirm-completion, ruling, arbitrationResponse worker, admin status | decision |
-| I-3 | Part 1 списан (`captureCustomerInitialDeposit`), но intent остаётся `action=hold` → потом `reverseHold` по уже списанному платежу → вероятно ошибка LiqPay и бесконечный retry `release_pending`; part 2 в этом цикле не обрабатывается. Capture может выполниться дважды (progress 30% в en_route + started). | `deposit.service.ts` capture/settle, `API/orders/[orderId]/progress`, `.../status` | open |
-| I-4 | **Ledger читает только intents `paid`**, а settlement переводит их в `released/refunded/forfeited` → после расчёта платежи, комиссии и штрафы исчезают из кошелька; «Сплачено Виконавцю» → ~0; доход компании в админке падает. | `BE/services/finance.service.ts` (`status: "paid"`), `adminFinance.service.ts` | open |
+| I-2 | **Release заказчика = возврат денег заказчику.** Для customer lock `released` → `reverseHold` (hold снимается, деньги на карте заказчика, вкл. комиссию), а ledger показывает исполнителю выплату. Для 100%-заказов ничего не списывается вообще. | `settlePendingLock` в `deposit.service.ts`; вызовы: confirm-completion, ruling, arbitrationResponse worker, admin status | fixed |
+| I-3 | Part 1 списан (`captureCustomerInitialDeposit`), но intent остаётся `action=hold` → потом `reverseHold` по уже списанному платежу → вероятно ошибка LiqPay и бесконечный retry `release_pending`; part 2 в этом цикле не обрабатывается. Capture может выполниться дважды (progress 30% в en_route + started). | `deposit.service.ts` capture/settle, `API/orders/[orderId]/progress`, `.../status` | fixed |
+| I-4 | **Ledger читает только intents `paid`**, а settlement переводит их в `released/refunded/forfeited` → после расчёта платежи, комиссии и штрафы исчезают из кошелька; «Сплачено Виконавцю» → ~0; доход компании в админке падает. | `BE/services/finance.service.ts` (`status: "paid"`), `adminFinance.service.ts` | fixed |
 | I-5 | **Upsert EscrowLock не обновляет `userId`** → залог и выплата нового исполнителя приписываются предыдущему (он может их вывести). У PaymentIntent нет `userId`. | `deposit.service.ts` upsert lock, `finance.service.ts`, `ledger.ts` `isMyPerformerOrder` | open |
 | I-6 | **Заказчик не может подтвердить выполнение в app** (кнопку убрали в `40571c5`), автоподтверждения нет → escrow не освобождается, рейтинг недоступен. | `APP/app/active-work.tsx`, `API/orders/[orderId]/confirm-completion` | fixed |
-| I-7 | **GET финансов пишет в БД**: `loadLedgerInput` переводит `held → released` без settlement, если у завершённого заказа есть любое событие «Адмін:» → исполнитель получает доступный баланс без подтверждения заказчика. | `BE/services/finance.service.ts` | open |
+| I-7 | **GET финансов пишет в БД**: `loadLedgerInput` переводит `held → released` без settlement, если у завершённого заказа есть любое событие «Адмін:» → исполнитель получает доступный баланс без подтверждения заказчика. | `BE/services/finance.service.ts` | fixed |
 
 ### P1
 
@@ -191,7 +197,7 @@ App: «Сплачено Виконавцю» у заказчика = `earnedOrPa
 | I-15 | Задачи таймеров с фиксированным `jobId` после 5 неудач больше не ставятся → заказ навсегда в accepted/requires_confirmation. `customerProfile.update` падает без профиля. | `WK/workers/expiredOrders`, `depositDeadlineTimeout`, `WK/queues/queues.ts` | open |
 | I-16 | `ensureIntentServerUrl` пересоздаёт intent без `part` → part 2 становится part 1 (снова 30% + комиссия). | `deposit.service.ts` | open |
 | I-17 | Lock исполнителя `refunded/refund_pending` не смаплен → висит в «В ескроу» исполнителя. | `ledger.ts` performer_deposit | open |
-| I-18 | Аванс 30% исполнителю становится доступным по его же отчёту о прогрессе, даже если capture не удался. | `ledger.ts` order_payout part 1, `captureCustomerInitialDeposit` | open |
+| I-18 | Аванс 30% исполнителю становится доступным по его же отчёту о прогрессе, даже если capture не удался. | `ledger.ts` order_payout part 1, `captureCustomerInitialDeposit` | fixed |
 | I-19 | Подтверждение part 2 без проверки статуса заказа и без защиты от двойной оплаты. | `confirmDeposit` part 2 | open |
 | I-20 | Админские переходы обходят логику: started без дедлайна part 2 и capture; arbitration без ArbitrationCase; completed без part 2 и подтверждения. | `API/admin/orders/[id]/status` | open |
 | I-21 | Нет таймеров для confirmed-не-начат, completed-не-подтверждён, decision_pending → деньги могут висеть бессрочно. | worker scheduler | decision |
@@ -224,6 +230,7 @@ App: «Сплачено Виконавцю» у заказчика = `earnedOrPa
 |---|---|
 | «В ескроу» исполнителя считает только его залог | backend `edafddd`, app `6f74056` / `0e3de77` |
 | Статус `decision_pending` в app (тип, подпись, цвет) | app `4453cd8` / `b2e797a` |
+| Деньги заказчика списываются на счёт компании только по его подтверждению: 30% (`confirm-progress`), 70%/100% (`confirm-completion`); выигрыш заказчика в арбитраже = возврат; GET финансов больше не пишет в БД; журнал не теряет рассчитанные платежи (I-2, I-3, I-4, I-7, I-18) | backend/worker/app, 2026-11-25 |
 | Кнопка «Підтвердити виконання» у заказчика (I-6); оплата 70% после `completed` (I-8, частично); одна кнопка вывода у исполнителя | см. git log app/backend |
 | Срок залога исполнителя 12ч → 24ч (код + docs) | backend `9225189`, worker `cedbaa2`, admin `4edc618`, app `7da3ddd` |
 
@@ -231,9 +238,8 @@ App: «Сплачено Виконавцю» у заказчика = `earnedOrPa
 
 ## 6. Решения, которые нужны от бизнеса
 
-1. **Что значит «release» денег заказчика при успешном завершении** (I-2):
-   списать (capture) в компанию и потом вручную выплатить исполнителю? Это
-   определяет исправление settlement и ledger.
+1. ~~Что значит «release» денег заказчика~~ — решено: capture на счёт компании
+   по подтверждению заказчика (30% отдельно, 70%/100% при закрытии).
 2. **Возвращается ли комиссия 8.5% при отмене** (I-12) — сейчас возвращается
    фактически, тексты говорят обратное.
 3. **Куда идёт штраф исполнителя** (I-13): остаётся у компании или

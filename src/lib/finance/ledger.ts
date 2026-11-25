@@ -57,6 +57,8 @@ export type LedgerOrder = {
   dateTo: Date | null;
   progressPercent?: number | null;
   progressCreatedAt?: Date | null;
+  /** Замовник підтвердив перші 30% робіт (split): 30% списано на рахунок компанії. */
+  part1ConfirmedAt?: Date | null;
 };
 
 export type LedgerIntent = {
@@ -136,7 +138,7 @@ function customerDepositTitle(order: LedgerOrder): { title: string; reason: stri
   return {
     title: "Гарантійна сума (30%)",
     reason:
-      "Робота понад 2 дні: перші 30% вартості вносяться одразу як гарантія. Залишок 70% — до кінця третього дня від початку робіт.",
+      "Робота понад 2 дні: перші 30% вартості вносяться одразу. Залишок 70% — протягом 24 годин від початку робіт.",
   };
 }
 
@@ -203,7 +205,9 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
         continue;
       }
       const deposit = intent.depositAmount ?? intent.amount - intent.feeAmount;
-      const status = customerDepositStatus(locksByKey.get(`${order.id}:customer`)?.status);
+      // Підтверджені 30% вже списано на рахунок компанії для Виконавця — це не ескроу.
+      const part1Confirmed = !!order.part1ConfirmedAt;
+      const status = part1Confirmed ? "completed" : customerDepositStatus(locksByKey.get(`${order.id}:customer`)?.status);
       const { title, reason } = customerDepositTitle(order);
       entries.push({
         id: `intent:${intent.id}`,
@@ -316,19 +320,21 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
       if (isSplit) {
         const part1Amount = round2(Number(plan.immediateAmount));
         const part2Amount = round2(Number(plan.part2Amount));
-        const progressPercent = order.progressPercent ?? (order.status === "completed" ? 100 : 0);
+        const progressPercent = order.progressPercent ?? 0;
+        const part1Confirmed = !!order.part1ConfirmedAt;
+        // 30% доступні виконавцю лише після підтвердження замовником
+        // (окремо або разом із підтвердженням усього замовлення).
         const reached30 =
-          progressPercent >= 30 ||
-          order.status === "completed" ||
+          part1Confirmed ||
           lock.status === "released" ||
           lock.status === "release_pending";
 
-        if (lock.status !== "refunded") {
+        if (lock.status !== "refunded" || part1Confirmed) {
           // Part 1 (30%)
           if (reached30) {
             entries.push({
               id: `payout:${lock.id}:part1`,
-              occurredAt: iso(order.progressCreatedAt ?? lock.releasedAt, now),
+              occurredAt: iso(order.part1ConfirmedAt ?? lock.releasedAt ?? order.progressCreatedAt, now),
               kind: "order_payout",
               direction: "in",
               amount: part1Amount,
@@ -336,7 +342,7 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
               status: "completed",
               ...meta,
               title: "Оплата за 30% робіт",
-              reason: "Виконано та зафіксовано 30% робіт. Кошти зараховано на баланс та доступні для виведення.",
+              reason: "Замовник підтвердив виконання 30% робіт. Кошти зараховано на баланс та доступні для виведення.",
             });
           } else {
             entries.push({
@@ -349,7 +355,10 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
               status: "in_escrow",
               ...meta,
               title: "Оплата за перший етап (30%)",
-              reason: "Кошти заблоковані на рахунку компанії-гаранта до фіксації 30% готовності робіт.",
+              reason:
+                progressPercent >= 30
+                  ? "Ви зафіксували 30% робіт. Кошти буде зараховано на баланс після підтвердження Замовником."
+                  : "Кошти заблоковані на рахунку компанії-гаранта до фіксації 30% готовності робіт та підтвердження Замовником.",
             });
           }
 
@@ -357,10 +366,8 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
           const hasCustomerPart2 =
             input.intents.some((i) => i.orderId === order.id && i.role === "customer" && i.part === 2) ||
             lock.amount >= order.budget;
-          const reached100 =
-            order.status === "completed" ||
-            lock.status === "released" ||
-            lock.status === "release_pending";
+          // 70% зараховуються лише після підтвердження замовником (або рішення арбітражу).
+          const reached100 = lock.status === "released" || lock.status === "release_pending";
 
           if (hasCustomerPart2) {
             if (reached100) {
@@ -390,7 +397,10 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
                 status: "in_escrow",
                 ...meta,
                 title: "Оплата за залишок робіт (70%)",
-                reason: "Замовник вніс залишок 70%. Кошти заблоковані в ескроу до повного завершення робіт.",
+                reason:
+                  order.status === "completed"
+                    ? "Роботи завершено. Кошти буде зараховано на баланс після підтвердження Замовником."
+                    : "Замовник вніс залишок 70%. Кошти заблоковані в ескроу до повного завершення робіт.",
               });
             }
           }

@@ -170,6 +170,8 @@ export function buildOrderDetailPayload(args: {
   confirmationReview: OrderDetailReviewInput | null;
   /** Момент підтвердження замовником (подія статусу). Має пріоритет над датою відгуку. */
   completionConfirmedAt?: Date | null;
+  /** Замовник підтвердив перші 30% робіт (split-замовлення). */
+  part1ConfirmedAt?: Date | null;
   counterpartyContact?: OrderDetailCounterpartyContact | null;
   part2Paid?: boolean;
   hasPaymentRequest?: boolean;
@@ -214,13 +216,15 @@ export function buildOrderDetailPayload(args: {
     part2Paid: isPart2Paid,
     canPayPart2:
       viewerRole === "customer" &&
-      order.status === "started" &&
-      !!order.customerPart2Deadline &&
-      !isPart2Paid,
+      !isPart2Paid &&
+      customerPaymentPlan(order.budget, order.dateFrom, order.dateTo).mode === "split" &&
+      ((order.status === "started" && !!order.customerPart2Deadline) ||
+        (order.status === "completed" && !args.completionConfirmedAt)),
     ...escrow,
     performerUserId: order.performerUserId,
     comment: order.comment,
     completionConfirmedAt: args.completionConfirmedAt ?? args.confirmationReview?.createdAt ?? null,
+    part1ConfirmedAt: args.part1ConfirmedAt ?? null,
     rating: args.confirmationReview?.rating ?? null,
     completionComment: args.confirmationReview?.text ?? null,
     timeline: args.timeline.map((t) => ({ status: t.status, at: t.createdAt, note: t.note })),

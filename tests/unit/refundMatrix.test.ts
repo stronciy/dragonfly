@@ -22,7 +22,7 @@ type FakeIntent = {
   amount: Prisma.Decimal;
   status: string;
   providerOrderId: string | null;
-  providerRaw: { action: string | null; payment_id: number | null } | null;
+  providerRaw: { action: string | null; payment_id: number | null; captured?: boolean } | null;
 };
 
 type FakeLock = {
@@ -140,6 +140,14 @@ function stageFullEscrow(orderId: string): Stage {
       heldLock({ orderId, role: "customer", userId: "c1", amount: "30000" }),
     ],
   };
+}
+
+// Замовник підтвердив 30% робіт: перша частина вже списана на рахунок компанії.
+function stagePart1CapturedFullEscrow(orderId: string): Stage {
+  const stage = stageFullEscrow(orderId);
+  const c1 = stage.intents.find((i) => i.id === "c1")!;
+  c1.providerRaw = { action: "hold", payment_id: 424242, captured: true };
+  return stage;
 }
 
 function stagePart2PendingPaused(orderId: string): Stage {
@@ -325,13 +333,13 @@ const refuseBeforeCustomerCommit: Trigger = async (tx, client, orderId) => {
   await settleProviderHolds({ orderId, role: "performer", to: "released", client });
 };
 
-// Mirrors refuse (after the customer committed) and arbitration/resolve/approve
-// with fine (confirm-completion no longer has a fine option)
+// Mirrors admin arbitration ruling: customer wins with penalty — performer's
+// deposit is forfeited, the customer's money goes back to the customer.
 const forfeitPerformerReleaseCustomer: Trigger = async (tx, client, orderId) => {
   await releaseEscrowForOrder(tx, { orderId, role: "performer", to: "forfeited" });
-  await releaseEscrowForOrder(tx, { orderId, role: "customer", to: "released" });
+  await releaseEscrowForOrder(tx, { orderId, role: "customer", to: "refunded" });
   await settleProviderHolds({ orderId, role: "performer", to: "forfeited", client });
-  await settleProviderHolds({ orderId, role: "customer", to: "released", client });
+  await settleProviderHolds({ orderId, role: "customer", to: "refunded", client });
 };
 
 // Mirrors refuse route after the customer committed: performer forfeited,
@@ -349,8 +357,8 @@ const depositDeadlineTimeout: Trigger = async (tx, client, orderId) => {
   await settleProviderHolds({ orderId, to: "refunded", client });
 };
 
-// Mirrors expiredOrders.worker.ts (accepted timeout) and arbitration /
-// confirm-completion resolved plain
+// Mirrors confirm-completion / arbitration plain: customer's money is captured
+// to the company (paid to the performer), performer's deposit is unblocked.
 const releaseAll: Trigger = async (tx, client, orderId) => {
   await releaseEscrowForOrder(tx, { orderId, to: "released" });
   await settleProviderHolds({ orderId, to: "released", client });
@@ -377,8 +385,38 @@ const REVERSAL_C1 = "hold_completion:reversal@lp-c1";
 const REVERSAL_C2 = "hold_completion:reversal@lp-c2";
 const CAPTURE_PERF = "hold_completion@lp-perf";
 const REFUND_C1 = "refund@lp-c1";
+const CAPTURE_C1 = "hold_completion@lp-c1";
+const CAPTURE_C2 = "hold_completion@lp-c2";
 
 const CELLS: MatrixCell[] = [
+  {
+    stage: "30% confirmed & captured, part2 paid (started)",
+    trigger: "completion confirmed / arbitration: performer wins",
+    seed: stagePart1CapturedFullEscrow,
+    run: releaseAll,
+    expect: {
+      performerLock: "released",
+      customerLock: "released",
+      customerLockAmount: "30000",
+      // Підтверджені 30% уже списано — списуємо лише залишок.
+      calls: [REVERSAL_PERF, CAPTURE_C2],
+      intentStatuses: { perf: "released", c1: "released", c2: "released" },
+    },
+  },
+  {
+    stage: "30% confirmed & captured, part2 paid (started)",
+    trigger: "arbitration: customer wins with penalty",
+    seed: stagePart1CapturedFullEscrow,
+    run: forfeitPerformerReleaseCustomer,
+    expect: {
+      performerLock: "forfeited",
+      customerLock: "refunded",
+      customerLockAmount: "30000",
+      // Підтверджені 30% належать виконавцю — повертається лише неспожитий залишок.
+      calls: [REVERSAL_C2, CAPTURE_PERF],
+      intentStatuses: { perf: "forfeited", c1: "refunded", c2: "refunded" },
+    },
+  },
   {
     stage: "nobody paid (accepted)",
     trigger: "cancel (customer)",
@@ -451,54 +489,54 @@ const CELLS: MatrixCell[] = [
   },
   {
     stage: "customer part1 only (confirmed)",
-    trigger: "arbitration/completion plain",
+    trigger: "completion confirmed / arbitration: performer wins",
     seed: stageCustomerPart1Only,
     run: releaseAll,
     expect: {
       performerLock: "released",
       customerLock: "released",
       customerLockAmount: "9000",
-      calls: [REVERSAL_C1, REVERSAL_PERF],
+      calls: [REVERSAL_PERF, CAPTURE_C1],
       intentStatuses: { perf: "released", c1: "released" },
     },
   },
   {
     stage: "customer part1 only (confirmed)",
-    trigger: "arbitration fine",
+    trigger: "arbitration: customer wins with penalty",
     seed: stageCustomerPart1Only,
     run: forfeitPerformerReleaseCustomer,
     expect: {
       performerLock: "forfeited",
-      customerLock: "released",
+      customerLock: "refunded",
       customerLockAmount: "9000",
       calls: [REVERSAL_C1, CAPTURE_PERF],
-      intentStatuses: { perf: "forfeited", c1: "released" },
+      intentStatuses: { perf: "forfeited", c1: "refunded" },
     },
   },
   {
     stage: "full escrow: part1 + part2 paid (started)",
-    trigger: "arbitration/completion plain",
+    trigger: "completion confirmed / arbitration: performer wins",
     seed: stageFullEscrow,
     run: releaseAll,
     expect: {
       performerLock: "released",
       customerLock: "released",
       customerLockAmount: "30000",
-      calls: [REVERSAL_C1, REVERSAL_C2, REVERSAL_PERF],
+      calls: [REVERSAL_PERF, CAPTURE_C1, CAPTURE_C2],
       intentStatuses: { perf: "released", c1: "released", c2: "released" },
     },
   },
   {
     stage: "full escrow: part1 + part2 paid (started)",
-    trigger: "arbitration fine",
+    trigger: "arbitration: customer wins with penalty",
     seed: stageFullEscrow,
     run: forfeitPerformerReleaseCustomer,
     expect: {
       performerLock: "forfeited",
-      customerLock: "released",
+      customerLock: "refunded",
       customerLockAmount: "30000",
       calls: [REVERSAL_C1, REVERSAL_C2, CAPTURE_PERF],
-      intentStatuses: { perf: "forfeited", c1: "released", c2: "released" },
+      intentStatuses: { perf: "forfeited", c1: "refunded", c2: "refunded" },
     },
   },
   {
@@ -516,28 +554,28 @@ const CELLS: MatrixCell[] = [
   },
   {
     stage: "part2 pending / order paused (started)",
-    trigger: "arbitration/completion plain",
+    trigger: "completion confirmed / arbitration: performer wins",
     seed: stagePart2PendingPaused,
     run: releaseAll,
     expect: {
       performerLock: "released",
       customerLock: "released",
       customerLockAmount: "9000",
-      calls: [REVERSAL_C1, REVERSAL_PERF],
+      calls: [REVERSAL_PERF, CAPTURE_C1],
       intentStatuses: { perf: "released", c1: "released", c2: "pending" },
     },
   },
   {
     stage: "part2 pending / order paused (started)",
-    trigger: "arbitration fine",
+    trigger: "arbitration: customer wins with penalty",
     seed: stagePart2PendingPaused,
     run: forfeitPerformerReleaseCustomer,
     expect: {
       performerLock: "forfeited",
-      customerLock: "released",
+      customerLock: "refunded",
       customerLockAmount: "9000",
       calls: [REVERSAL_C1, CAPTURE_PERF],
-      intentStatuses: { perf: "forfeited", c1: "released", c2: "pending" },
+      intentStatuses: { perf: "forfeited", c1: "refunded", c2: "pending" },
     },
   },
   {
@@ -568,14 +606,14 @@ const CELLS: MatrixCell[] = [
   },
   {
     stage: "legacy confirmed (old single 10% deposits)",
-    trigger: "arbitration/completion plain",
+    trigger: "completion confirmed / arbitration: performer wins",
     seed: stageLegacyConfirmed,
     run: releaseAll,
     expect: {
       performerLock: "released",
       customerLock: "released",
       customerLockAmount: "10000",
-      calls: [REVERSAL_PERF, REFUND_C1],
+      calls: [REVERSAL_PERF],
       intentStatuses: { perf: "released", c1: "released" },
     },
   },

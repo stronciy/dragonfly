@@ -425,9 +425,20 @@ export async function heldEscrowTotal(tx: Tx, orderId: string) {
   return locks.reduce((sum, l) => sum + Number(l.amount), 0);
 }
 
+function providerRawOf(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+}
+
+/** Холд уже списано на рахунок компанії (повторно не списуємо і не реверсуємо). */
+export function isIntentCaptured(providerRaw: unknown): boolean {
+  return providerRawOf(providerRaw)?.captured === true;
+}
+
 /**
- * Списання 30% гарантійної суми замовника з холду на рахунок компанії при
- * старті робіт виконавцем (замовлення > 2 днів).
+ * Списання першої частини оплати замовника (30% + комісія) з холду на рахунок
+ * компанії. Викликається, коли замовник підтверджує виконання 30% робіт
+ * (split-замовлення). Ідемпотентно: вже списаний платіж не списується вдруге.
+ * Помилку LiqPay прокидає далі — підтвердження не має пройти без списання.
  */
 export async function captureCustomerInitialDeposit(
   orderId: string,
@@ -438,46 +449,37 @@ export async function captureCustomerInitialDeposit(
     where: { orderId, role: "customer", part: 1, status: "paid" },
     select: { id: true, providerOrderId: true, providerRaw: true },
   });
-  if (!intent || !intent.providerOrderId) return false;
+  if (!intent) return false;
 
-  const raw =
-    intent.providerRaw && typeof intent.providerRaw === "object"
-      ? (intent.providerRaw as Record<string, unknown>)
-      : null;
+  const raw = providerRawOf(intent.providerRaw);
+  if (isIntentCaptured(raw)) return true;
   const isHold = raw?.action === "hold";
   const liqpayPaymentId = raw?.payment_id;
 
-  if (isHold && liqpayPaymentId != null) {
-    try {
-      await captureHold(intent.providerOrderId);
-      process.stdout.write(
-        JSON.stringify({
-          level: "info",
-          msg: "customer_initial_deposit_captured",
-          orderId,
-          intentId: intent.id,
-          providerOrderId: intent.providerOrderId,
-        }) + "\n"
-      );
-    } catch (e) {
-      process.stdout.write(
-        JSON.stringify({
-          level: "error",
-          msg: "customer_initial_deposit_capture_failed",
-          orderId,
-          intentId: intent.id,
-          providerOrderId: intent.providerOrderId,
-          error: e instanceof Error ? e.message : String(e),
-        }) + "\n"
-      );
-    }
+  if (isHold && liqpayPaymentId != null && intent.providerOrderId) {
+    await captureHold(intent.providerOrderId);
+    await db.paymentIntent.update({
+      where: { id: intent.id },
+      data: {
+        providerRaw: { ...raw, captured: true, capturedAt: new Date().toISOString() } as unknown as Prisma.InputJsonValue,
+      },
+    });
+    process.stdout.write(
+      JSON.stringify({
+        level: "info",
+        msg: "customer_initial_deposit_captured",
+        orderId,
+        intentId: intent.id,
+        providerOrderId: intent.providerOrderId,
+      }) + "\n"
+    );
   }
 
   await db.orderStatusEvent.create({
     data: {
       orderId,
       status: "started",
-      note: "30% гарантійної суми Замовника списано на рахунок компанії-гаранта",
+      note: "30% оплати Замовника списано на рахунок компанії-гаранта",
     },
   });
   return true;
@@ -518,20 +520,26 @@ async function settlePendingLock(
         ? (intent.providerRaw as Record<string, unknown>)
         : null;
     const isHold = raw?.action === "hold";
+    const captured = isIntentCaptured(raw);
     const liqpayOrderId = intent.providerOrderId;
     const liqpayPaymentId = raw?.payment_id;
     if (!liqpayOrderId || liqpayPaymentId == null) {
       process.stdout.write(JSON.stringify({ level: "info", msg: "settle_skipped_no_provider_payment", ...logCtx, intentId: intent.id }) + "\n");
       continue;
     }
-    if (to === "forfeited" && !isHold) {
-      process.stdout.write(JSON.stringify({ level: "info", msg: "settle_skipped_already_captured", ...logCtx, intentId: intent.id }) + "\n");
-      continue;
-    }
+    // Гроші замовника при підтвердженні (released) і штраф будь-якої сторони
+    // (forfeited) списуються на рахунок компанії. Повернення (refunded) і
+    // розблокування застави виконавця (released) — реверс холду.
+    const captureToCompany = to === "forfeited" || (to === "released" && lock.role === "customer");
+    // Уже списана частина замовника (підтверджені 30%) належить виконавцю —
+    // її не повертаємо і не списуємо вдруге.
+    const skip = captureToCompany ? !isHold || captured : lock.role === "customer" && captured;
     try {
-      if (to === "forfeited") {
+      if (skip) {
+        process.stdout.write(JSON.stringify({ level: "info", msg: "settle_skipped_already_captured", ...logCtx, intentId: intent.id }) + "\n");
+      } else if (captureToCompany) {
         await captureHold(liqpayOrderId);
-      } else if (isHold) {
+      } else if (isHold && !captured) {
         await reverseHold(liqpayOrderId);
       } else {
         await refundCaptured(liqpayOrderId);
