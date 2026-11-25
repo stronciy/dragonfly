@@ -71,6 +71,8 @@ export type LedgerIntent = {
   feeAmount: number;
   currency: string;
   paidAt: Date | null;
+  /** paid — гроші в поточному циклі ескроу; released/refunded/forfeited — платіж уже розраховано. */
+  status?: string;
 };
 
 export type LedgerLock = {
@@ -148,6 +150,18 @@ function customerDepositStatus(lockStatus: string | undefined): LedgerStatus {
   return "in_escrow";
 }
 
+/**
+ * Блокування одне на заказ і роль: після відмови й повторного прийняття воно
+ * знову стає `held`. Платіж попереднього циклу вже розраховано — його статус
+ * беремо з самого платежу, інакше старі гроші знову виглядають «в ескроу».
+ */
+const SETTLED_INTENT_STATUSES = new Set(["released", "refunded", "forfeited"]);
+const OPEN_LOCK_STATUSES = new Set(["held", "decision_pending", "release_pending", "refund_pending", "forfeit_pending"]);
+
+function isPreviousCycleIntent(intent: LedgerIntent, lock: LedgerLock | undefined): boolean {
+  return !!intent.status && SETTLED_INTENT_STATUSES.has(intent.status) && !!lock && OPEN_LOCK_STATUSES.has(lock.status);
+}
+
 function customerDepositReason(status: LedgerStatus): string {
   if (status === "in_escrow") {
     return "Кошти заблоковані на рахунку компанії-гаранта до завершення роботи та підтвердження Замовником.";
@@ -188,8 +202,26 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
     const occurredAt = iso(intent.paidAt, now);
 
     if (input.role === "customer" && intent.role === "customer") {
+      const customerLock = locksByKey.get(`${order.id}:customer`);
+      const previousCycle = isPreviousCycleIntent(intent, customerLock);
+      if (previousCycle && intent.status === "refunded") {
+        entries.push({
+          id: `refund:intent:${intent.id}`,
+          occurredAt,
+          kind: "customer_refund",
+          direction: "in",
+          amount: round2(intent.part === 2 ? intent.amount : (intent.depositAmount ?? intent.amount - intent.feeAmount)),
+          currency: intent.currency,
+          status: "refunded",
+          ...meta,
+          title: "Повернення коштів",
+          reason: "Заказ скасовано або робота не відбулась — кошти повернуто.",
+        });
+      }
+      const customerStatus = (): LedgerStatus =>
+        previousCycle ? customerDepositStatus(intent.status) : customerDepositStatus(customerLock?.status);
       if (intent.part === 2) {
-        const status = customerDepositStatus(locksByKey.get(`${order.id}:customer`)?.status);
+        const status = customerStatus();
         entries.push({
           id: `intent:${intent.id}`,
           occurredAt,
@@ -207,7 +239,7 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
       const deposit = intent.depositAmount ?? intent.amount - intent.feeAmount;
       // Підтверджені 30% вже списано на рахунок компанії для Виконавця — це не ескроу.
       const part1Confirmed = !!order.part1ConfirmedAt;
-      const status = part1Confirmed ? "completed" : customerDepositStatus(locksByKey.get(`${order.id}:customer`)?.status);
+      const status = part1Confirmed && !previousCycle ? "completed" : customerStatus();
       const { title, reason } = customerDepositTitle(order);
       entries.push({
         id: `intent:${intent.id}`,
@@ -239,13 +271,29 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
 
     if (input.role === "performer" && intent.role === "performer" && isMyPerformerOrder(order.id)) {
       const lock = locksByKey.get(`${order.id}:performer`);
-      const lockStatus = lock?.status;
+      const previousCycle = isPreviousCycleIntent(intent, lock);
+      // Попередній цикл (відмова до оплати Замовника): released/refunded = застава повернута.
+      const lockStatus = previousCycle ? (intent.status === "forfeited" ? "forfeited" : "released") : lock?.status;
+      if (previousCycle && lockStatus === "released") {
+        entries.push({
+          id: `deposit-return:intent:${intent.id}`,
+          occurredAt,
+          kind: "performer_deposit_return",
+          direction: "none",
+          amount: round2(intent.amount),
+          currency: intent.currency,
+          status: "returned",
+          ...meta,
+          title: "Розблокування застави",
+          reason: "Ви відмовились від заказу: гарантійна сума розблокована на вашій картці. Вона не зараховується на баланс.",
+        });
+      }
       let status: LedgerStatus = "in_escrow";
       if (lockStatus === "release_pending") status = "unlock_pending";
       if (lockStatus === "decision_pending") status = "decision_pending";
       if (lockStatus === "released") status = "returned";
       if (lockStatus === "forfeited" || lockStatus === "forfeit_pending") status = "forfeited";
-      const completedWork = order.status === "completed";
+      const completedWork = order.status === "completed" && !previousCycle;
       entries.push({
         id: `intent:${intent.id}`,
         occurredAt,

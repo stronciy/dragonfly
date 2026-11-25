@@ -100,6 +100,20 @@ beforeEach(() => {
   seedLegalProfile(USERS.performer, VALID_IBAN);
 });
 
+// У тестах немає LiqPay-холдів (payment_id), тож розрахунок після відмови
+// лишається «pending». Доводимо його до кінця так, як це робить LiqPay у проді.
+function settleLikeLiqPay(orderId: string) {
+  const final: Record<string, string> = { release_pending: "released", refund_pending: "refunded", forfeit_pending: "forfeited" };
+  for (const lock of db.findMany("escrowLock", { where: { orderId } }) as any[]) {
+    const to = final[lock.status] ?? (["released", "refunded", "forfeited"].includes(lock.status) ? lock.status : null);
+    if (!to) continue;
+    db.update("escrowLock", { where: { id: lock.id }, data: { status: to, releasedAt: lock.releasedAt ?? new Date() } });
+    for (const intent of db.findMany("paymentIntent", { where: { orderId, role: lock.role, status: "paid" } }) as any[]) {
+      db.update("paymentIntent", { where: { id: intent.id }, data: { status: to } });
+    }
+  }
+}
+
 describe("журнал Заказчика", () => {
   it("під час робіт: оплата і комісія в ескроу, у журналі видно, чому кошти заблоковані", async () => {
     const id = createOrder({ days: 1, budget: 10000 });
@@ -352,6 +366,56 @@ describe("журнал Виконавця", () => {
     assert.match(forfeit.reason, /штраф/);
     assert.equal(summary.availableUah, 0);
     assert.equal(summary.inEscrowUah, 0);
+  });
+
+  it("взяв заказ, відмовився, взяв знову, Замовник оплатив: застава в ескроу одна, а не подвійна", async () => {
+    const id = createOrder({ days: 1, budget: 500000 });
+    await performerClaimsAndPays(id);
+    assert.equal((await readResponse(await refusePost(await call(USERS.performer, "POST", { reason: "Помилково взяв" }), ctx(id)))).status, 200);
+    settleLikeLiqPay(id);
+
+    await performerClaimsAndPays(id);
+    assert.equal((await customerPays(id)).status, 200);
+
+    const { summary, entries } = await transactions(USERS.performer);
+    const deposits = entries.filter((e) => e.kind === "performer_deposit");
+    assert.equal(deposits.length, 2, "обидва внески застави лишаються в історії");
+    assert.deepEqual(deposits.map((d) => d.status).sort(), ["in_escrow", "returned"]);
+    assert.equal(summary.inEscrowUah, 150000, "в ескроу лише поточна застава 150 000");
+    assert.equal(entries.filter((e) => e.kind === "performer_deposit_return").length, 1, "перша застава — розблокована");
+
+    // Після завершення: поточна застава теж повертається, у ескроу нічого.
+    await status(id, USERS.performer, "en_route");
+    await status(id, USERS.performer, "started");
+    await status(id, USERS.performer, "completed");
+    assert.equal((await confirm(id, { accepted: true, rating: 5 })).status, 200);
+    const after = await transactions(USERS.performer);
+    assert.equal(after.summary.inEscrowUah, 0);
+    assert.equal(after.summary.availableUah, 500000);
+    assert.deepEqual(
+      after.entries.filter((e) => e.kind === "performer_deposit").map((d) => d.status),
+      ["returned", "returned"],
+    );
+  });
+
+  it("Замовнику повернули оплату після відмови Виконавця, потім він оплатив знову: в ескроу одна оплата", async () => {
+    const id = createOrder({ days: 1, budget: 10000 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    await refusePost(await call(USERS.performer, "POST", { reason: "Хвороба" }), ctx(id));
+    await decisionPost(await call(USERS.customer, "POST", { decision: "return" }), id);
+    settleLikeLiqPay(id);
+
+    await performerClaimsAndPays(id, USERS.performer);
+    assert.equal((await customerPays(id)).status, 200);
+
+    const { summary, entries } = await transactions(USERS.customer);
+    assert.equal(summary.inEscrowUah, 10000, "лише поточна оплата");
+    assert.deepEqual(
+      entries.filter((e) => e.kind === "customer_deposit").map((d) => d.status).sort(),
+      ["in_escrow", "refunded"],
+    );
+    assert.equal(entries.filter((e) => e.kind === "customer_refund").length, 1, "перша оплата — повернута");
   });
 
   it("рішення щодо застави приймається лише раз (409) і лише Заказчиком", async () => {

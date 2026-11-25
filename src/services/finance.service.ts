@@ -68,6 +68,7 @@ export async function loadLedgerInput(
             feeAmount: true,
             currency: true,
             paidAt: true,
+            status: true,
           },
         })
       : Promise.resolve([]),
@@ -126,6 +127,7 @@ export async function loadLedgerInput(
       feeAmount: Number(i.feeAmount),
       currency: i.currency,
       paidAt: i.paidAt,
+      status: i.status,
     })),
     locks: locks.map((l) => {
       return {
