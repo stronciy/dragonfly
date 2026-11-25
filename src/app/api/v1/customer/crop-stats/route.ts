@@ -11,7 +11,7 @@ const querySchema = z.object({
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
 
     const url = new URL(req.url);
     const { season } = querySchema.parse({ season: url.searchParams.get("season") ?? undefined });

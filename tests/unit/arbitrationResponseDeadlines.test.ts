@@ -46,22 +46,22 @@ describe("строки відповіді", () => {
     const kase = kaseOf(caseId);
     assert.equal(kase.customerResponseDueAt, null);
     const due = new Date(kase.performerResponseDueAt).getTime();
-    assert.ok(Math.abs(due - (Date.now() + DAY)) < 60_000, "виконавець має добу на відповідь");
+    assert.ok(Math.abs(due - (Date.now() + DAY)) < 60_000, "Виконавець має добу на відповідь");
   });
 
   it("відповідь сторони знімає її строк і запускає строк іншій стороні", async () => {
     const { id, caseId } = await opened("customer");
     await readResponse(await arbMessage(await call(USERS.performer, "PATCH", { reason: "Відповідаю" }), ctx(id)));
     const kase = kaseOf(caseId);
-    assert.equal(kase.performerResponseDueAt, null, "виконавець відповів — його строк знято");
-    assert.ok(kase.customerResponseDueAt, "заказчик має добу на відповідь");
+    assert.equal(kase.performerResponseDueAt, null, "Виконавець відповів — його строк знято");
+    assert.ok(kase.customerResponseDueAt, "Заказчик має добу на відповідь");
   });
 
   it("приватне повідомлення адміну не запускає строк другій стороні", async () => {
     const { id, caseId } = await opened("customer");
     await db.update("arbitrationCase", { where: { id: caseId }, data: { customerResponseDueAt: null, performerResponseDueAt: null } } as any);
     await readResponse(await arbMessage(await call(USERS.customer, "PATCH", { reason: "Лише адміну", toAdmin: true }), ctx(id)));
-    assert.equal(kaseOf(caseId).performerResponseDueAt, null, "приватний лист не запускає строк виконавцю");
+    assert.equal(kaseOf(caseId).performerResponseDueAt, null, "приватний лист не запускає строк Виконавцю");
   });
 
   it("загальне повідомлення адміна запускає строк обом сторонам", async () => {
@@ -85,7 +85,7 @@ describe("строки відповіді", () => {
   it("сторона бачить свій строк у відповіді на GET", async () => {
     const { id } = await opened("customer");
     const res = await readResponse(await arbGet(await call(USERS.performer, "GET"), ctx(id)));
-    assert.ok(res.body.data.myResponseDueAt, "виконавець бачить свій строк");
+    assert.ok(res.body.data.myResponseDueAt, "Виконавець бачить свій строк");
     const cust = await readResponse(await arbGet(await call(USERS.customer, "GET"), ctx(id)));
     assert.equal(cust.body.data.myResponseDueAt, null, "відкривач строку не має");
   });

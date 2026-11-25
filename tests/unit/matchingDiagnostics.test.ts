@@ -22,7 +22,7 @@ const base = {
 };
 const free = { refused: false, blockedByEscrow: false };
 
-test("категорія виконавця покриває заказ її підкатегорії", () => {
+test("категорія Виконавця покриває заказ її підкатегорії", () => {
   assert.deepEqual(matchServiceLevel(order, ["1"]), { matchedBy: "category", serviceId: "1" });
   assert.deepEqual(matchServiceLevel(order, ["1.1"]), { matchedBy: "subcategory", serviceId: "1.1" });
   assert.deepEqual(matchServiceLevel(order, ["2.1.2"]), { matchedBy: null, serviceId: null });
@@ -52,12 +52,12 @@ test("радіус без базової точки не проходить з �
   assert.match(check.reasons.join(" "), /базової точки/);
 });
 
-test("відмовлений і заблокований виконавець не підбирається", () => {
+test("відмовлений і заблокований Виконавець не підбирається", () => {
   assert.match(evaluatePerformer(order, base, { refused: true, blockedByEscrow: false }).reasons.join(" "), /відмовився/);
   assert.match(evaluatePerformer(order, base, { refused: false, blockedByEscrow: true }).reasons.join(" "), /застава/);
 });
 
-test("заказчик не отримує власний заказ", () => {
+test("Заказчик не отримує власний заказ", () => {
   const check = evaluatePerformer(order, { ...base, userId: "customer-1" }, free);
   assert.equal(check.eligible, false);
   assert.equal(check.isCustomer, true);

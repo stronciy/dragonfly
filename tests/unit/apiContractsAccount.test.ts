@@ -73,12 +73,12 @@ describe("аватар", () => {
   });
 });
 
-describe("статистика і рейтинг заказчика", () => {
+describe("статистика і рейтинг Заказчика", () => {
   it("статистика користувача віддається", async () => {
     assert.equal((await readResponse(await statsGet(await call(USERS.performer, "GET")))).status, 200);
   });
 
-  it("рейтинг заказчика віддається власнику", async () => {
+  it("рейтинг Заказчика віддається власнику", async () => {
     assert.equal((await readResponse(await customerRatingGet(await call(USERS.customer, "GET")))).status, 200);
   });
 });

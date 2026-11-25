@@ -40,7 +40,7 @@ beforeEach(() => {
 });
 
 describe("оцінка після закриття заказу", () => {
-  it("завершено, але заказчик ще не підтвердив — оцінювати не можна", async () => {
+  it("завершено, але Заказчик ще не підтвердив — оцінювати не можна", async () => {
     const id = await completedOrder({ confirm: false });
     const st = await stateOf(USERS.customer, id);
     assert.equal(st.body.data.rating.closed, false);
@@ -61,7 +61,7 @@ describe("оцінка після закриття заказу", () => {
     assert.equal((await stateOf(USERS.customer, id)).body.data.rating.ratedByMe, true);
   });
 
-  it("заказчик оцінює виконавця, виконавець — заказчика; напрямок збережено правильно", async () => {
+  it("Заказчик оцінює Виконавця, Виконавець — Заказчика; напрямок збережено правильно", async () => {
     const id = await completedOrder({ confirm: true });
     await rate(USERS.customer, id, 5);
     await rate(USERS.performer, id, 4);
@@ -72,7 +72,7 @@ describe("оцінка після закриття заказу", () => {
     assert.equal(byPerformer?.customerUserId, USERS.customer);
   });
 
-  it("рейтинг виконавця рахується після взаємних оцінок", async () => {
+  it("рейтинг Виконавця рахується після взаємних оцінок", async () => {
     const id = await completedOrder({ confirm: true });
     await rate(USERS.customer, id, 5);
     await rate(USERS.performer, id, 4);

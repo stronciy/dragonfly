@@ -39,9 +39,9 @@ export function resetWorld() {
       createdAt: now,
     });
   user(USERS.customer, "customer", "Замовник");
-  user(USERS.otherCustomer, "customer", "Інший замовник");
+  user(USERS.otherCustomer, "customer", "Інший Замовник");
   user(USERS.performer, "performer", "Виконавець");
-  user(USERS.otherPerformer, "performer", "Інший виконавець");
+  user(USERS.otherPerformer, "performer", "Інший Виконавець");
   for (const performerUserId of [USERS.performer, USERS.otherPerformer]) {
     db.insert("performerProfile", {
       id: `pp_${performerUserId}`,

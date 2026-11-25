@@ -33,7 +33,7 @@ beforeEach(() => {
 });
 
 describe("ранній старт", () => {
-  it("виконавець просить ранній старт → заказчик погоджує → старт дозволено раніше дати", async () => {
+  it("Виконавець просить ранній старт → Заказчик погоджує → старт дозволено раніше дати", async () => {
     const id = await confirmedFutureOrder();
     const req = await readResponse(await earlyPost(await call(USERS.performer, "POST", {}), ctx(id)));
     assert.equal(req.status, 201);
@@ -58,7 +58,7 @@ describe("ранній старт", () => {
     assert.equal(order(id).status, "en_route", "перехід en_route дозволено, а started — ні");
   });
 
-  it("заказчик відхиляє ранній старт — статус не змінюється", async () => {
+  it("Заказчик відхиляє ранній старт — статус не змінюється", async () => {
     const id = await confirmedFutureOrder();
     await earlyPost(await call(USERS.performer, "POST", {}), ctx(id));
     const res = await readResponse(await earlyReject(await call(USERS.customer, "POST", { reason: "Ще рано" }), ctx(id)));
@@ -67,7 +67,7 @@ describe("ранній старт", () => {
     assert.equal((await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id)))).status, 400);
   });
 
-  it("неназначений виконавець не бачить заказ для раннього старту (404)", async () => {
+  it("неназначений Виконавець не бачить заказ для раннього старту (404)", async () => {
     const id = createOrder({ days: 3 });
     const res = await readResponse(await earlyPost(await call(USERS.performer, "POST", {}), ctx(id)));
     assert.equal(res.status, 404);
@@ -80,7 +80,7 @@ describe("ранній старт", () => {
     assert.equal(res.status, 409);
   });
 
-  it("погоджувати може лише заказчик (403 для виконавця)", async () => {
+  it("погоджувати може лише Заказчик (403 для Виконавця)", async () => {
     const id = await confirmedFutureOrder();
     await earlyPost(await call(USERS.performer, "POST", {}), ctx(id));
     const res = await readResponse(await earlyApprove(await call(USERS.performer, "POST", {}), ctx(id)));
@@ -114,7 +114,7 @@ describe("адмін: скасування заказу", () => {
 });
 
 describe("зміна ролі", () => {
-  it("користувач перемикає роль на виконавця, нова роль зберігається", async () => {
+  it("користувач перемикає роль на Виконавця, нова роль зберігається", async () => {
     const res = await readResponse(await roleChange(await call(USERS.customer, "PATCH", { role: "performer" })));
     assert.equal(res.status, 200);
     assert.equal((db.findUnique("user", { where: { id: USERS.customer } }) as any).role, "performer");
@@ -138,7 +138,7 @@ describe("каталог послуг", () => {
   });
 });
 
-describe("зведення заказчика", () => {
+describe("зведення Заказчика", () => {
   it("сума бюджетів завершених заказів рахується лише для власника", async () => {
     const done = createOrder({ days: 1, budget: 7000 });
     db.updateMany("order", { where: { id: done }, data: { status: "completed" } });
@@ -149,13 +149,13 @@ describe("зведення заказчика", () => {
     assert.equal(JSON.stringify(res.body.data).includes("999"), false, "незавершені не входять у суму");
   });
 
-  it("виконавець не має доступу до зведення заказчика (403)", async () => {
+  it("Виконавець не має доступу до зведення Заказчика (403)", async () => {
     assert.equal((await readResponse(await billingGet(await call(USERS.performer, "GET")))).status, 403);
   });
 });
 
-describe("поля заказчика", () => {
-  it("заказчик створює поле і бачить його у списку", async () => {
+describe("поля Заказчика", () => {
+  it("Заказчик створює поле і бачить його у списку", async () => {
     const created = await readResponse(await fieldsPost(await call(USERS.customer, "POST", {
       name: "Північне поле", areaHa: 42, addressLabel: "Полтавська обл.", lat: 49.5, lng: 34.5,
     })));
@@ -165,7 +165,7 @@ describe("поля заказчика", () => {
     assert.ok(JSON.stringify(list.body.data).includes("Північне поле"));
   });
 
-  it("виконавець не створює поля (403)", async () => {
+  it("Виконавець не створює поля (403)", async () => {
     const res = await readResponse(await fieldsPost(await call(USERS.performer, "POST", { name: "X", areaHa: 1 })));
     assert.equal(res.status, 403);
   });

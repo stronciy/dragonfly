@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
     if (user.role !== "customer" && user.role !== "performer") {
-      throw new ApiError(403, "FORBIDDEN", "Фінанси доступні лише замовнику та виконавцю");
+      throw new ApiError(403, "FORBIDDEN", "Фінанси доступні лише Замовнику та Виконавцю");
     }
     const { entries, summary } = await getFinanceSnapshot(prisma, user.id, user.role);
     return ok(req, { role: user.role, summary, entries });

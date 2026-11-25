@@ -6,7 +6,7 @@ import { prisma, reservedEscrowTotal } from "@/shared";
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
 
     const [completedAgg, reservedTotal] = await Promise.all([
       prisma.order.aggregate({ where: { customerUserId: user.id, status: "completed" }, _sum: { budget: true } }),

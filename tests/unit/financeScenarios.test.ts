@@ -100,7 +100,7 @@ beforeEach(() => {
   seedLegalProfile(USERS.performer, VALID_IBAN);
 });
 
-describe("журнал заказчика", () => {
+describe("журнал Заказчика", () => {
   it("під час робіт: оплата і комісія в ескроу, у журналі видно, чому кошти заблоковані", async () => {
     const id = createOrder({ days: 1, budget: 10000 });
     await performerClaimsAndPays(id);
@@ -124,7 +124,7 @@ describe("журнал заказчика", () => {
     assert.equal(summary.refundedUah, 0);
   });
 
-  it("після підтвердження роботи: кошти передано виконавцю, заказчик бачить, за що і коли", async () => {
+  it("після підтвердження роботи: кошти передано Виконавцю, Заказчик бачить, за що і коли", async () => {
     const id = await completedOneDay(10000);
     assert.equal((await confirm(id, { accepted: true, rating: 5 })).status, 200);
     const { summary, entries } = await transactions(USERS.customer);
@@ -133,7 +133,7 @@ describe("журнал заказчика", () => {
     assert.match(deposit.reason, /передано Виконавцю/i);
     assert.ok(deposit.occurredAt, "є час події");
     assert.equal(summary.inEscrowUah, 0);
-    assert.equal(summary.earnedOrPaidUah, 10850, "після підтвердження кошти виконавцю і комісія сервісу входять у сплачені");
+    assert.equal(summary.earnedOrPaidUah, 10850, "після підтвердження кошти Виконавцю і комісія сервісу входять у сплачені");
   });
 
   it("заказ на 3 дні: 30% + комісія одразу, 70% — окремий запис з часом внесення", async () => {
@@ -156,7 +156,7 @@ describe("журнал заказчика", () => {
     assert.equal(summary.feesPaidUah, 850, "комісія лише один раз");
   });
 
-  it("виконавець відмовився до оплати заказчика: застава одразу розблокована, пояснення коректне", async () => {
+  it("Виконавець відмовився до оплати Заказчика: застава одразу розблокована, пояснення коректне", async () => {
     const id = createOrder({ days: 1, budget: 10000 });
     await performerClaimsAndPays(id);
     const req = await call(USERS.performer, "POST", { reason: "Не встигаю за графіком" });
@@ -181,7 +181,7 @@ describe("журнал заказчика", () => {
     assert.equal(summary.availableUah, 0, "застава ніколи не входить у доступний баланс");
   });
 
-  it("заказ відмінено виконавцем: кошти повернуто, у журналі «Повернення коштів»", async () => {
+  it("заказ відмінено Виконавцем: кошти повернуто, у журналі «Повернення коштів»", async () => {
     const id = createOrder({ days: 1, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -197,7 +197,7 @@ describe("журнал заказчика", () => {
     assert.equal(kindOf(entries, "customer_deposit").status, "refunded");
   });
 
-  it("штраф з виконавця зараховується замовнику у журнал та підсумок", async () => {
+  it("штраф з Виконавця зараховується Замовнику у журнал та підсумок", async () => {
     const id = createOrder({ days: 1, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -212,14 +212,14 @@ describe("журнал заказчика", () => {
     assert.equal(summary.refundedUah, 13000);
   });
 
-  it("журнал містить лише власні платежі: інший заказчик нічого не бачить", async () => {
+  it("журнал містить лише власні платежі: інший Заказчик нічого не бачить", async () => {
     const id = await completedOneDay();
     assert.equal((await transactions(USERS.otherCustomer)).entries.length, 0);
     assert.ok((await transactions(USERS.customer)).entries.some((e) => e.orderId === id));
   });
 });
 
-describe("журнал виконавця", () => {
+describe("журнал Виконавця", () => {
   it("під час робіт: застава в ескроу, баланс для виведення нульовий", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
@@ -232,7 +232,7 @@ describe("журнал виконавця", () => {
     assert.equal(summary.inEscrowUah, 3000);
   });
 
-  it("утриманий штраф (forfeited) відображається у підсумку штрафів виконавця", async () => {
+  it("утриманий штраф (forfeited) відображається у підсумку штрафів Виконавця", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -263,17 +263,17 @@ describe("журнал виконавця", () => {
     assert.equal(summary.inEscrowUah, 0);
   });
 
-  it("виконавець завершив, але замовник ще не прийняв: застава виконавця заблокована", async () => {
+  it("Виконавець завершив, але Замовник ще не прийняв: застава Виконавця заблокована", async () => {
     const id = await completedOneDay(10000);
     const { summary, entries } = await transactions(USERS.performer);
     assert.equal(kindOf(entries, "performer_deposit").status, "in_escrow");
-    assert.equal(summary.inEscrowUah, 3000, "застава не розблокована до прийняття замовником");
+    assert.equal(summary.inEscrowUah, 3000, "застава не розблокована до прийняття Замовником");
     assert.equal(summary.availableUah, 0);
     const customer = await transactions(USERS.customer);
     assert.equal(kindOf(customer.entries, "customer_deposit").status, "in_escrow");
   });
 
-  it("замовник приймає роботу: обидві застави розблоковано, штрафу немає", async () => {
+  it("Замовник приймає роботу: обидві застави розблоковано, штрафу немає", async () => {
     const id = await completedOneDay(10000);
     assert.equal((await confirm(id, { accepted: true, rating: 5 })).status, 200);
     const performer = await transactions(USERS.performer);
@@ -291,14 +291,14 @@ describe("журнал виконавця", () => {
     assert.equal(kindOf(entries, "performer_deposit").status, "returned");
   });
 
-  it("прийняття до завершення виконавцем відхиляється (409)", async () => {
+  it("прийняття до завершення Виконавцем відхиляється (409)", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
     assert.equal((await confirm(id, { accepted: true, rating: 5 })).status, 409);
   });
 
-  it("відмова після оплати заказчика: застава чекає рішення замовника, не списується автоматично", async () => {
+  it("відмова після оплати Заказчика: застава чекає рішення Замовника, не списується автоматично", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -309,10 +309,10 @@ describe("журнал виконавця", () => {
     assert.equal(deposit.status, "decision_pending");
     assert.match(deposit.reason, /вирішує/);
     assert.equal(summary.availableUah, 0);
-    assert.equal(summary.inEscrowUah, 3000, "застава блокована, поки замовник не вирішить");
+    assert.equal(summary.inEscrowUah, 3000, "застава блокована, поки Замовник не вирішить");
   });
 
-  it("відмова до оплати заказчика: застава одразу повертається, виконавець отримує сповіщення", async () => {
+  it("відмова до оплати Заказчика: застава одразу повертається, Виконавець отримує сповіщення", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     const req = await call(USERS.performer, "POST", { reason: "Не встигаю" });
@@ -324,7 +324,7 @@ describe("журнал виконавця", () => {
     assert.ok(notes.find((n) => n.data?.type === "performer_deposit_returned"), "сповіщення про повернення відсутнє");
   });
 
-  it("замовник повертає заставу після відмови: виконавець отримує повернення", async () => {
+  it("Замовник повертає заставу після відмови: Виконавець отримує повернення", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -339,7 +339,7 @@ describe("журнал виконавця", () => {
     assert.ok(notes.find((n) => n.data?.decision === "return"));
   });
 
-  it("замовник утримує заставу як штраф: застава втрачена, виконавець бачить штраф", async () => {
+  it("Замовник утримує заставу як штраф: застава втрачена, Виконавець бачить штраф", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -354,7 +354,7 @@ describe("журнал виконавця", () => {
     assert.equal(summary.inEscrowUah, 0);
   });
 
-  it("рішення щодо застави приймається лише раз (409) і лише заказчиком", async () => {
+  it("рішення щодо застави приймається лише раз (409) і лише Заказчиком", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -366,8 +366,8 @@ describe("журнал виконавця", () => {
   });
 });
 
-describe("виведення коштів виконавцем", () => {
-  it("виконавець бачить баланс і виводить частину: заявка резервує кошти", async () => {
+describe("виведення коштів Виконавцем", () => {
+  it("Виконавець бачить баланс і виводить частину: заявка резервує кошти", async () => {
     const id = await completedOneDay(10000);
     await confirm(id, { accepted: true, rating: 5 });
 
@@ -410,7 +410,7 @@ describe("виведення коштів виконавцем", () => {
     assert.match(kindOf(entries, "withdrawal").reason, /IBAN не відповідає/);
   });
 
-  it("відхилення надсилає виконавцю сповіщення з причиною і посиланням на кошелек", async () => {
+  it("відхилення надсилає Виконавцю сповіщення з причиною і посиланням на кошелек", async () => {
     const id = await completedOneDay(10000);
     await confirm(id, { accepted: true, rating: 5 });
     const payoutId = (await requestPayout(USERS.performer, 5000)).body.data.payout.id;
@@ -488,12 +488,12 @@ describe("виведення коштів виконавцем", () => {
     assert.equal((await requestPayout(USERS.performer, 1000)).status, 400);
   });
 
-  it("заказчик не може створити заявку на виведення (403)", async () => {
+  it("Заказчик не може створити заявку на виведення (403)", async () => {
     const req = await call(USERS.customer, "POST", { amount: 500 });
     assert.equal((await readResponse(await payoutsPost(req))).status, 403);
   });
 
-  it("список заявок виконавця містить маскований IBAN і статус", async () => {
+  it("список заявок Виконавця містить маскований IBAN і статус", async () => {
     const id = await completedOneDay(10000);
     await confirm(id, { accepted: true, rating: 5 });
     await requestPayout(USERS.performer, 1000);
@@ -536,7 +536,7 @@ describe("обробка заявок адміністратором", () => {
     assert.equal(audit[0].adminId, ADMIN_ID);
   });
 
-  it("черга заявок показує заявки зі статусом requested з даними виконавця", async () => {
+  it("черга заявок показує заявки зі статусом requested з даними Виконавця", async () => {
     const id = await completedOneDay(10000);
     await confirm(id, { accepted: true, rating: 5 });
     await requestPayout(USERS.performer, 1000);
@@ -560,13 +560,13 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
 
     const { summary, entries } = await transactions(USERS.performer);
     assert.equal(summary.availableUah, 0);
-    assert.equal(summary.inEscrowUah, 3000, "лише застава виконавця; перший етап замовника у ескроу — не його кошти");
+    assert.equal(summary.inEscrowUah, 3000, "лише застава Виконавця; перший етап Замовника у ескроу — не його кошти");
     const part1 = kindOf(entries, "order_payout");
     assert.equal(part1.status, "in_escrow");
     assert.equal(part1.amount, 3000);
   });
 
-  it("фіксація 30% без підтвердження замовника: 30% ще не доступні виконавцю", async () => {
+  it("фіксація 30% без підтвердження Замовника: 30% ще не доступні Виконавцю", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id, 1);
@@ -580,7 +580,7 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     assert.match(part1.reason, /після підтвердження Замовником/);
   });
 
-  it("підтвердження 30%: лише замовник, лише після фіксації 30%, лише один раз", async () => {
+  it("підтвердження 30%: лише Замовник, лише після фіксації 30%, лише один раз", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id, 1);
@@ -601,7 +601,7 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     assert.equal((await confirmProgress(id)).status, 409);
   });
 
-  it("після фіксації 30% і підтвердження замовником: 30% доступні, виконавець виводить кошти", async () => {
+  it("після фіксації 30% і підтвердження Замовником: 30% доступні, Виконавець виводить кошти", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id, 1);
@@ -613,7 +613,7 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
 
     const customerView = await transactions(USERS.customer);
     const custPart1 = kindOf(customerView.entries, "customer_deposit");
-    assert.equal(custPart1.status, "completed", "у замовника підтверджені 30% — передано виконавцю, не ескроу");
+    assert.equal(custPart1.status, "completed", "у Замовника підтверджені 30% — передано Виконавцю, не ескроу");
     assert.equal(customerView.summary.inEscrowUah, 0);
 
     const { summary, entries } = await transactions(USERS.performer);
@@ -635,7 +635,7 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     assert.equal(afterPayout.summary.pendingWithdrawalUah, 3000);
   });
 
-  it("повний цикл split-замовлення: виведення 30% на етапі 30%, сплата замовником 70%, завершення і виведення залишку 70%", async () => {
+  it("повний цикл split-замовлення: виведення 30% на етапі 30%, сплата Замовником 70%, завершення і виведення залишку 70%", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id, 1);
@@ -654,7 +654,7 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     const mid = await transactions(USERS.performer);
     assert.equal(mid.summary.withdrawnUah, 3000);
     assert.equal(mid.summary.availableUah, 0);
-    assert.equal(mid.summary.inEscrowUah, 3000, "лише застава виконавця; залишок заказчика в ескроу — не його кошти");
+    assert.equal(mid.summary.inEscrowUah, 3000, "лише застава Виконавця; залишок Заказчика в ескроу — не його кошти");
 
     // 3. Завершення робіт і підтвердження замовником
     await status(id, USERS.performer, "completed");
@@ -674,7 +674,7 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     assert.equal(afterP2.summary.pendingWithdrawalUah, 7000);
   });
 
-  it("замовник не підтверджував 30% окремо: підтвердження всього замовлення відкриває всю суму", async () => {
+  it("Замовник не підтверджував 30% окремо: підтвердження всього замовлення відкриває всю суму", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id, 1);
@@ -684,7 +684,7 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     await status(id, USERS.performer, "completed");
 
     const before = await transactions(USERS.performer);
-    assert.equal(before.summary.availableUah, 0, "до підтвердження замовником нічого не доступно");
+    assert.equal(before.summary.availableUah, 0, "до підтвердження Замовником нічого не доступно");
 
     assert.equal((await confirm(id, { accepted: true })).status, 200);
     const after = await transactions(USERS.performer);
@@ -692,7 +692,7 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     assert.equal(after.summary.earnedOrPaidUah, 10000);
   });
 
-  it("виконавець завершив до оплати 70%: замовник доплачує вже після завершення, підтверджує, і виконавець виводить 70%", async () => {
+  it("Виконавець завершив до оплати 70%: Замовник доплачує вже після завершення, підтверджує, і Виконавець виводить 70%", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id, 1);

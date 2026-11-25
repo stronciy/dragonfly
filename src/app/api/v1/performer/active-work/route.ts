@@ -7,7 +7,7 @@ import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Виконавця");
 
     const now = new Date();
 

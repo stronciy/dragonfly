@@ -35,7 +35,7 @@ beforeEach(() => {
 });
 
 describe("сторони не вирішують спір самі", () => {
-  it("заказчик не може запропонувати рішення (403), заказ лишається в арбітражі", async () => {
+  it("Заказчик не може запропонувати рішення (403), заказ лишається в арбітражі", async () => {
     const id = await inArbitration();
     const res = await readResponse(await resolvePropose(await call(USERS.customer, "POST", { decision: "close_plain" }), ctx(id)));
     assert.equal(res.status, 403);
@@ -43,7 +43,7 @@ describe("сторони не вирішують спір самі", () => {
     assert.equal(db.findMany("arbitrationResolution", { where: { orderId: id } }).length, 0);
   });
 
-  it("виконавець не може ні підтвердити, ні відхилити, ні відкликати (403)", async () => {
+  it("Виконавець не може ні підтвердити, ні відхилити, ні відкликати (403)", async () => {
     const id = await inArbitration();
     for (const handler of [approvePost, rejectPost, withdrawPost]) {
       const res = await readResponse(await handler(await call(USERS.performer, "POST", {}), ctx(id)));

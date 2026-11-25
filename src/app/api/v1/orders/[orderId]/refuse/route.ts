@@ -27,7 +27,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Виконавця");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
@@ -97,7 +97,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         userId: order.customerUserId,
         type: "order",
         title: "Виконавець відмовився: вирішіть долю застави",
-        message: `Замовлення ${ref} повернуто на біржу. Причина: ${body.reason.slice(0, 120)}. Ваша оплата повернута. Застава виконавця${depositText} очікує вашого рішення: повернути її виконавцю або утримати як штраф.`,
+        message: `Замовлення ${ref} повернуто на біржу. Причина: ${body.reason.slice(0, 120)}. Ваша оплата повернута. Застава Виконавця${depositText} очікує вашого рішення: повернути її Виконавцю або утримати як штраф.`,
         data: {
           orderId,
           type: "performer_deposit_decision_required",
@@ -111,7 +111,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         userId: user.id,
         type: "wallet.deposit",
         title: "Застава на розгляді",
-        message: `Ви відмовились від заказу ${ref} після оплати замовника. Застава${depositText} буде повернута або утримана за рішенням замовника.`,
+        message: `Ви відмовились від заказу ${ref} після оплати Замовника. Застава${depositText} буде повернута або утримана за рішенням Замовника.`,
         data: { orderId, type: "performer_deposit_pending_decision", role: "performer", action: "view_finance" },
       });
     } else {
@@ -126,7 +126,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         userId: user.id,
         type: "wallet.deposit",
         title: "Заставу повернено",
-        message: `Ви відмовились від заказу ${ref} до оплати замовника. Застава${depositText} повертається на вашу картку.`,
+        message: `Ви відмовились від заказу ${ref} до оплати Замовника. Застава${depositText} повертається на вашу картку.`,
         data: { orderId, type: "performer_deposit_returned", role: "performer", action: "view_finance" },
       });
     }

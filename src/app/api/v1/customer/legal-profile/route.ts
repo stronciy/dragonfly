@@ -45,7 +45,7 @@ const patchSchema = z.object({
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
 
     const legalProfile = await prisma.legalProfile.findUnique({
       where: { userId: user.id },
@@ -77,7 +77,7 @@ export async function GET(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
 
     const body = patchSchema.parse(await req.json());
 

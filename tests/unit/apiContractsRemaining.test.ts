@@ -58,7 +58,7 @@ describe("завершення роботи і ранній старт", () => {
     const id = await startedOrder();
     const res = await readResponse(await completePost(await call(USERS.performer, "POST", { confirmed: true }), ctx(id)));
     assert.equal(res.status, 410);
-    assert.equal(order(id).status, "started", "статус не змінено без підтвердження заказчика");
+    assert.equal(order(id).status, "started", "статус не змінено без підтвердження Заказчика");
     assert.equal(db.count("wallet", {}), 0, "жодних нарахувань у застарілий гаманець");
   });
 
@@ -75,7 +75,7 @@ describe("завершення роботи і ранній старт", () => {
   });
 });
 
-describe("звіт виконавця", () => {
+describe("звіт Виконавця", () => {
   it("учасники бачать звіт, сторонній — 404", async () => {
     const id = await startedOrder();
     assert.equal((await readResponse(await reportGet(await call(USERS.customer, "GET"), ctx(id)))).status, 200);
@@ -105,7 +105,7 @@ describe("звіт виконавця", () => {
 });
 
 describe("оплати", () => {
-  it("виконавець створює інтент застави для призначеного заказу", async () => {
+  it("Виконавець створює інтент застави для призначеного заказу", async () => {
     const pre = createOrder({ days: 1 });
     db.updateMany("order", { where: { id: pre }, data: { status: "accepted", performerUserId: USERS.performer } });
     const res = await readResponse(await performerIntent(await call(USERS.performer, "POST", {}), ctx(pre)));
@@ -149,17 +149,17 @@ describe("оплати", () => {
 });
 
 describe("статистика і довідники", () => {
-  it("активність і статистика біржі віддаються виконавцю", async () => {
+  it("активність і статистика біржі віддаються Виконавцю", async () => {
     assert.equal((await readResponse(await activityGet(await call(USERS.performer, "GET")))).status, 200);
     assert.equal((await readResponse(await marketplaceStats(await call(USERS.performer, "GET")))).status, 200);
   });
 
-  it("статистика культур і довідник культур доступні заказчику", async () => {
+  it("статистика культур і довідник культур доступні Заказчику", async () => {
     assert.equal((await readResponse(await cropStatsGet(await call(USERS.customer, "GET")))).status, 200);
     assert.equal((await readResponse(await cropsGet(new Request("http://localhost/api/v1/catalog/crops")))).status, 200);
   });
 
-  it("статистика заказчика — лише власнику (чужий — 403)", async () => {
+  it("статистика Заказчика — лише власнику (чужий — 403)", async () => {
     const own = (id: string) => ({ params: Promise.resolve({ customerId: id }) });
     assert.equal((await readResponse(await customerStatsGet(await call(USERS.customer, "GET"), own(USERS.customer)))).status, 200);
     assert.equal((await readResponse(await customerStatsGet(await call(USERS.otherCustomer, "GET"), own(USERS.customer)))).status, 403);
@@ -174,7 +174,7 @@ describe("статистика і довідники", () => {
   });
 });
 
-describe("поля заказчика", () => {
+describe("поля Заказчика", () => {
   it("власник читає, оновлює і видаляє поле; чужий — 404", async () => {
     db.insert("field", { id: "f1", ownerUserId: USERS.customer, name: "Північ", areaHa: 40, addressLabel: "Полтава", lat: 49.5, lng: 34.5, createdAt: new Date(), updatedAt: new Date() });
     assert.equal((await readResponse(await fieldGet(await call(USERS.customer, "GET"), fieldCtx("f1")))).status, 200);
@@ -187,8 +187,8 @@ describe("поля заказчика", () => {
   });
 });
 
-describe("юридичні профілі заказчика і виконавця", () => {
-  it("заказчик зберігає юридичні дані; виконавець їх бачить окремим маршрутом", async () => {
+describe("юридичні профілі Заказчика і Виконавця", () => {
+  it("Заказчик зберігає юридичні дані; Виконавець їх бачить окремим маршрутом", async () => {
     const patch = await readResponse(await customerLegalPatch(await call(USERS.customer, "PATCH", {
       companyName: "ТОВ Агро", edrpou: "12345678", iban: VALID_IBAN, legalAddress: "м. Полтава, вул. Тестова, 1",
     })));
@@ -196,7 +196,7 @@ describe("юридичні профілі заказчика і виконавц
     assert.equal((await readResponse(await customerLegalGet(await call(USERS.customer, "GET")))).status, 200);
   });
 
-  it("юридичний профіль виконавця віддається і оновлюється", async () => {
+  it("юридичний профіль Виконавця віддається і оновлюється", async () => {
     assert.equal((await readResponse(await performerLegalGet(await call(USERS.performer, "GET")))).status, 200);
     const res = await readResponse(await performerLegalPatch(await call(USERS.performer, "PATCH", {
       companyName: "ФОП Тест", edrpou: "12345678", iban: VALID_IBAN, legalAddress: "м. Полтава, вул. Тестова, 2",
@@ -204,18 +204,18 @@ describe("юридичні профілі заказчика і виконавц
     assert.equal(res.status, 200);
   });
 
-  it("заказчик не має доступу до юрпрофілю виконавця (403)", async () => {
+  it("Заказчик не має доступу до юрпрофілю Виконавця (403)", async () => {
     assert.equal((await readResponse(await performerLegalGet(await call(USERS.customer, "GET")))).status, 403);
   });
 });
 
-describe("журнали виконавця (сумісність)", () => {
-  it("завершені роботи і резервні операції віддаються виконавцю", async () => {
+describe("журнали Виконавця (сумісність)", () => {
+  it("завершені роботи і резервні операції віддаються Виконавцю", async () => {
     assert.equal((await readResponse(await completedWorks(await call(USERS.performer, "GET")))).status, 200);
     assert.equal((await readResponse(await reserveTx(await call(USERS.performer, "GET")))).status, 200);
   });
 
-  it("журнали недоступні заказчику (403)", async () => {
+  it("журнали недоступні Заказчику (403)", async () => {
     assert.equal((await readResponse(await completedWorks(await call(USERS.customer, "GET")))).status, 403);
   });
 });

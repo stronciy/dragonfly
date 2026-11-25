@@ -48,14 +48,14 @@ describe("відправка звіту: умови", () => {
     assert.equal(res.status, 409);
   });
 
-  it("сторонній виконавець не надсилає чужий звіт (404)", async () => {
+  it("сторонній Виконавець не надсилає чужий звіт (404)", async () => {
     const id = await startedOrder();
     await uploadPhoto(id);
     const res = await submit(id, USERS.otherPerformer);
     assert.equal(res.status, 404);
   });
 
-  it("заказчик не може надіслати звіт виконавця (403)", async () => {
+  it("Заказчик не може надіслати звіт Виконавця (403)", async () => {
     const id = await startedOrder();
     await uploadPhoto(id);
     assert.equal((await submit(id, USERS.customer)).status, 403);
@@ -83,7 +83,7 @@ describe("відправка звіту: успіх і наслідки", () => 
     assert.equal(report.body.data.report.items.length, 1);
   });
 
-  it("з фото звіт надсилається: час відправки, запис у таймлайні, сповіщення заказчику", async () => {
+  it("з фото звіт надсилається: час відправки, запис у таймлайні, сповіщення Заказчику", async () => {
     const id = await startedOrder();
     await uploadPhoto(id);
     const res = await submit(id);
@@ -93,7 +93,7 @@ describe("відправка звіту: успіх і наслідки", () => 
     assert.ok(order(id).reportSubmittedAt, "час відправки збережено");
 
     const events = db.findMany("orderStatusEvent", { where: { orderId: id } }) as any[];
-    assert.ok(events.some((e) => String(e.note).includes("Звіт виконавця надіслано")));
+    assert.ok(events.some((e) => String(e.note).includes("Звіт Виконавця надіслано")));
 
     const customerNotes = notificationsFor(USERS.customer).filter((n) => n.data?.type === "report_submitted");
     assert.equal(customerNotes.length, 1);
@@ -123,7 +123,7 @@ describe("відправка звіту: успіх і наслідки", () => 
     assert.equal((await submit(id)).status, 200);
   });
 
-  it("заказчик бачить час відправки у звіті та в деталях замовлення", async () => {
+  it("Заказчик бачить час відправки у звіті та в деталях замовлення", async () => {
     const id = await startedOrder();
     await uploadPhoto(id);
     assert.equal((await readResponse(await reportGet(await call(USERS.customer, "GET"), ctx(id)))).body.data.report.submittedAt, null);

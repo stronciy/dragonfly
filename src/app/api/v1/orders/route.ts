@@ -69,7 +69,7 @@ const listQuerySchema = z.object({
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
 
     const url = new URL(req.url);
     const { limit, offset } = parsePagination(url);
@@ -225,7 +225,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
 
     const requestId = getRequestId(req);
     await assertVatPayer(prisma, user.id);

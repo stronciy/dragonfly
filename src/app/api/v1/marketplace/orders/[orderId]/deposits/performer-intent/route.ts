@@ -16,7 +16,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Виконавця");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 

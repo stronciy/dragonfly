@@ -141,7 +141,7 @@ describe("однодневний заказ — успішний сценарі�
 });
 
 describe("однодневний заказ — невдалі сценарії", () => {
-  it("заказчик відхиляє роботу: арбітраж через POST /arbitration, а не через confirm-completion", async () => {
+  it("Заказчик відхиляє роботу: арбітраж через POST /arbitration, а не через confirm-completion", async () => {
     const id = await completedOneDayOrder();
 
     const reject = await confirm(id, { accepted: false, comment: "Поле не обробили" });
@@ -157,7 +157,7 @@ describe("однодневний заказ — невдалі сценарії"
     assert.equal(cases[0].status, "open");
 
     const performerNotes = notificationsFor(USERS.performer).map((n) => n.data?.type);
-    assert.ok(performerNotes.includes("arbitration_opened"), "виконавець отримав сповіщення про арбітраж");
+    assert.ok(performerNotes.includes("arbitration_opened"), "Виконавець отримав сповіщення про арбітраж");
     assert.equal(escrowOf(id, "customer")?.status, "held", "кошти заблоковані до рішення");
     assert.equal(escrowOf(id, "performer")?.status, "held");
   });
@@ -170,14 +170,14 @@ describe("однодневний заказ — невдалі сценарії"
     assert.equal((await openArbitration(id, USERS.performer)).status, 400);
   });
 
-  it("заказчик не може відкрити арбітраж без причини (400)", async () => {
+  it("Заказчик не може відкрити арбітраж без причини (400)", async () => {
     const id = await completedOneDayOrder();
     const req = await call(USERS.customer, "POST", { reason: "" });
     assert.equal((await arbitrationPost(req, ctx(id))).status, 400);
     assert.equal(order(id).status, "completed");
   });
 
-  it("виконавець не може завершити роботу — відкриває арбітраж під час робіт", async () => {
+  it("Виконавець не може завершити роботу — відкриває арбітраж під час робіт", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -188,10 +188,10 @@ describe("однодневний заказ — невдалі сценарії"
     assert.equal(res.status, 201);
     assert.equal(order(id).status, "arbitration");
     const customerNotes = notificationsFor(USERS.customer).map((n) => n.data?.type);
-    assert.ok(customerNotes.includes("arbitration_opened"), "заказчик отримав сповіщення");
+    assert.ok(customerNotes.includes("arbitration_opened"), "Заказчик отримав сповіщення");
   });
 
-  it("виконавець відмовляється після оплати заказчика — застава чекає рішення заказчика, оплату заказчика повернено", async () => {
+  it("Виконавець відмовляється після оплати Заказчика — застава чекає рішення Заказчика, оплату Заказчика повернено", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -207,7 +207,7 @@ describe("однодневний заказ — невдалі сценарії"
     assert.ok(notificationsFor(USERS.customer).some((n) => n.data?.type === "performer_deposit_decision_required"));
   });
 
-  it("після відмови виконавця його рядок матчу позначено refused — заказ йому більше не пропонується", async () => {
+  it("після відмови Виконавця його рядок матчу позначено refused — заказ йому більше не пропонується", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await refusePost(await call(USERS.performer, "POST", { reason: "Не встигаю" }), ctx(id));
@@ -225,21 +225,21 @@ describe("однодневний заказ — невдалі сценарії"
     assert.equal(order(id).status, "requires_confirmation");
   });
 
-  it("сторонній виконавець не може відкрити арбітраж по чужому заказу (403/404)", async () => {
+  it("сторонній Виконавець не може відкрити арбітраж по чужому заказу (403/404)", async () => {
     const id = await completedOneDayOrder();
     const res = await openArbitration(id, USERS.otherPerformer);
     assert.ok([403, 404].includes(res.status), `очікувався 403/404, отримано ${res.status}`);
     assert.equal(order(id).status, "completed");
   });
 
-  it("сторонній замовник не може відкрити арбітраж по чужому заказу (403/404)", async () => {
+  it("сторонній Замовник не може відкрити арбітраж по чужому заказу (403/404)", async () => {
     const id = await completedOneDayOrder();
     const res = await openArbitration(id, USERS.otherCustomer);
     assert.ok([403, 404].includes(res.status), `очікувався 403/404, отримано ${res.status}`);
     assert.equal(order(id).status, "completed");
   });
 
-  it("після прийняття роботи заказчиком арбітраж відкрити не можна (409)", async () => {
+  it("після прийняття роботи Заказчиком арбітраж відкрити не можна (409)", async () => {
     const id = await completedOneDayOrder();
     assert.equal((await confirm(id, { accepted: true, rating: 5 })).status, 200);
     const res = await openArbitration(id, USERS.customer);
@@ -249,7 +249,7 @@ describe("однодневний заказ — невдалі сценарії"
 });
 
 describe("арбітраж — докази та сторони", () => {
-  it("заказчик додає фото, виконавець — відео; файли прив'язані до повідомлень кейсу", async () => {
+  it("Заказчик додає фото, Виконавець — відео; файли прив'язані до повідомлень кейсу", async () => {
     const id = await completedOneDayOrder();
     assert.equal((await openArbitration(id, USERS.customer, "Фото дефектів додано")).status, 201);
 
@@ -287,10 +287,10 @@ describe("арбітраж — докази та сторони", () => {
 
   it("сторона бачить кейс і повідомлення, сторонній користувач — ні", async () => {
     const id = await completedOneDayOrder();
-    await openArbitration(id, USERS.customer, "Причина заказчика");
+    await openArbitration(id, USERS.customer, "Причина Заказчика");
     const mine = await readResponse(await arbitrationGet(await call(USERS.performer, "GET"), ctx(id)));
     assert.equal(mine.status, 200);
-    assert.equal(mine.body.data.messages[0].text, "Причина заказчика");
+    assert.equal(mine.body.data.messages[0].text, "Причина Заказчика");
     const outsider = await readResponse(await arbitrationGet(await call(USERS.otherCustomer, "GET"), ctx(id)));
     assert.equal(outsider.status, 403);
   });
@@ -325,7 +325,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
     assert.ok(notificationsFor(USERS.customer).some((n) => /Внесіть залишок/.test(n.message)));
   });
 
-  it("заказчик вносить 70% після старту — escrow 100%, дедлайн знято, заказ завершується", async () => {
+  it("Заказчик вносить 70% після старту — escrow 100%, дедлайн знято, заказ завершується", async () => {
     const id = await startedSplitOrder(3);
     await progress(id, 30);
     const pay = await customerPays(id, 2);
@@ -341,7 +341,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
     assert.equal(order(id).status, "completed");
   });
 
-  it("заказчик вносить 70% після дедлайну — оплата приймається, виконавець може відкрити арбітраж", async () => {
+  it("Заказчик вносить 70% після дедлайну — оплата приймається, Виконавець може відкрити арбітраж", async () => {
     const id = await startedSplitOrder(3);
     await progress(id, 30);
     db.updateMany("order", { where: { id }, data: { customerPart2Deadline: new Date(Date.now() - 1000) } });
@@ -350,7 +350,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
     assert.deepEqual(escrowOf(id, "customer"), { status: "held", amount: 10000 });
   });
 
-  it("заказчик не може сплатити 70% до старту роботи (409)", async () => {
+  it("Заказчик не може сплатити 70% до старту роботи (409)", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -375,13 +375,13 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
     assert.deepEqual(escrowOf(id, "customer"), { status: "held", amount: 3000 });
   });
 
-  it("запит доплати від виконавця відхиляється — оплата автоматична (409)", async () => {
+  it("запит доплати від Виконавця відхиляється — оплата автоматична (409)", async () => {
     const id = await startedSplitOrder(3);
     const req = await call(USERS.performer, "POST", { amount: 7000 });
     assert.equal((await requestPaymentPost(req, ctx(id))).status, 409);
   });
 
-  it("заказчик відхиляє роботу після часткової оплати — арбітраж, кошти заблоковані", async () => {
+  it("Заказчик відхиляє роботу після часткової оплати — арбітраж, кошти заблоковані", async () => {
     const id = await startedSplitOrder(3);
     await progress(id, 30);
     await customerPays(id, 2);
@@ -391,7 +391,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
     assert.deepEqual(escrowOf(id, "customer"), { status: "held", amount: 10000 });
   });
 
-  it("арбітраж під час робіт при неоплаченому 70%: виконавець відкриває, заказчик не може доплатити", async () => {
+  it("арбітраж під час робіт при неоплаченому 70%: Виконавець відкриває, Заказчик не може доплатити", async () => {
     const id = await startedSplitOrder(3);
     await progress(id, 30);
     assert.equal((await openArbitration(id, USERS.performer, "Заказчик не вносить залишок")).status, 201);
@@ -400,7 +400,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
     assert.notEqual(res.status, 200, "під час арбітражу залишок не приймаємо");
   });
 
-  it("виконавець не може стартувати замовлення, що починається в майбутньому (400)", async () => {
+  it("Виконавець не може стартувати замовлення, що починається в майбутньому (400)", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     db.updateMany("order", { where: { id }, data: { dateFrom: new Date(Date.now() + 3 * DAY) } });
     await performerClaimsAndPays(id);
@@ -422,7 +422,7 @@ describe("замовлення без дат — оплата 100% одразу"
 });
 
 describe("граничні та некоректні дії", () => {
-  it("статуси змінює лише призначений виконавець (404 для чужого)", async () => {
+  it("статуси змінює лише призначений Виконавець (404 для чужого)", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -430,7 +430,7 @@ describe("граничні та некоректні дії", () => {
     assert.equal(order(id).status, "confirmed");
   });
 
-  it("заказчик не може змінювати статус роботи (403)", async () => {
+  it("Заказчик не може змінювати статус роботи (403)", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);

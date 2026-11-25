@@ -120,8 +120,8 @@ describe("скасування платежу", () => {
   });
 });
 
-describe("налаштування виконавця", () => {
-  it("заказчик не може задати локацію і радіус: 403, профіль виконавця не створюється", async () => {
+describe("налаштування Виконавця", () => {
+  it("Заказчик не може задати локацію і радіус: 403, профіль Виконавця не створюється", async () => {
     const res = await readResponse(await settingsPut(await call(USERS.customer, "PUT", {
       baseLocationLabel: "Полтава",
       baseCoordinate: { lat: 49.59, lng: 34.55 },

@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth/requireAuth";
 export async function POST(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Виконавця");
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({ where: { id: orderId }, select: { id: true } });

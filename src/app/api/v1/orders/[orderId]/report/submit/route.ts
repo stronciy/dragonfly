@@ -12,7 +12,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Виконавця");
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({
@@ -23,7 +23,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (order.status !== "started" && order.status !== "completed") {
       throw new ApiError(409, "CONFLICT", "Звіт можна надіслати лише під час або після виконання робіт");
     }
-    if (order.reportSubmittedAt) throw new ApiError(409, "CONFLICT", "Звіт вже надіслано замовнику");
+    if (order.reportSubmittedAt) throw new ApiError(409, "CONFLICT", "Звіт вже надіслано Замовнику");
 
     // Фотозвіт — це фото робіт: окремо завантажені до звіту та фото, додані в ході
     // прогресу (вони вже видно заказчику в хабі прогресу).
@@ -39,16 +39,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       where: { id: orderId, reportSubmittedAt: null },
       data: { reportSubmittedAt: now },
     });
-    if (claimed.count !== 1) throw new ApiError(409, "CONFLICT", "Звіт вже надіслано замовнику");
+    if (claimed.count !== 1) throw new ApiError(409, "CONFLICT", "Звіт вже надіслано Замовнику");
 
     await prisma.orderStatusEvent.create({
-      data: { orderId, status: order.status, note: `Звіт виконавця надіслано (${photoCount} фото)` },
+      data: { orderId, status: order.status, note: `Звіт Виконавця надіслано (${photoCount} фото)` },
     });
 
     await notifyUser({
       userId: order.customerUserId,
       type: "order",
-      title: "Звіт виконавця",
+      title: "Звіт Виконавця",
       message: `Виконавець надіслав фотозвіт (${photoCount} фото). Перегляньте результати робіт.`,
       data: { orderId, type: "report_submitted", role: "customer", action: "view_order", photoCount, requestId },
     }).catch(() => {});
@@ -56,7 +56,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     return ok(
       req,
       { report: { orderId, status: "submitted", submittedAt: now.toISOString(), photoCount } },
-      { message: "Звіт надіслано замовнику" }
+      { message: "Звіт надіслано Замовнику" }
     );
   } catch (err) {
     return fail(req, err);

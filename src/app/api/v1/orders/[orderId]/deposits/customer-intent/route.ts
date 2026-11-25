@@ -25,7 +25,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
@@ -39,7 +39,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     const targetPart = isPart2 ? 2 : 1;
 
     if (!isPart2 && order.status !== "requires_confirmation" && order.status !== "accepted") {
-      throw new ApiError(400, "VALIDATION_ERROR", "Замовлення не потребує застави замовника");
+      throw new ApiError(400, "VALIDATION_ERROR", "Замовлення не потребує застави Замовника");
     }
     // Залишок можна внести і після завершення робіт виконавцем — інакше
     // замовник не зможе підтвердити виконання (confirm-completion вимагає part 2).
@@ -63,7 +63,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       throw new ApiError(409, "CONFLICT", "Залишок 70% вже сплачено");
     }
     if (isPart2 && order.status === "started" && !order.customerPart2Deadline) {
-      throw new ApiError(400, "VALIDATION_ERROR", "Доплата 70% доступна лише після фіксації 30% робіт виконавцем");
+      throw new ApiError(400, "VALIDATION_ERROR", "Доплата 70% доступна лише після фіксації 30% робіт Виконавцем");
     }
     if (!order.performerUserId) {
       throw new ApiError(400, "VALIDATION_ERROR", "Виконавця ще не призначено");

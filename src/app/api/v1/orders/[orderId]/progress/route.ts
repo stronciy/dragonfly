@@ -148,7 +148,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     );
     
     if (user.role !== "performer") {
-      throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
+      throw new ApiError(403, "FORBIDDEN", "Потрібна роль Виконавця");
     }
 
     const contentType = (req.headers.get("content-type") || "").toLowerCase();
@@ -198,7 +198,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     }
 
     if (order.performerUserId !== user.id) {
-      throw new ApiError(403, "FORBIDDEN", "Ви не є виконавцем цього замовлення");
+      throw new ApiError(403, "FORBIDDEN", "Ви не є Виконавцем цього замовлення");
     }
 
     if (!["started", "en_route"].includes(order.status)) {
@@ -220,7 +220,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       throw new ApiError(
         409,
         "CONFLICT",
-        "Неможливо зафіксувати 100% виконання: замовник ще не вніс залишок 70% в ескроу-гарантію. Ви маєте право завершити замовлення через арбітраж."
+        "Неможливо зафіксувати 100% виконання: Замовник ще не вніс залишок 70% в ескроу-гарантію. Ви маєте право завершити замовлення через арбітраж."
       );
     }
 
@@ -301,7 +301,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         userId: order.customerUserId,
         type: "payment",
         title: "Внесення залишку 70%",
-        message: `Замовлення ${ref}. Виконавець розпочав роботу. Внесіть залишок 70% (${Number(plan.part2Amount)} ₴) в ескроу протягом 24 годин (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, виконавець має право припинити роботи та покинути об'єкт.`,
+        message: `Замовлення ${ref}. Виконавець розпочав роботу. Внесіть залишок 70% (${Number(plan.part2Amount)} ₴) в ескроу протягом 24 годин (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, Виконавець має право припинити роботи та покинути об'єкт.`,
         data: {
           orderId,
           amount: Number(plan.part2Amount),
@@ -335,7 +335,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
           ? "Робота досягла 30% готовності. Після підтвердження Замовником 30% вартості замовлення буде зараховано на баланс гаманця. Залишок 70% уже внесено в ескроу — ви можете виконувати роботи до 100%."
           : isOverdue
             ? "Робота досягла 30% готовності. Після підтвердження Замовником 30% вартості замовлення буде зараховано на баланс гаманця. Замовник не вніс залишок 70% у встановлений строк — ви маєте право покинути об'єкт та завершити замовлення через арбітраж."
-            : "Робота досягла 30% готовності. Після підтвердження Замовником 30% вартості замовлення буде зараховано на баланс гаманця. Очікується внесення замовником залишку 70%.",
+            : "Робота досягла 30% готовності. Після підтвердження Замовником 30% вартості замовлення буде зараховано на баланс гаманця. Очікується внесення Замовником залишку 70%.",
         data: { orderId, orderNumber: order.orderNumber, percent, canArbitrate: !isPart2Paid },
       }).catch(() => {});
     }

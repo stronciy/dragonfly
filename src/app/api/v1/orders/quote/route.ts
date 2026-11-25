@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
 
     const rawBody = await req.json();
     if (process.env.NODE_ENV !== "production") {

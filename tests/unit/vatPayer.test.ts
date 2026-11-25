@@ -18,14 +18,14 @@ beforeEach(() => {
   resetWorld();
 });
 
-describe("платник ПДВ обов'язковий для заказчика", () => {
-  it("заказчик без ПДВ не може розмістити заказ (403)", async () => {
+describe("платник ПДВ обов'язковий для Заказчика", () => {
+  it("Заказчик без ПДВ не може розмістити заказ (403)", async () => {
     setVatPayer(USERS.customer, false);
     const res = await readResponse(await ordersPost(await call(USERS.customer, "POST", {})));
     assert.equal(res.status, 403);
   });
 
-  it("заказчик без ПДВ не може внести заставу (403)", async () => {
+  it("Заказчик без ПДВ не може внести заставу (403)", async () => {
     const orderId = createOrder({ status: "requires_confirmation", performerUserId: USERS.performer });
     setVatPayer(USERS.customer, false);
     const res = await readResponse(await customerIntentPost(await call(USERS.customer, "POST", {}), ctx(orderId)));
@@ -33,8 +33,8 @@ describe("платник ПДВ обов'язковий для заказчик�
   });
 });
 
-describe("платник ПДВ обов'язковий для виконавця", () => {
-  it("виконавець без ПДВ не може взяти заказ (403), заказ лишається опублікованим", async () => {
+describe("платник ПДВ обов'язковий для Виконавця", () => {
+  it("Виконавець без ПДВ не може взяти заказ (403), заказ лишається опублікованим", async () => {
     const orderId = createOrder({ status: "published" });
     setVatPayer(USERS.performer, false);
     const res = await readResponse(await performerIntentPost(await call(USERS.performer, "POST", {}), ctx(orderId)));
@@ -43,7 +43,7 @@ describe("платник ПДВ обов'язковий для виконавц�
     assert.equal(order(orderId).performerUserId, null);
   });
 
-  it("виконавець з ПДВ бере заказ", async () => {
+  it("Виконавець з ПДВ бере заказ", async () => {
     const orderId = createOrder({ status: "published" });
     const res = await readResponse(await performerIntentPost(await call(USERS.performer, "POST", {}), ctx(orderId)));
     assert.equal(res.status, 200);

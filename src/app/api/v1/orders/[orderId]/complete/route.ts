@@ -10,6 +10,6 @@ import { ApiError } from "@/shared";
 export async function POST(req: Request, _ctx: { params: Promise<{ orderId: string }> }) {
   return fail(
     req,
-    new ApiError(410, "GONE", "Цей спосіб завершення вимкнено. Завершіть роботу в застосунку, заказчик підтверджує результат окремо.")
+    new ApiError(410, "GONE", "Цей спосіб завершення вимкнено. Завершіть роботу в застосунку, Заказчик підтверджує результат окремо.")
   );
 }

@@ -206,7 +206,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
     const { orderId } = await ctx.params;
     const order = await getOrderOr404(orderId);
     if (order.customerUserId !== user.id) throw new ApiError(404, "NOT_FOUND", "Замовлення не знайдено");
@@ -368,7 +368,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ orderId: str
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
     const { orderId } = await ctx.params;
     let order: Awaited<ReturnType<typeof getOrderOr404>>;
     try {

@@ -13,7 +13,7 @@ const createSchema = z.object({
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Виведення доступне лише виконавцю");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Виведення доступне лише Виконавцю");
     const payouts = await prisma.payout.findMany({
       where: { userId: user.id },
       orderBy: { requestedAt: "desc" },
@@ -45,7 +45,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Виведення доступне лише виконавцю");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Виведення доступне лише Виконавцю");
     const body = createSchema.parse(await req.json());
 
     const payout = await requestPayout({ userId: user.id, amount: body.amount });

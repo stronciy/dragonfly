@@ -39,7 +39,7 @@ function seedAccount(id: string, email: string, opts: { blocked?: boolean } = {}
 beforeEach(() => resetWorld());
 
 describe("реєстрація", () => {
-  it("новий заказчик створюється з профілем і отримує токен", async () => {
+  it("новий Заказчик створюється з профілем і отримує токен", async () => {
     const res = await readResponse(await registerPost(jsonPost("http://localhost/api/v1/auth/register", {
       name: "Олена", email: "olena@test.local", password: PASSWORD,
     })));
@@ -47,7 +47,7 @@ describe("реєстрація", () => {
     assert.ok(res.body.data.accessToken, "є accessToken");
     const user = db.findUnique("user", { where: { email: "olena@test.local" } }) as any;
     assert.ok(user, "користувач записаний");
-    assert.ok(db.findUnique("customerProfile", { where: { userId: user.id } }), "профіль заказчика створено");
+    assert.ok(db.findUnique("customerProfile", { where: { userId: user.id } }), "профіль Заказчика створено");
     assert.notEqual(user.passwordHash, PASSWORD, "пароль не зберігається у відкритому вигляді");
   });
 

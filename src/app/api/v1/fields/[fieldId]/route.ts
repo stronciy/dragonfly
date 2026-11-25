@@ -24,7 +24,7 @@ async function getOwnedField(userId: string, fieldId: string) {
 export async function GET(req: Request, ctx: { params: Promise<{ fieldId: string }> }) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
     const { fieldId } = await ctx.params;
     const field = await getOwnedField(user.id, fieldId);
     return ok(req, { field });
@@ -36,7 +36,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ fieldId: string
 export async function PATCH(req: Request, ctx: { params: Promise<{ fieldId: string }> }) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
     const { fieldId } = await ctx.params;
     await getOwnedField(user.id, fieldId);
     const body = patchSchema.parse(await req.json());
@@ -65,7 +65,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ fieldId: stri
 export async function DELETE(req: Request, ctx: { params: Promise<{ fieldId: string }> }) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль замовника");
+    if (user.role !== "customer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Замовника");
     const { fieldId } = await ctx.params;
     await getOwnedField(user.id, fieldId);
     await prisma.field.delete({ where: { id: fieldId } });

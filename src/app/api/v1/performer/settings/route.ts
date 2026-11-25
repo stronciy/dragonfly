@@ -103,7 +103,7 @@ export async function PUT(req: Request) {
   try {
     const user = await requireUser(req);
     if (user.role !== "performer") {
-      throw new ApiError(403, "FORBIDDEN", "Локація та радіус роботи задаються лише виконавцем");
+      throw new ApiError(403, "FORBIDDEN", "Локація та радіус роботи задаються лише Виконавцем");
     }
 
     const body = putSchema.parse(await req.json());

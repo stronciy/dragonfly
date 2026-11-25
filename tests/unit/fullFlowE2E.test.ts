@@ -868,7 +868,7 @@ test("Arbitration Scenario 2: Started → Arbitration → Resolution in favor of
     proposedById: "cust-003",
     decision: "close_fine", // Fine on performer
     status: "pending",
-    reason: "Утримання застави виконавця через брак у роботі",
+    reason: "Утримання застави Виконавця через брак у роботі",
     rating: 1,
     comment: "Робота виконана неякісно",
     decidedAt: null,

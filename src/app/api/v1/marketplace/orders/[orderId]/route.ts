@@ -12,7 +12,7 @@ import { performerBlockingEscrowWhere } from "@/lib/marketplaceEligibility";
 export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Виконавця");
     const { orderId } = await ctx.params;
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });

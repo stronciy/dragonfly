@@ -27,7 +27,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
   try {
     const requestId = getRequestId(req);
     const user = await requireUser(req);
-    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль виконавця");
+    if (user.role !== "performer") throw new ApiError(403, "FORBIDDEN", "Потрібна роль Виконавця");
     const { orderId } = await ctx.params;
     const body = schema.parse(await req.json());
 
@@ -43,7 +43,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         orderBy: { createdAt: "desc" },
       });
       if (!earlyStart) {
-        throw new ApiError(400, "VALIDATION_ERROR", "Ранній старт ще не погоджено замовником");
+        throw new ApiError(400, "VALIDATION_ERROR", "Ранній старт ще не погоджено Замовником");
       }
     }
 
@@ -163,7 +163,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         userId: order.customerUserId,
         type: "payment",
         title: "Внесення залишку 70%",
-        message: `Замовлення ${ref}. Виконавець розпочав виконання робіт. Внесіть залишок 70% (${Number(plan.part2Amount)} ₴) в ескроу протягом 24 годин (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, виконавець має право припинити роботи та покинути об'єкт.`,
+        message: `Замовлення ${ref}. Виконавець розпочав виконання робіт. Внесіть залишок 70% (${Number(plan.part2Amount)} ₴) в ескроу протягом 24 годин (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, Виконавець має право припинити роботи та покинути об'єкт.`,
         data: {
           orderId,
           amount: Number(plan.part2Amount),

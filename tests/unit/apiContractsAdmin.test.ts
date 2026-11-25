@@ -90,7 +90,7 @@ describe("адмін: зміна статусу заказу", () => {
     assert.equal(res.status, 400);
   });
 
-  it("заказ без виконавця не переводиться в роботу (409)", async () => {
+  it("заказ без Виконавця не переводиться в роботу (409)", async () => {
     const id = createOrder({ days: 1 });
     const res = await readResponse(await adminStatusPost(admin("POST", { to: "started", reason: "Тест" }), idCtx(id)));
     assert.ok([409, 400].includes(res.status), `очікувався 409/400, отримано ${res.status}`);

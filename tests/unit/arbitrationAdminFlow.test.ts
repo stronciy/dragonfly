@@ -82,7 +82,7 @@ describe("відкриття арбітражу", () => {
   it("друга сторона отримує сповіщення про відкритий арбітраж", async () => {
     const { id } = await openedArbitration();
     const notes = notificationsFor(USERS.performer).filter((n) => n.type === "arbitration");
-    assert.ok(notes.some((n) => n.data?.orderId === id), "виконавець бачить сповіщення про арбітраж");
+    assert.ok(notes.some((n) => n.data?.orderId === id), "Виконавець бачить сповіщення про арбітраж");
   });
 
   it("повторне відкриття при відкритому арбітражі відхиляється, кейс один", async () => {
@@ -209,7 +209,7 @@ describe("адмін-панель: список і карточка кейсу",
 });
 
 describe("рішення адміністратора", () => {
-  it("заказчик виграє зі штрафом: застава виконавця утримується, заказчика — повертається, заказ закрито через арбітраж", async () => {
+  it("Заказчик виграє зі штрафом: застава Виконавця утримується, Заказчика — повертається, заказ закрито через арбітраж", async () => {
     const { id, caseId } = await openedArbitration({ budget: 10000 });
     const res = await readResponse(
       await adminRulingPost(adminReq("POST", { winner: "customer", penalty: true, reason: "Акт не підписано" }), caseCtx(caseId))
@@ -231,7 +231,7 @@ describe("рішення адміністратора", () => {
     assert.equal(ruling[0].reason, "Акт не підписано");
   });
 
-  it("виконавець виграє без штрафу: обидві застави повертаються, заказ завершено", async () => {
+  it("Виконавець виграє без штрафу: обидві застави повертаються, заказ завершено", async () => {
     const { id, caseId } = await openedArbitration({ budget: 10000 });
     const res = await readResponse(
       await adminRulingPost(adminReq("POST", { winner: "performer", penalty: false, reason: "Замовник не виконав умови" }), caseCtx(caseId))
@@ -243,7 +243,7 @@ describe("рішення адміністратора", () => {
     assert.deepEqual(escrowOf(id, "customer"), { status: "released", amount: 10000 });
   });
 
-  it("заказчик виграє після підтвердження 30%: підтверджені 30% лишаються виконавцю", async () => {
+  it("Заказчик виграє після підтвердження 30%: підтверджені 30% лишаються Виконавцю", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id, 1);
@@ -265,7 +265,7 @@ describe("рішення адміністратора", () => {
     assert.equal(tx.body.data.summary.availableUah, 3000, "лише підтверджені 30%");
   });
 
-  it("заказчик виграє без штрафу: оплата повертається заказчику, застава виконавця розблоковується", async () => {
+  it("Заказчик виграє без штрафу: оплата повертається Заказчику, застава Виконавця розблоковується", async () => {
     const { id, caseId } = await openedArbitration({ budget: 10000 });
     const res = await readResponse(
       await adminRulingPost(adminReq("POST", { winner: "customer", penalty: false, reason: "Роботу не виконано" }), caseCtx(caseId))
@@ -275,7 +275,7 @@ describe("рішення адміністратора", () => {
     assert.deepEqual(escrowOf(id, "customer"), { status: "refunded", amount: 10000 });
   });
 
-  it("виконавець виграє зі штрафом: застава замовника утримується", async () => {
+  it("Виконавець виграє зі штрафом: застава Замовника утримується", async () => {
     const { id, caseId } = await openedArbitration({ budget: 10000 });
     await adminRulingPost(adminReq("POST", { winner: "performer", penalty: true, reason: "Замовник відмовився" }), caseCtx(caseId));
     assert.deepEqual(escrowOf(id, "customer"), { status: "forfeited", amount: 10000 });
@@ -365,7 +365,7 @@ describe("медіа арбітражу (окремий endpoint)", () => {
 });
 
 describe("канали листування: загальний чат і приватні гілки адміна", () => {
-  it("адмін пише заказчику лично — виконавець цього не бачить, заказчик бачить", async () => {
+  it("адмін пише Заказчику лично — Виконавець цього не бачить, Заказчик бачить", async () => {
     const { id, caseId } = await openedArbitration();
     const res = await readResponse(
       await adminMessagePost(adminReq("POST", { text: "Надішліть фото акту", channel: "customer" }), caseCtx(caseId))
@@ -384,7 +384,7 @@ describe("канали листування: загальний чат і при
     const perf = notificationsFor(USERS.performer).filter((n) => n.data?.type === "arbitration_admin_message");
     const cust = notificationsFor(USERS.customer).filter((n) => n.data?.type === "arbitration_admin_message");
     assert.equal(perf.length, 1);
-    assert.equal(cust.length, 0, "заказчик не отримує чужу приватну гілку");
+    assert.equal(cust.length, 0, "Заказчик не отримує чужу приватну гілку");
   });
 
   it("загальне повідомлення адміна бачать обидві сторони", async () => {

@@ -80,7 +80,7 @@ describe("адмін: журнал аудиту", () => {
 });
 
 describe("біржа: деталі замовлення", () => {
-  it("призначений виконавець бачить деталі; замовник — 403", async () => {
+  it("призначений Виконавець бачить деталі; Замовник — 403", async () => {
     const id = createOrder({ days: 1 });
     db.insert("orderMatch", { id: "mm", orderId: id, performerUserId: USERS.performer, status: "pending", createdAt: new Date() });
     const ok = await readResponse(await marketplaceDetail(await call(USERS.performer, "GET"), ctx(id)));
@@ -90,14 +90,14 @@ describe("біржа: деталі замовлення", () => {
     assert.equal(wrongRole.status, 403);
   });
 
-  it("виконавець без збігу не бачить замовлення (404)", async () => {
+  it("Виконавець без збігу не бачить замовлення (404)", async () => {
     const id = createOrder({ days: 1 });
     const res = await readResponse(await marketplaceDetail(await call(USERS.otherPerformer, "GET"), ctx(id)));
     assert.equal(res.status, 404);
   });
 });
 
-describe("активна робота і звіти виконавця", () => {
+describe("активна робота і звіти Виконавця", () => {
   it("активна робота містить взятий заказ, рейтинг і відгуки віддаються", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
@@ -112,7 +112,7 @@ describe("активна робота і звіти виконавця", () => {
     assert.equal((await readResponse(await ratingGet(await call(USERS.customer, "GET")))).status, 403);
   });
 
-  it("історія виплат виконавця віддається з фільтром за роллю", async () => {
+  it("історія виплат Виконавця віддається з фільтром за роллю", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     const res = await readResponse(await billingGet(await call(USERS.performer, "GET")));
@@ -121,7 +121,7 @@ describe("активна робота і звіти виконавця", () => {
 });
 
 describe("котирування заказу", () => {
-  it("котирування доступне лише заказчику (403 для виконавця)", async () => {
+  it("котирування доступне лише Заказчику (403 для Виконавця)", async () => {
     const res = await readResponse(await quotePost(await call(USERS.performer, "POST", { serviceCategoryId: "x", areaHa: 10 })));
     assert.equal(res.status, 403);
   });

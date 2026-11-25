@@ -46,7 +46,7 @@ beforeEach(() => {
 });
 
 describe("заказ: список, деталі, скасування", () => {
-  it("заказчик бачить лише свої закази у списку", async () => {
+  it("Заказчик бачить лише свої закази у списку", async () => {
     const mine = createOrder({ days: 1 });
     createOrder({ days: 1, status: "published" });
     db.updateMany("order", { where: { id: mine }, data: { status: "published" } });
@@ -59,13 +59,13 @@ describe("заказ: список, деталі, скасування", () => {
     assert.ok(!ids.includes("foreign"), "чужий заказ не віддається");
   });
 
-  it("заказчик отримує деталі свого заказу, сторонній — 404", async () => {
+  it("Заказчик отримує деталі свого заказу, сторонній — 404", async () => {
     const id = createOrder({ days: 1 });
     assert.equal((await get(orderGet, USERS.customer, id)).status, 200);
     assert.equal((await get(orderGet, USERS.otherCustomer, id)).status, 404);
   });
 
-  it("скасувати можна опубліковане замовлення; після призначення виконавця — ні", async () => {
+  it("скасувати можна опубліковане замовлення; після призначення Виконавця — ні", async () => {
     const id = createOrder({ days: 1 });
     const ok = await readResponse(await cancelPatch(await call(USERS.customer, "PATCH", { reason: "Передумав" }), ctx(id)));
     assert.equal(ok.status, 200);
@@ -78,7 +78,7 @@ describe("заказ: список, деталі, скасування", () => {
     assert.equal(order(taken).status, "requires_confirmation");
   });
 
-  it("виконавець не може скасувати заказ замовника (404)", async () => {
+  it("Виконавець не може скасувати заказ Замовника (404)", async () => {
     const id = createOrder({ days: 1 });
     const res = await readResponse(await cancelPatch(await call(USERS.performer, "PATCH", {}), ctx(id)));
     assert.equal(res.status, 404);
@@ -86,8 +86,8 @@ describe("заказ: список, деталі, скасування", () => {
   });
 });
 
-describe("біржа: видача виконавцю і приховування", () => {
-  it("виконавець бачить замовлення, на яке його запросили", async () => {
+describe("біржа: видача Виконавцю і приховування", () => {
+  it("Виконавець бачить замовлення, на яке його запросили", async () => {
     const id = createOrder({ days: 1 });
     db.insert("orderMatch", { id: "m1", orderId: id, performerUserId: USERS.performer, status: "pending", createdAt: new Date() });
     const res = await get(marketplaceGet, USERS.performer);
@@ -95,11 +95,11 @@ describe("біржа: видача виконавцю і приховуванн�
     assert.ok(res.body.data.items.some((o: any) => o.id === id));
   });
 
-  it("замовник не може відкрити біржу (403)", async () => {
+  it("Замовник не може відкрити біржу (403)", async () => {
     assert.equal((await get(marketplaceGet, USERS.customer)).status, 403);
   });
 
-  it("приховане замовлення зникає з біржі виконавця", async () => {
+  it("приховане замовлення зникає з біржі Виконавця", async () => {
     const id = createOrder({ days: 1 });
     db.insert("orderMatch", { id: "m2", orderId: id, performerUserId: USERS.performer, status: "pending", createdAt: new Date() });
     const hide = await readResponse(await hidePost(await call(USERS.performer, "POST"), ctx(id)));
@@ -159,7 +159,7 @@ describe("пристрої для push", () => {
 });
 
 describe("юридичний профіль", () => {
-  it("виконавець зберігає IBAN та ЄДРПОУ, які видно у профілі", async () => {
+  it("Виконавець зберігає IBAN та ЄДРПОУ, які видно у профілі", async () => {
     const res = await readResponse(await legalPatch(await call(USERS.performer, "PATCH", {
       companyName: "ФОП Тест",
       edrpou: "12345678",
@@ -183,7 +183,7 @@ describe("юридичний профіль", () => {
 });
 
 describe("прогрес робіт і відгуки", () => {
-  it("виконавець публікує прогрес під час робіт, сторони його бачать", async () => {
+  it("Виконавець публікує прогрес під час робіт, сторони його бачать", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -201,7 +201,7 @@ describe("прогрес робіт і відгуки", () => {
     assert.equal(forStranger.status, 403);
   });
 
-  it("заказ до 2 діб: досягнення 30% не запитує залишок 70% і не сповіщає виконавця про це", async () => {
+  it("заказ до 2 діб: досягнення 30% не запитує залишок 70% і не сповіщає Виконавця про це", async () => {
     const id = createOrder({ days: 2 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -215,7 +215,7 @@ describe("прогрес робіт і відгуки", () => {
     assert.equal(notes.filter((n) => n.type === "progress.30_percent_reached").length, 0);
   });
 
-  it("заказ від 3 діб: досягнення 30% сповіщає виконавця про можливість запросити залишок 70%", async () => {
+  it("заказ від 3 діб: досягнення 30% сповіщає Виконавця про можливість запросити залишок 70%", async () => {
     const id = createOrder({ days: 3 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -243,7 +243,7 @@ describe("прогрес робіт і відгуки", () => {
     assert.equal(bad2.status, 400);
   });
 
-  it("прогрес: 100% на split-замовленні блокується, якщо 70% не внесено замовником", async () => {
+  it("прогрес: 100% на split-замовленні блокується, якщо 70% не внесено Замовником", async () => {
     const id = createOrder({ days: 3 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -254,7 +254,7 @@ describe("прогрес робіт і відгуки", () => {
     assert.match(post100.body.message, /не вніс залишок 70%/);
   });
 
-  it("відгук виконавця на замовника можна лише після завершення робіт", async () => {
+  it("відгук Виконавця на Замовника можна лише після завершення робіт", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -262,7 +262,7 @@ describe("прогрес робіт і відгуки", () => {
     assert.equal(early.status, 409);
   });
 
-  it("оцінка лише після закриття: до підтвердження заказчиком — 409, потім один раз", async () => {
+  it("оцінка лише після закриття: до підтвердження Заказчиком — 409, потім один раз", async () => {
     const id = createOrder({ days: 1 });
     await performerClaimsAndPays(id);
     await customerPays(id);
@@ -307,7 +307,7 @@ describe("адмін-панель: блокування та перевірка"
     assert.equal(again.status, 409);
   });
 
-  it("перевірка юридичних даних виконавця: після підтвердження повторне — 409", async () => {
+  it("перевірка юридичних даних Виконавця: після підтвердження повторне — 409", async () => {
     db.updateMany("legalProfile", { where: { userId: USERS.performer }, data: { iban: VALID_IBAN } });
     db.insert("legalProfile", { id: "lp_p", userId: USERS.performer, companyName: "ФОП", edrpou: "12345678", iban: VALID_IBAN, legalAddress: "м. Полтава", vatPayer: false });
     const make = () => new Request("http://localhost/x", {

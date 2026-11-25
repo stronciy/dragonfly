@@ -72,8 +72,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       await notifyUser({
         userId: order.performerUserId,
         type: "order",
-        title: "Замовлення скасовано замовником",
-        message: `Замовлення ${await orderRef(orderId)} скасовано замовником. ${isExpired ? "Час підтвердження минув." : ""} ${body.reason || ''}`.trim(),
+        title: "Замовлення скасовано Замовником",
+        message: `Замовлення ${await orderRef(orderId)} скасовано Замовником. ${isExpired ? "Час підтвердження минув." : ""} ${body.reason || ''}`.trim(),
         data: {
           orderId,
           type: "order_cancelled_by_customer",

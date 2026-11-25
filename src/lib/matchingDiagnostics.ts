@@ -63,7 +63,7 @@ export function evaluatePerformer(
 ): PerformerCheck {
   const reasons: string[] = [];
   const isCustomer = performer.userId === order.customerUserId;
-  if (isCustomer) reasons.push("це заказчик цього заказу");
+  if (isCustomer) reasons.push("це Заказчик цього заказу");
 
   const service = matchServiceLevel(order, performer.services);
   if (!service.matchedBy) reasons.push("немає потрібної послуги (тип, підкатегорія або категорія)");
@@ -88,8 +88,8 @@ export function evaluatePerformer(
     reasons.push(`невідомий режим покриття: ${mode ?? "не задано"}`);
   }
 
-  if (state.refused) reasons.push("виконавець уже відмовився від цього заказу");
-  if (state.blockedByEscrow) reasons.push("застава виконавця по заказу ще заблокована");
+  if (state.refused) reasons.push("Виконавець уже відмовився від цього заказу");
+  if (state.blockedByEscrow) reasons.push("застава Виконавця по заказу ще заблокована");
 
   return {
     performerUserId: performer.userId,
