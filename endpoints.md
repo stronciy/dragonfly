@@ -544,7 +544,7 @@
 ### POST `/api/v1/payments/:paymentIntentId/confirm`
 - **Auth:** Bearer (замовник для `role=customer`, назначенный исполнитель для `role=performer`)
 - **Body:** `{ providerPayload: { provider: "liqpay", data: string, signature: string } }`
-- **Side effects:** проверка LiqPay-подписи; guarded-переход (`accepted → requires_confirmation` для performer с ресетом дедлайна +12ч; `requires_confirmation → confirmed` для customer со снятием дедлайна); создание `escrow_locks` (upsert по `(orderId, role)`); `orderStatusEvent`. Для part-2 интента замовника (`part: 2`): статус НЕ меняется — эскроу замовника дополняется до полных 30% (сумма его оплаченных интентов), снимаются `customerPart2Deadline` и `paymentPaused` (resume); оплатить part-2 можно только пока заказ `started`, иначе `409 CONFLICT`
+- **Side effects:** проверка LiqPay-подписи; guarded-переход (`accepted → requires_confirmation` для performer с ресетом дедлайна +24ч; `requires_confirmation → confirmed` для customer со снятием дедлайна); создание `escrow_locks` (upsert по `(orderId, role)`); `orderStatusEvent`. Для part-2 интента замовника (`part: 2`): статус НЕ меняется — эскроу замовника дополняется до полных 30% (сумма его оплаченных интентов), снимаются `customerPart2Deadline` и `paymentPaused` (resume); оплатить part-2 можно только пока заказ `started`, иначе `409 CONFLICT`
 - **Events (performer):** `deposit.performer_paid`, `escrow.changed`, `order.status_changed`, `deposit.customer_required`, `payment:required` + Push замовнику
 - **Events (customer, part 1):** `deposit.customer_paid`, `escrow.changed`, `order.status_changed`, `order.confirmed`, `order:confirmed` + Push исполнителю
 - **Events (customer, part 2):** `deposit.customer_part2_paid`, `escrow.changed`, `order.payment_resumed` + уведомления обеим сторонам
@@ -820,7 +820,7 @@
 - `draft` — черновик
 - `published` — опубликован, виден в бирже
 - `accepted` — принят исполнителем (ставится атомарным claim в performer-intent)
-- `requires_confirmation` — ожидает депозита замовника (12ч таймер; просрочка → возврат в `published`)
+- `requires_confirmation` — ожидает депозита замовника (24ч таймер; просрочка → `cancelled`, залог исполнителя возвращается)
 - `confirmed` — сделка подтверждена, оба депозита оплачены
 - `started` — в работе (статус устанавливается исполнителем через `/status`); может быть на паузе (`paymentPaused`) из-за неоплаты второй части гарантійної суми — на паузе отчёты о прогрессе отклоняются `409`, поздняя оплата part-2 снимает паузу (`order.payment_resumed`)
 - `completed` — завершён исполнителем (ожидает подтверждения замовником)
