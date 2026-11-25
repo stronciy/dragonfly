@@ -473,14 +473,12 @@ export function summarizeLedger(role: LedgerRole, entries: LedgerEntry[]): Ledge
   const sum = (pred: (e: LedgerEntry) => boolean) =>
     round2(entries.filter(pred).reduce((acc, e) => acc + e.amount, 0));
 
+  // «В ескроу» — лише власні кошти користувача. Оплата заказчика, що лежить в
+  // ескроу під заказ, належить заказчику і у виконавця не рахується.
   const inEscrowUah =
     role === "customer"
       ? sum((e) => (e.kind === "customer_deposit" || e.kind === "customer_balance") && e.status === "in_escrow")
-      : sum(
-          (e) =>
-            (e.kind === "performer_deposit" && (e.status === "in_escrow" || e.status === "decision_pending")) ||
-            (e.kind === "order_payout" && (e.status === "in_escrow" || e.status === "settling")),
-        );
+      : sum((e) => e.kind === "performer_deposit" && (e.status === "in_escrow" || e.status === "decision_pending"));
 
   if (role === "customer") {
     const paidToPerformers = sum(

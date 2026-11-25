@@ -556,7 +556,7 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
 
     const { summary, entries } = await transactions(USERS.performer);
     assert.equal(summary.availableUah, 0);
-    assert.equal(summary.inEscrowUah, 6000, "3000 застава виконавця + 3000 перший етап замовника");
+    assert.equal(summary.inEscrowUah, 3000, "лише застава виконавця; перший етап замовника у ескроу — не його кошти");
     const part1 = kindOf(entries, "order_payout");
     assert.equal(part1.status, "in_escrow");
     assert.equal(part1.amount, 3000);
@@ -608,7 +608,7 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     const mid = await transactions(USERS.performer);
     assert.equal(mid.summary.withdrawnUah, 3000);
     assert.equal(mid.summary.availableUah, 0);
-    assert.equal(mid.summary.inEscrowUah, 10000, "3000 застава + 7000 залишок в ескроу");
+    assert.equal(mid.summary.inEscrowUah, 3000, "лише застава виконавця; залишок заказчика в ескроу — не його кошти");
 
     // 3. Завершення робіт і підтвердження замовником
     await status(id, USERS.performer, "completed");
