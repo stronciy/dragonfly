@@ -246,14 +246,24 @@ export class FakeDb {
     return related.map((r) => this.project(rel.table, r, sel as any));
   }
 
-  private sortRows(rows: Row[], orderBy: any) {
+  private sortRows(rows: Row[], orderBy: any, table?: string) {
     if (!orderBy) return rows;
     const list = Array.isArray(orderBy) ? orderBy : [orderBy];
+    // `{ order: { createdAt: "desc" } }` — sort by a field of a belongsTo relation.
+    const sortKey = (row: Row, spec: Record<string, any>): [number, string] => {
+      const [field, dir] = Object.entries(spec)[0] as [string, any];
+      const rel = table ? RELATIONS[table]?.[field] : undefined;
+      if (rel && rel.side === "belongsTo" && isPlainObject(dir)) {
+        const localValue = row[rel.localKey ?? rel.fk];
+        const target = this.rows(rel.table).find((t) => t[rel.fk] === localValue) ?? {};
+        return sortKey(target, dir);
+      }
+      return [numeric(row[field]) ?? 0, dir as string];
+    };
     return [...rows].sort((a, b) => {
       for (const spec of list) {
-        const [field, dir] = Object.entries(spec)[0] as [string, string];
-        const av = numeric(a[field]) ?? 0;
-        const bv = numeric(b[field]) ?? 0;
+        const [av, dir] = sortKey(a, spec);
+        const [bv] = sortKey(b, spec);
         if (av !== bv) return dir === "desc" ? bv - av : av - bv;
       }
       return 0;
@@ -262,7 +272,7 @@ export class FakeDb {
 
   findMany(table: string, args: any = {}): Row[] {
     let rows = this.rows(table).filter((r) => this.matchRow(table, r, flattenWhere(args.where)));
-    rows = this.sortRows(rows, args.orderBy);
+    rows = this.sortRows(rows, args.orderBy, table);
     if (args.skip) rows = rows.slice(args.skip);
     if (args.take !== undefined) rows = rows.slice(0, args.take);
     return rows.map((r) => this.project(table, r, args));

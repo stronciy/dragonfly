@@ -39,12 +39,13 @@ export async function GET(req: Request) {
       ...(q.distanceKmMax != null ? { distanceKm: { lte: q.distanceKmMax } } : {}),
     };
 
+    // Нові замовлення — першими. Раніше за замовчуванням сортувалось за датою
+    // матчу за зростанням: у Виконавця з покриттям «вся Україна» понад
+    // `limit` матчів свіжі замовлення не потрапляли на першу сторінку.
     const orderBy =
       q.sort === "price"
-        ? [{ order: { budget: "desc" as const } }]
-        : q.sort === "date"
-          ? [{ order: { createdAt: "desc" as const } }]
-          : [{ createdAt: "asc" as const }];
+        ? [{ order: { budget: "desc" as const } }, { order: { createdAt: "desc" as const } }]
+        : [{ order: { createdAt: "desc" as const } }, { createdAt: "desc" as const }];
 
     const orderWhere = performerMarketplaceOrderWhere({
       userId: user.id,

@@ -95,6 +95,26 @@ describe("біржа: видача Виконавцю і приховуванн�
     assert.ok(res.body.data.items.some((o: any) => o.id === id));
   });
 
+  it("нове замовлення є на першій сторінці, навіть коли матчів понад ліміт (покриття «вся Україна»)", async () => {
+    const base = Date.now() - 10 * 24 * 60 * 60 * 1000;
+    for (let i = 0; i < 101; i += 1) {
+      const old = createOrder({ days: 1 });
+      db.update("order", { where: { id: old }, data: { createdAt: new Date(base + i * 1000) } });
+      db.insert("orderMatch", { id: `old-${i}`, orderId: old, performerUserId: USERS.performer, status: "pending", createdAt: new Date(base + i * 1000) });
+    }
+    const fresh = createOrder({ days: 1 });
+    db.insert("orderMatch", { id: "fresh", orderId: fresh, performerUserId: USERS.performer, status: "pending", createdAt: new Date() });
+
+    const res = await readResponse(
+      await marketplaceGet(new Request("http://localhost/api/v1/marketplace/orders?limit=100&offset=0", {
+        headers: (await call(USERS.performer, "GET")).headers,
+      }))
+    );
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.items[0].id, fresh, "найновіше замовлення — першим");
+    assert.equal(res.body.data.page.hasMore, true);
+  });
+
   it("Замовник не може відкрити біржу (403)", async () => {
     assert.equal((await get(marketplaceGet, USERS.customer)).status, 403);
   });

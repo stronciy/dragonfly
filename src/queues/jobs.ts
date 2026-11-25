@@ -8,8 +8,8 @@ import { getMatchNewExecutorQueue, getMatchNewOrderQueue, getDepositDeadlineTime
  * BullMQ treats `jobId` as unique: adding a job that already exists in a
  * failed state is a no-op. After a worker restart or a transient DB error the
  * job stays failed (removeOnFail keeps 5000), so saving performer settings or
- * re-publishing an order would silently never rematch. Waiting/active/delayed
- * jobs still dedupe normally.
+ * re-publishing an order would silently never rematch. Waiting/delayed jobs
+ * still dedupe; an active job gets a follow-up run so fresh data is applied.
  */
 export async function addQueueJob<T extends Record<string, unknown>>(
   queue: Queue,
@@ -29,7 +29,12 @@ export async function addQueueJob<T extends Record<string, unknown>>(
         // the rematch possible; the worker itself is idempotent.
         effectiveJobId = `${jobId}-retry-${Date.now()}`;
       }
+    } else if (state === "active") {
+      // Активна задача вже прочитала старі дані (налаштування Виконавця, заказ).
+      // Без повторного запуску зміна, зроблена під час її виконання, губиться.
+      effectiveJobId = `${jobId}-rerun-${Date.now()}`;
     } else {
+      // waiting/delayed: задача ще прочитає свіжі дані, коли запуститься.
       return existing;
     }
   }

@@ -48,8 +48,17 @@ test("addQueueJob removes a completed job before re-adding it", async () => {
   assert.deepEqual(calls, ["get:order-o1", "remove", "add:match:order-o1"]);
 });
 
-test("addQueueJob keeps dedupe for waiting/active jobs", async () => {
-  for (const state of ["waiting", "active", "delayed"]) {
+test("addQueueJob re-runs after an active job (it may have read stale settings)", async () => {
+  const { queue, calls } = fakeQueue({ state: "active" });
+
+  await addQueueJob(queue, "match", { performerUserId: "p1" }, "performer-p1");
+
+  assert.equal(calls[0], "get:performer-p1");
+  assert.match(calls[1], /^add:match:performer-p1-rerun-\d+$/);
+});
+
+test("addQueueJob keeps dedupe for waiting/delayed jobs", async () => {
+  for (const state of ["waiting", "delayed"]) {
     const { queue, calls } = fakeQueue({ state });
 
     await addQueueJob(queue, "match", { orderId: "o1" }, "order-o1");
