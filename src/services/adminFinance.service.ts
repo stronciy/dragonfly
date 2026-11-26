@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma";
 import { LIQPAY_FEE_RATE, SERVICE_FEE_RATE, liqpayFeeAmount } from "../lib/fees";
 import { getFinanceSnapshot } from "./finance.service";
+import { buildAccountStatement } from "../lib/finance/statement";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -87,4 +88,42 @@ export async function getPerformerBalances() {
   return rows
     .map((r) => ({ ...r, user: usersById.get(r.userId) ?? null }))
     .sort((a, b) => b.availableUah - a.availableUah);
+}
+
+/** Пошук користувача для фінансової виписки: за іменем, поштою або телефоном. */
+export async function searchFinanceUsers(query: string) {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  return prisma.user.findMany({
+    where: {
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { email: { contains: q, mode: "insensitive" } },
+        { phone: { contains: q } },
+      ],
+    },
+    select: { id: true, name: true, email: true, phone: true, role: true },
+    orderBy: { name: "asc" },
+    take: 20,
+  });
+}
+
+/** Повна виписка по рахунку користувача: обидві ролі, хронологія, взаємозаліки. */
+export async function getUserStatement(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true, phone: true, role: true },
+  });
+  if (!user) return null;
+  const [customer, performer] = await Promise.all([
+    getFinanceSnapshot(prisma, userId, "customer"),
+    getFinanceSnapshot(prisma, userId, "performer"),
+  ]);
+  return buildAccountStatement({
+    user,
+    roles: {
+      customer: customer.entries.length > 0 ? customer : null,
+      performer: performer.entries.length > 0 ? performer : null,
+    },
+  });
 }
