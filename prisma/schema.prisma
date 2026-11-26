@@ -753,6 +753,8 @@ model PaymentIntent {
   resultUrl       String?  @map("result_url")
   providerRaw     Json?    @map("provider_raw")
   paidAt          DateTime? @map("paid_at")
+  // Виконавець, що вніс заставу (для журналу: попередні заставы того самого заказу).
+  payerUserId     String?  @map("payer_user_id")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

@@ -43,6 +43,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         resultUrl: body.resultUrl,
         serverUrl: buildDepositCallbackUrl(intentId, req),
         intentId,
+        payerUserId: user.id,
       });
       return { order: claim.order, freshClaim: claim.freshClaim, intent: created.intent };
     });

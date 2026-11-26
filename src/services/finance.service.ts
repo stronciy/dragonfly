@@ -27,6 +27,8 @@ export async function loadLedgerInput(
           OR: [
             { performerUserId: userId },
             { escrowLocks: { some: { userId, role: "performer" } } },
+            // Попередні заставы того самого заказу (після відмови заказ взяв інший).
+            { paymentIntents: { some: { role: "performer", payerUserId: userId } } },
           ],
         }
       : { customerUserId: userId };
@@ -69,6 +71,7 @@ export async function loadLedgerInput(
             currency: true,
             paidAt: true,
             status: true,
+            payerUserId: true,
           },
         })
       : Promise.resolve([]),
@@ -128,6 +131,7 @@ export async function loadLedgerInput(
       currency: i.currency,
       paidAt: i.paidAt,
       status: i.status,
+      payerUserId: i.payerUserId,
     })),
     locks: locks.map((l) => {
       return {

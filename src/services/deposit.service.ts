@@ -73,6 +73,7 @@ export async function createDepositIntent(
     resultUrl?: string;
     serverUrl?: string;
     intentId?: string;
+    payerUserId?: string | null;
   }
 ) {
   const order = await tx.order.findUnique({ where: { id: args.orderId } });
@@ -130,6 +131,7 @@ export async function createDepositIntent(
       signature: checkout.signature,
       serverUrl: args.serverUrl,
       resultUrl: args.resultUrl,
+      payerUserId: args.role === "performer" ? args.payerUserId ?? null : null,
     },
   });
   // Як serverUrl порожній — у логах одразу видно, що LiqPay колбеку не отримає.
@@ -181,6 +183,7 @@ export async function ensureIntentServerUrl(tx: Tx, intent: PaymentIntent, req?:
     resultUrl: intent.resultUrl ?? undefined,
     serverUrl: fresh,
     intentId: intent.id,
+    payerUserId: intent.payerUserId,
   });
   return created.intent;
 }
@@ -408,7 +411,7 @@ export async function confirmDeposit(
       amount: lockAmount,
       status: "held",
     },
-    update: { status: "held", releasedAt: null, amount: lockAmount },
+    update: { status: "held", releasedAt: null, amount: lockAmount, userId: lockUserId },
   });
   await tx.orderStatusEvent.create({
     data: { orderId: order.id, status: toStatus, note: null },
@@ -553,6 +556,12 @@ async function settlePendingLock(
     const liqpayOrderId = intent.providerOrderId;
     const liqpayPaymentId = raw?.payment_id;
     if (!liqpayOrderId || liqpayPaymentId == null) {
+      // Немає що переказувати в LiqPay, але платіж усе одно розраховано: інакше
+      // він лишиться «paid» і наступне взяття заказу сприйматиметься як дубль.
+      await client.paymentIntent.updateMany({
+        where: { id: intent.id, status: "paid" },
+        data: { status: INTENT_STATUS_BY_TARGET[to] },
+      });
       process.stdout.write(JSON.stringify({ level: "info", msg: "settle_skipped_no_provider_payment", ...logCtx, intentId: intent.id }) + "\n");
       continue;
     }

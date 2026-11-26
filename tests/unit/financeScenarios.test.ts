@@ -9,6 +9,7 @@ import {
 } from "../helpers/world";
 import { db } from "../helpers/fakePrisma";
 import { PATCH as statusPatch } from "../../src/app/api/v1/orders/[orderId]/status/route";
+import { PATCH as cancelPatch } from "../../src/app/api/v1/orders/[orderId]/cancel/route";
 import { POST as confirmPost } from "../../src/app/api/v1/orders/[orderId]/confirm-completion/route";
 import { POST as progressPost } from "../../src/app/api/v1/orders/[orderId]/progress/route";
 import { POST as refusePost } from "../../src/app/api/v1/orders/[orderId]/refuse/route";
@@ -396,6 +397,35 @@ describe("журнал Виконавця", () => {
       after.entries.filter((e) => e.kind === "performer_deposit").map((d) => d.status),
       ["returned", "returned"],
     );
+  });
+
+  it("скасування заказу Замовником: застава виконавця повертається, плитка не лишається «в ескроу»", async () => {
+    const id = createOrder({ days: 1, budget: 10000 });
+    await performerClaimsAndPays(id);
+    db.update("order", { where: { id }, data: { depositDeadline: new Date(Date.now() - 1000) } });
+    const cancelRes = await readResponse(await cancelPatch(await call(USERS.customer, "PATCH", { reason: "Не потрібно" }), ctx(id)));
+    assert.equal(cancelRes.status, 200);
+
+    const { summary, entries } = await transactions(USERS.performer);
+    assert.equal(kindOf(entries, "performer_deposit").status, "returned");
+    assert.equal(summary.inEscrowUah, 0);
+  });
+
+  it("заказ взяв інший Виконавець: попередня застава першого — повернена, у другого — лише його застава", async () => {
+    const id = createOrder({ days: 1, budget: 10000 });
+    await performerClaimsAndPays(id, USERS.performer);
+    db.update("order", { where: { id }, data: { depositDeadline: new Date(Date.now() - 1000) } });
+    await readResponse(await cancelPatch(await call(USERS.customer, "PATCH", { reason: "Тест" }), ctx(id)));
+    db.update("order", { where: { id }, data: { status: "published", depositDeadline: null } });
+    await performerClaimsAndPays(id, USERS.otherPerformer);
+
+    const first = await transactions(USERS.performer);
+    assert.equal(first.summary.inEscrowUah, 0, "у першого нічого не в ескроу");
+    assert.deepEqual(first.entries.filter((e) => e.kind === "performer_deposit").map((e) => e.status), ["returned"]);
+
+    const second = await transactions(USERS.otherPerformer);
+    assert.equal(second.summary.inEscrowUah, 3000, "у другого — його чинна застава");
+    assert.deepEqual(second.entries.filter((e) => e.kind === "performer_deposit").map((e) => e.status), ["in_escrow"]);
   });
 
   it("не можна взяти заказ знову, поки попередня застава ще повертається", async () => {

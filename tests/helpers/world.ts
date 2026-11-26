@@ -184,6 +184,7 @@ export async function performerClaimsAndPays(orderId: string, performerUserId: s
   const { intent } = await createDepositIntent(prisma as unknown as Prisma.TransactionClient, {
     orderId,
     role: "performer",
+    payerUserId: performerUserId,
   });
   return settlePayment(intent.id);
 }
