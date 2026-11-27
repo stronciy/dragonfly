@@ -158,6 +158,7 @@ describe("журнал Заказчика", () => {
     await status(id, USERS.performer, "en_route");
     await status(id, USERS.performer, "started");
     await progress(id, 30);
+    assert.equal((await confirmProgress(id)).status, 200);
     assert.equal((await customerPays(id, 2)).status, 200);
 
     const { summary, entries } = await transactions(USERS.customer);
@@ -167,7 +168,7 @@ describe("журнал Заказчика", () => {
     const balance = kindOf(entries, "customer_balance");
     assert.equal(balance.amount, 7000);
     assert.match(balance.title, /70%/);
-    assert.equal(summary.inEscrowUah, 10000, "уся вартість у гарантії до завершення");
+    assert.equal(summary.inEscrowUah, 7000, "30% уже передано Виконавцю, у гарантії залишок 70%");
     assert.equal(summary.feesPaidUah, 850, "комісія лише один раз");
   });
 
@@ -779,7 +780,8 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     assert.equal(mid.summary.inEscrowUah, 3000, "лише застава Виконавця; залишок Заказчика в ескроу — не його кошти");
 
     // 3. Завершення робіт і підтвердження замовником
-    await status(id, USERS.performer, "completed");
+    assert.equal((await progress(id, 100)).status, 200);
+    assert.equal((await status(id, USERS.performer, "completed")).status, 200);
     await confirm(id, { accepted: true, rating: 5 });
 
     const finalTxs = await transactions(USERS.performer);
@@ -796,25 +798,28 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     assert.equal(afterP2.summary.pendingWithdrawalUah, 7000);
   });
 
-  it("Замовник не підтверджував 30% окремо: підтвердження всього замовлення відкриває всю суму", async () => {
+  it("без підтвердження 30% ні оплатити 70%, ні завершити замовлення не можна", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id, 1);
     await status(id, USERS.performer, "started");
     await progress(id, 30);
+
+    assert.equal((await customerPays(id, 2)).status, 409, "спочатку Замовник підтверджує 30%");
+    assert.equal((await status(id, USERS.performer, "completed")).status, 409, "завершення без 30%+70% закрите");
+
+    assert.equal((await confirmProgress(id)).status, 200);
     assert.equal((await customerPays(id, 2)).status, 200);
-    await status(id, USERS.performer, "completed");
-
-    const before = await transactions(USERS.performer);
-    assert.equal(before.summary.availableUah, 0, "до підтвердження Замовником нічого не доступно");
-
+    assert.equal((await progress(id, 100)).status, 200);
+    assert.equal((await status(id, USERS.performer, "completed")).status, 200);
     assert.equal((await confirm(id, { accepted: true })).status, 200);
+
     const after = await transactions(USERS.performer);
     assert.equal(after.summary.availableUah, 10000);
     assert.equal(after.summary.earnedOrPaidUah, 10000);
   });
 
-  it("Виконавець завершив до оплати 70%: Замовник доплачує вже після завершення, підтверджує, і Виконавець виводить 70%", async () => {
+  it("Виконавець не може завершити до оплати 70%: 30% → 70% → 100% → підтвердження", async () => {
     const id = createOrder({ days: 3, budget: 10000 });
     await performerClaimsAndPays(id);
     await customerPays(id, 1);
@@ -825,17 +830,14 @@ describe("split-замовлення (> 2 діб) та виведення 30% п
     assert.equal(p1.status, 201);
     await processPayout(p1.body.data.payout.id, { action: "mark_paid" });
 
-    await status(id, USERS.performer, "completed");
+    const earlyComplete = await status(id, USERS.performer, "completed");
+    assert.equal(earlyComplete.status, 409, "без 70% завершити не можна");
 
-    // Без 70% підтвердити не можна
-    const early = await confirm(id, { accepted: true });
-    assert.equal(early.status, 409);
-
-    // Доплата 70% у статусі completed дозволена
     const pay2 = await customerPays(id, 2);
     assert.equal(pay2.status, 200, JSON.stringify(pay2.body));
-    const ok = await confirm(id, { accepted: true });
-    assert.equal(ok.status, 200);
+    assert.equal((await progress(id, 100)).status, 200);
+    assert.equal((await status(id, USERS.performer, "completed")).status, 200);
+    assert.equal((await confirm(id, { accepted: true })).status, 200);
 
     const finalTxs = await transactions(USERS.performer);
     assert.equal(finalTxs.summary.withdrawnUah, 3000);

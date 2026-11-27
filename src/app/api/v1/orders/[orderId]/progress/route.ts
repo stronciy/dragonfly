@@ -8,6 +8,7 @@ import { notifyUser } from "@/services/notify";
 import { publishWalletChanged } from "@/services/payoutEvents";
 import { publishDomainEvent } from "@/shared";
 import { readFormFilesAsDataUrl } from "@/lib/uploads";
+import { PART1_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 
 export const runtime = "nodejs";
 
@@ -215,8 +216,23 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         })
       : null;
     const isPart2Paid = !isSplit || !!part2PaidIntent;
+    // Для split-замовлення 100% доступні лише після підтвердження Замовником
+    // перших 30% і внесення залишку 70%.
+    const part1ConfirmedEvent = isSplit
+      ? await prisma.orderStatusEvent.findFirst({
+          where: { orderId, note: PART1_CONFIRMED_NOTE },
+          select: { id: true },
+        })
+      : null;
 
-    // Якщо замовлення триває > 2 діб, фіксувати 100% дозволено ТІЛЬКИ після внесення замовником 70%
+    if (percent === 100 && isSplit && !part1ConfirmedEvent) {
+      throw new ApiError(
+        409,
+        "CONFLICT",
+        "Неможливо зафіксувати 100% виконання: спочатку Замовник має підтвердити 30% робіт. Після цього внесіть залишок 70%."
+      );
+    }
+
     if (percent === 100 && isSplit && !isPart2Paid) {
       throw new ApiError(
         409,

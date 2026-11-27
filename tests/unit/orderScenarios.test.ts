@@ -15,9 +15,13 @@ import { POST as arbitrationMediaPost } from "../../src/app/api/v1/orders/[order
 import { POST as refusePost } from "../../src/app/api/v1/orders/[orderId]/refuse/route";
 import { POST as requestPaymentPost } from "../../src/app/api/v1/orders/[orderId]/request-payment/route";
 import { POST as progressPost } from "../../src/app/api/v1/orders/[orderId]/progress/route";
+import { POST as confirmProgressPost } from "../../src/app/api/v1/orders/[orderId]/confirm-progress/route";
 
 const progress = (orderId: string, percent: number) =>
   call(USERS.performer, "POST", { percent }).then((req) => progressPost(req, ctx(orderId))).then(readResponse);
+
+const confirmProgress = (orderId: string) =>
+  call(USERS.customer, "POST", {}).then((req) => confirmProgressPost(req, ctx(orderId))).then(readResponse);
 
 const status = (orderId: string, userId: string, to: string) =>
   call(userId, "PATCH", { status: to }).then((req) => statusPatch(req, ctx(orderId))).then(readResponse);
@@ -328,6 +332,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
   it("Заказчик вносить 70% після старту — escrow 100%, дедлайн знято, заказ завершується", async () => {
     const id = await startedSplitOrder(3);
     await progress(id, 30);
+    assert.equal((await confirmProgress(id)).status, 200);
     const pay = await customerPays(id, 2);
     assert.equal(pay.status, 200);
     const part2 = rowsWhere("paymentIntent", { orderId: id, role: "customer", part: 2 })[0];
@@ -335,6 +340,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
     assert.deepEqual(escrowOf(id, "customer"), { status: "held", amount: 10000 });
     assert.equal(order(id).customerPart2Deadline, null);
 
+    assert.equal((await progress(id, 100)).status, 200);
     await status(id, USERS.performer, "completed");
     assert.equal((await confirm(id, { accepted: true, rating: 5 })).status, 200);
     assert.deepEqual(escrowOf(id, "customer"), { status: "released", amount: 10000 });
@@ -344,6 +350,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
   it("Заказчик вносить 70% після дедлайну — оплата приймається, Виконавець може відкрити арбітраж", async () => {
     const id = await startedSplitOrder(3);
     await progress(id, 30);
+    assert.equal((await confirmProgress(id)).status, 200);
     db.updateMany("order", { where: { id }, data: { customerPart2Deadline: new Date(Date.now() - 1000) } });
     const pay = await customerPays(id, 2);
     assert.equal(pay.status, 200);
@@ -362,16 +369,18 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
   it("повторна оплата 70% відхиляється (409)", async () => {
     const id = await startedSplitOrder(3);
     await progress(id, 30);
+    assert.equal((await confirmProgress(id)).status, 200);
     assert.equal((await customerPays(id, 2)).status, 200);
     assert.equal((await customerPays(id, 2)).status, 409);
   });
 
   it("закрити заказ без оплати 70% не можна (409)", async () => {
     const id = await startedSplitOrder(3);
-    await status(id, USERS.performer, "completed");
-    const res = await confirm(id, { accepted: true, rating: 5 });
-    assert.equal(res.status, 409, "гроші за 70% не внесено — закрити не можна");
-    assert.equal(order(id).status, "completed");
+    await progress(id, 30);
+    assert.equal((await confirmProgress(id)).status, 200);
+    const res = await status(id, USERS.performer, "completed");
+    assert.equal(res.status, 409, "гроші за 70% не внесено — завершити не можна");
+    assert.equal(order(id).status, "started");
     assert.deepEqual(escrowOf(id, "customer"), { status: "held", amount: 3000 });
   });
 
@@ -384,6 +393,7 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
   it("Заказчик відхиляє роботу після часткової оплати — арбітраж, кошти заблоковані", async () => {
     const id = await startedSplitOrder(3);
     await progress(id, 30);
+    assert.equal((await confirmProgress(id)).status, 200);
     await customerPays(id, 2);
     await status(id, USERS.performer, "completed");
     assert.equal((await openArbitration(id, USERS.customer, "Не встигли до кінця 3 дня")).status, 201);

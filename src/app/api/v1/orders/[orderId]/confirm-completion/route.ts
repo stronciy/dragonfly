@@ -8,7 +8,7 @@ import { ExpoPushService } from "@/shared";
 import { releaseEscrowForOrder, settleProviderHolds, emitEscrowChanged } from "@/shared";
 import { recomputePerformerRating } from "@/shared";
 import { customerPaymentPlan } from "@/shared";
-import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
+import { COMPLETION_CONFIRMED_NOTE, PART1_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 import { Prisma } from "@prisma/client";
 
 const schema = z.object({
@@ -66,10 +66,19 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
     const plan = customerPaymentPlan(order.budget, order.dateFrom, order.dateTo);
     if (plan.mode === "split") {
-      const part2Paid = await prisma.paymentIntent.findFirst({
-        where: { orderId, role: "customer", part: 2, status: "paid" },
-        select: { id: true },
-      });
+      const [part1Confirmed, part2Paid] = await Promise.all([
+        prisma.orderStatusEvent.findFirst({
+          where: { orderId, note: PART1_CONFIRMED_NOTE },
+          select: { id: true },
+        }),
+        prisma.paymentIntent.findFirst({
+          where: { orderId, role: "customer", part: 2, status: "paid" },
+          select: { id: true },
+        }),
+      ]);
+      if (!part1Confirmed) {
+        throw new ApiError(409, "CONFLICT", "Спочатку підтвердіть 30% робіт");
+      }
       if (!part2Paid) {
         throw new ApiError(409, "CONFLICT", "Залишок 70% ще не внесено — закриття можливе після оплати");
       }

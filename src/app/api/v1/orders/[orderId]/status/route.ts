@@ -7,6 +7,7 @@ import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
 import { notifyUser } from "@/services/notify";
 import { Prisma } from "@prisma/client";
+import { PART1_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 
 const schema = z.object({
   status: z.enum(["en_route", "started", "completed"]),
@@ -53,6 +54,35 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
     let part2Deadline: Date | null = null;
     if (body.status === "started" && isSplit) {
       part2Deadline = part2DeadlineFor(new Date());
+    }
+
+    // >2 діб: завершити роботу можна лише після підтвердження Замовником
+    // перших 30% і внесення залишку 70%.
+    if (body.status === "completed" && isSplit) {
+      const [part1Confirmed, part2Paid, latestProgress] = await Promise.all([
+        prisma.orderStatusEvent.findFirst({
+          where: { orderId, note: PART1_CONFIRMED_NOTE },
+          select: { id: true },
+        }),
+        prisma.paymentIntent.findFirst({
+          where: { orderId, role: "customer", part: 2, status: "paid" },
+          select: { id: true },
+        }),
+        prisma.workProgressUpdate.findFirst({
+          where: { orderId, percent: { not: null } },
+          orderBy: { percent: "desc" },
+          select: { percent: true },
+        }),
+      ]);
+      if (!part1Confirmed) {
+        throw new ApiError(409, "CONFLICT", "Спочатку Замовник має підтвердити 30% робіт");
+      }
+      if (!part2Paid) {
+        throw new ApiError(409, "CONFLICT", "Замовник ще не вніс залишок 70%");
+      }
+      if ((latestProgress?.percent ?? 0) < 100) {
+        throw new ApiError(409, "CONFLICT", "Спочатку зафіксуйте 100% виконання у звіті");
+      }
     }
 
     const { order: updated, completedProgress } = await prisma.$transaction(async (tx) => {

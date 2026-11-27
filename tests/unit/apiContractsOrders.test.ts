@@ -16,6 +16,7 @@ import { PATCH as notificationRead } from "../../src/app/api/v1/notifications/[n
 import { GET as tokensGet, POST as tokensPost } from "../../src/app/api/v1/devices/push-tokens/route";
 import { GET as legalGet, PATCH as legalPatch } from "../../src/app/api/v1/users/me/legal-profile/route";
 import { GET as progressGet, POST as progressPost } from "../../src/app/api/v1/orders/[orderId]/progress/route";
+import { POST as confirmProgressPost } from "../../src/app/api/v1/orders/[orderId]/confirm-progress/route";
 import { POST as reviewPost } from "../../src/app/api/v1/orders/[orderId]/reviews/route";
 import { POST as blockPost } from "../../src/app/api/v1/admin/users/[id]/block/route";
 import { POST as verifyPost } from "../../src/app/api/v1/admin/legal-profiles/[userId]/verify/route";
@@ -283,9 +284,27 @@ describe("прогрес робіт і відгуки", () => {
     await customerPays(id);
     await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id)));
 
+    await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 30 }), ctx(id)));
+    const confirmed30 = await readResponse(
+      await confirmProgressPost(await call(USERS.customer, "POST", {}), ctx(id))
+    );
+    assert.equal(confirmed30.status, 200);
+
     const post100 = await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 100 }), ctx(id)));
     assert.equal(post100.status, 409);
     assert.match(post100.body.message, /не вніс залишок 70%/);
+  });
+
+  it("прогрес: 100% на split-замовленні блокується, доки 30% не підтверджено", async () => {
+    const id = createOrder({ days: 3 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id)));
+
+    await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 30 }), ctx(id)));
+    const post100 = await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 100 }), ctx(id)));
+    assert.equal(post100.status, 409);
+    assert.match(post100.body.message, /підтвердити 30%/);
   });
 
   it("відгук Виконавця на Замовника можна лише після завершення робіт", async () => {
