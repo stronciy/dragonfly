@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formatUahAmount } from "@/lib/money";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { ApiError, orderRef, customerPaymentPlan, part2DeadlineFor } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
@@ -163,7 +164,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
         userId: order.customerUserId,
         type: "payment",
         title: "Внесення залишку 70%",
-        message: `Замовлення ${ref}. Виконавець розпочав виконання робіт. Внесіть залишок 70% (${Number(plan.part2Amount)} ₴) в ескроу протягом 24 годин (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, Виконавець має право припинити роботи та покинути об'єкт.`,
+        message: `Замовлення ${ref}. Виконавець розпочав виконання робіт. Внесіть залишок 70% (${formatUahAmount(plan.part2Amount)}) в ескроу протягом 24 годин (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, Виконавець має право припинити роботи та покинути об'єкт.`,
         data: {
           orderId,
           amount: Number(plan.part2Amount),

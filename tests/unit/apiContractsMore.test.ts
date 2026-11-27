@@ -10,6 +10,8 @@ import { POST as revokePost } from "../../src/app/api/v1/admin/users/[id]/revoke
 import { GET as auditGet } from "../../src/app/api/v1/admin/audit-logs/route";
 import { GET as marketplaceDetail } from "../../src/app/api/v1/marketplace/orders/[orderId]/route";
 import { GET as activeWorkGet } from "../../src/app/api/v1/performer/active-work/route";
+import { PATCH as statusPatch } from "../../src/app/api/v1/orders/[orderId]/status/route";
+import { POST as confirmRoute } from "../../src/app/api/v1/orders/[orderId]/confirm-completion/route";
 import { GET as billingGet } from "../../src/app/api/v1/billing/orders/route";
 import { GET as ratingGet } from "../../src/app/api/v1/performer/rating/route";
 import { GET as reviewsGet } from "../../src/app/api/v1/performer/reviews/route";
@@ -110,6 +112,26 @@ describe("активна робота і звіти Виконавця", () => {
     const reviews = await readResponse(await reviewsGet(await call(USERS.performer, "GET")));
     assert.equal(reviews.status, 200);
     assert.equal((await readResponse(await ratingGet(await call(USERS.customer, "GET")))).status, 403);
+  });
+
+  it("активна робота віддає completionConfirmedAt після підтвердження Замовником", async () => {
+    const id = createOrder({ days: 1 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    for (const s of ["en_route", "started", "completed"]) {
+      await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: s }), ctx(id)));
+    }
+
+    const before = await readResponse(await activeWorkGet(await call(USERS.performer, "GET")));
+    const beforeItem = before.body.data.items.find((o: any) => o.id === id);
+    assert.equal(beforeItem.completionConfirmedAt, null);
+
+    const confirmed = await readResponse(await confirmRoute(await call(USERS.customer, "POST", { accepted: true }), ctx(id)));
+    assert.equal(confirmed.status, 200);
+
+    const after = await readResponse(await activeWorkGet(await call(USERS.performer, "GET")));
+    const afterItem = after.body.data.items.find((o: any) => o.id === id);
+    assert.ok(afterItem.completionConfirmedAt, "підтвердження має бути видно Виконавцю");
   });
 
   it("«Очікують оплату»: Виконавець не бачить адресу і контакти Замовника до внесення обох застав", async () => {

@@ -4,8 +4,10 @@ import type { AdminEvent, OrderStatusPayload } from "./events";
 const MAX_TEXT_LENGTH = 300;
 
 function money(amount: number, currency: string): string {
-  const formatted = amount.toLocaleString("uk-UA", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-  return `${formatted} ${currency === "UAH" ? "₴" : escapeHtml(currency)}`;
+  const rounded = Math.round(Number.isFinite(amount) ? amount : 0);
+  const sign = rounded < 0 ? "-" : "";
+  const formatted = String(Math.abs(rounded)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return `${sign}${formatted} ${currency === "UAH" ? "₴" : escapeHtml(currency)}`;
 }
 
 function orderLabel(orderNumber: string | null, orderId: string): string {

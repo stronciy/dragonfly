@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { asApiError, ApiError } from "@/shared";
 import "./zodUkLocale";
+import { localizeServerMessage, resolveServerLocale } from "./serverMessages";
 
 type SuccessBody<T> = {
   success: true;
@@ -45,7 +46,7 @@ export function ok<T>(
     success: true,
     code: "SUCCESS",
     data,
-    message: init?.message ?? "OK",
+    message: localizeServerMessage(init?.message ?? "OK", resolveServerLocale(req)),
     timestamp: new Date().toISOString(),
     requestId,
   };
@@ -69,7 +70,7 @@ export function fail(req: Request, err: unknown) {
       type: apiErr.name || "Error",
       details: apiErr.details,
     },
-    message: apiErr.message,
+    message: localizeServerMessage(apiErr.message, resolveServerLocale(req)),
     timestamp: new Date().toISOString(),
     requestId,
   };

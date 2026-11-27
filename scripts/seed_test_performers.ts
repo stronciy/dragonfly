@@ -138,7 +138,7 @@ async function main() {
         companyName: `TEST ${p.name}`,
         edrpou: p.edrpou,
         iban: TEST_IBAN,
-        vatPayer: false,
+        vatPayer: true,
       },
     });
     console.log(`legal -> ${legal.status}`);

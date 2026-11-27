@@ -22,6 +22,7 @@ export type DiagnosticPerformer = {
   coverageMode: string | null;
   coverageRadiusKm: number | null;
   services: string[];
+  vatPayer: boolean;
 };
 
 export type PerformerCheck = {
@@ -64,6 +65,10 @@ export function evaluatePerformer(
   const reasons: string[] = [];
   const isCustomer = performer.userId === order.customerUserId;
   if (isCustomer) reasons.push("це Заказчик цього заказу");
+
+  // Matching SQL (worker) бере лише платників ПДВ — без цього пункту
+  // діагностика показувала «підходить», хоча рядків підбору не було.
+  if (!performer.vatPayer) reasons.push("немає статусу платника ПДВ (увімкніть у юридичних даних)");
 
   const service = matchServiceLevel(order, performer.services);
   if (!service.matchedBy) reasons.push("немає потрібної послуги (тип, підкатегорія або категорія)");

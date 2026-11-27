@@ -3,6 +3,7 @@ import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { ApiError } from "@/shared";
 import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
+import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 import { enqueueMatchNewOrder } from "@/shared";
 import { makePage, parsePagination } from "@/lib/pagination";
 import { publishDomainEvent } from "@/shared";
@@ -163,6 +164,12 @@ export async function GET(req: Request) {
               },
             },
           },
+          statusEvents: {
+            where: { note: COMPLETION_CONFIRMED_NOTE },
+            orderBy: { createdAt: "asc" },
+            take: 1,
+            select: { createdAt: true },
+          },
         },
       }),
       prisma.order.count({ where }),
@@ -210,6 +217,9 @@ export async function GET(req: Request) {
           createdAt: p.createdAt.toISOString(),
           media: p.media?.map((m) => ({ id: m.id, url: m.url })) ?? [],
         })) ?? [],
+        completionConfirmedAt: o.statusEvents?.[0]?.createdAt
+          ? o.statusEvents[0].createdAt.toISOString()
+          : null,
         createdAt: o.createdAt,
       })),
       page: makePage(limit, offset, totalCount),

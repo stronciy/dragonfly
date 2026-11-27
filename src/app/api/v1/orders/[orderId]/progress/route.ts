@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formatUahAmount } from "@/lib/money";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
 import { ApiError, customerPaymentPlan, part2DeadlineFor, orderRef } from "@/shared";
 import { prisma } from "@/shared";
@@ -231,6 +232,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
       select: { percent: true },
     });
 
+    // Етап 30% фіксується лише один раз. Після нього Виконавець надсилає
+    // тільки фінальний звіт 100%, який завершує роботу.
+    if (percent === 30 && previousMax?.percent != null && previousMax.percent >= 30) {
+      throw new ApiError(
+        409,
+        "CONFLICT",
+        "Етап 30% уже зафіксовано. Надішліть фінальний звіт на 100%."
+      );
+    }
+
     if (previousMax?.percent != null && percent < previousMax.percent) {
       throw new ApiError(
         400,
@@ -301,7 +312,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         userId: order.customerUserId,
         type: "payment",
         title: "Внесення залишку 70%",
-        message: `Замовлення ${ref}. Виконавець розпочав роботу. Внесіть залишок 70% (${Number(plan.part2Amount)} ₴) в ескроу протягом 24 годин (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, Виконавець має право припинити роботи та покинути об'єкт.`,
+        message: `Замовлення ${ref}. Виконавець розпочав роботу. Внесіть залишок 70% (${formatUahAmount(plan.part2Amount)}) в ескроу протягом 24 годин (до ${deadlineLabel}). Якщо кошти не надійдуть у строк, Виконавець має право припинити роботи та покинути об'єкт.`,
         data: {
           orderId,
           amount: Number(plan.part2Amount),

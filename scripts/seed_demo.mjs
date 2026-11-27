@@ -64,7 +64,7 @@ const performer1 = {
     edrpou: "10000010",
     iban: makeUaIban("300001", "0000000000000000001"),
     legalAddress: "м. Полтава, вул. Тестова, 10",
-    vatPayer: false,
+    vatPayer: true,
   },
 };
 
@@ -85,7 +85,7 @@ const performer2 = {
     edrpou: "10000011",
     iban: makeUaIban("300002", "0000000000000000002"),
     legalAddress: "м. Київ, вул. Тестова, 11",
-    vatPayer: false,
+    vatPayer: true,
   },
 };
 
@@ -100,7 +100,7 @@ const customer = {
     edrpou: "10000020",
     iban: makeUaIban("300003", "0000000000000000003"),
     legalAddress: "м. Полтава, вул. Замовника, 20",
-    vatPayer: false,
+    vatPayer: true,
   },
 };
 

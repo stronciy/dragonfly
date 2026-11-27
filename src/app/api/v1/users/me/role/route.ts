@@ -4,6 +4,7 @@ import { ApiError } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { signAccessToken } from "@/lib/auth/tokens";
 import { prisma } from "@/shared";
+import { enqueueMatchNewExecutor } from "@/shared";
 
 const schema = z.object({
   role: z.enum(["customer", "performer"]),
@@ -44,6 +45,13 @@ export async function PATCH(req: Request) {
       role: updated.role,
       sv: user.sessionVersion,
     });
+
+    // Перемикання на Виконавця саме по собі не створює рядків підбору, тож уже
+    // опубліковані замовлення не з'являться на біржі, доки не зберегти
+    // налаштування. Запускаємо матчинг одразу після зміни ролі.
+    if (updated.role === "performer") {
+      await enqueueMatchNewExecutor(updated.id).catch(() => {});
+    }
 
     return ok(req, { user: updated, accessToken }, { message: "Роль оновлено" });
   } catch (err) {

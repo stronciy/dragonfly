@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { formatUahAmount } from "../lib/money";
 import { prisma } from "../lib/prisma";
 import { ApiError } from "../lib/errors";
 import {
@@ -180,7 +181,7 @@ export async function requestPayout(args: { userId: string; amount: number }) {
     throw new ApiError(400, "VALIDATION_ERROR", "IBAN у юридичному профілі некоректний");
   }
   if (args.amount < PAYOUT_MIN_AMOUNT_UAH) {
-    throw new ApiError(400, "VALIDATION_ERROR", `Мінімальна сума для виведення — ${PAYOUT_MIN_AMOUNT_UAH} ₴`);
+    throw new ApiError(400, "VALIDATION_ERROR", `Мінімальна сума для виведення — ${formatUahAmount(PAYOUT_MIN_AMOUNT_UAH)}`);
   }
 
   const payout = await prisma.$transaction(async (tx) => {
@@ -192,7 +193,7 @@ export async function requestPayout(args: { userId: string; amount: number }) {
       throw new ApiError(
         400,
         "VALIDATION_ERROR",
-        `Недостатньо коштів: доступно ${summary.availableUah.toFixed(2)} ₴`
+        `Недостатньо коштів: доступно ${formatUahAmount(summary.availableUah)}`
       );
     }
     const user = await tx.user.findUnique({ where: { id: args.userId }, select: { name: true } });

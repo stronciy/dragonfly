@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formatUahAmount } from "@/lib/money";
 import { ok, fail } from "@/lib/apiResponse";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { ApiError, prisma } from "@/shared";
@@ -54,7 +55,7 @@ export async function POST(req: Request) {
       userId: user.id,
       type: "wallet.withdrawal_requested",
       title: "Заявку на виведення прийнято",
-      message: `Заявку на виведення ${Number(payout.amount).toFixed(2)} ₴ прийнято. Очікуйте переказу на ваш рахунок.`,
+      message: `Заявку на виведення ${formatUahAmount(payout.amount)} прийнято. Очікуйте переказу на ваш рахунок.`,
       data: { payoutId: payout.id, amount: Number(payout.amount), status: "requested", action: "view_finance" },
     }).catch(() => {});
 

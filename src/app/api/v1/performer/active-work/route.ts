@@ -48,6 +48,7 @@ export async function GET(req: Request) {
         reportSubmittedAt: true,
         statusEvents: {
           where: { note: COMPLETION_CONFIRMED_NOTE },
+          orderBy: { createdAt: "asc" },
           select: { createdAt: true },
           take: 1,
         },

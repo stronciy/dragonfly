@@ -221,6 +221,20 @@ describe("прогрес робіт і відгуки", () => {
     assert.equal(forStranger.status, 403);
   });
 
+  it("етап 30% не можна надіслати повторно — лишається тільки фінальний 100%", async () => {
+    const id = createOrder({ days: 3 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id)));
+
+    const first = await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 30, note: "Третина" }), ctx(id)));
+    assert.equal(first.status, 200);
+
+    const second = await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 30, note: "Ще раз" }), ctx(id)));
+    assert.equal(second.status, 409);
+    assert.match(second.body.message, /Етап 30% уже зафіксовано/);
+  });
+
   it("заказ до 2 діб: досягнення 30% не запитує залишок 70% і не сповіщає Виконавця про це", async () => {
     const id = createOrder({ days: 2 });
     await performerClaimsAndPays(id);
@@ -299,6 +313,28 @@ describe("прогрес робіт і відгуки", () => {
     assert.equal(first.status, 201);
     const second = await readResponse(await reviewPost(await call(USERS.performer, "POST", { rating: 4 }), ctx(id)));
     assert.equal(second.status, 409);
+  });
+
+  it("список заказів показує completionConfirmedAt після підтвердження Замовником", async () => {
+    const id = createOrder({ days: 1 });
+    await performerClaimsAndPays(id);
+    await customerPays(id);
+    for (const s of ["en_route", "started", "completed"]) {
+      await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: s }), ctx(id)));
+    }
+
+    const before = await get(ordersGet, USERS.customer);
+    const beforeItem = before.body.data.items.find((o: any) => o.id === id);
+    assert.equal(beforeItem.status, "completed");
+    assert.equal(beforeItem.completionConfirmedAt, null);
+
+    const confirmed = await readResponse(await confirmRoute(await call(USERS.customer, "POST", { accepted: true }), ctx(id)));
+    assert.equal(confirmed.status, 200);
+
+    const after = await get(ordersGet, USERS.customer);
+    const afterItem = after.body.data.items.find((o: any) => o.id === id);
+    assert.ok(afterItem.completionConfirmedAt, "підтвердження має бути видно у списку");
+    assert.equal(afterItem.status, "completed");
   });
 });
 

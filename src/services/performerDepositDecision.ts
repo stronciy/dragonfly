@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma";
+import { formatUahAmount } from "../lib/money";
 import { ApiError } from "../lib/errors";
 import { notifyUser } from "./notify";
 import { emitEscrowChanged, settleProviderHolds } from "./deposit.service";
@@ -8,7 +9,7 @@ export type PerformerDepositDecision = "return" | "fine";
 
 /** Текст суми застави для повідомлень: " 3000.00 ₴" або порожньо, якщо суми немає. */
 export function formatPerformerDeposit(amount: number | null): string {
-  return amount == null ? "" : ` ${amount.toFixed(2)} ₴`;
+  return amount == null ? "" : ` ${formatUahAmount(amount)}`;
 }
 
 /**

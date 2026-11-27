@@ -3,6 +3,7 @@ import { ok, fail } from "@/lib/apiResponse";
 import { ApiError } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
+import { enqueueMatchNewExecutor } from "@/shared";
 import { normalizeEdrpou, normalizeUAIban, validateEdrpou, validateUAIban } from "@/lib/validators";
 
 const companyNameSchema = z.preprocess(
@@ -117,6 +118,13 @@ export async function PATCH(req: Request) {
         updatedAt: true,
       },
     });
+
+    // Підбір замовлень (worker) пускає лише платників ПДВ. Після увімкнення
+    // статусу вже опубліковані замовлення самі не з'являться — потрібен
+    // повторний матчинг. Помилку черги не валимо: дані вже збережено.
+    if (user.role === "performer" && profile.vatPayer) {
+      await enqueueMatchNewExecutor(user.id).catch(() => {});
+    }
 
     return ok(req, {
       legalProfile: {

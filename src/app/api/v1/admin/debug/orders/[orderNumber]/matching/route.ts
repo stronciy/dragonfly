@@ -50,7 +50,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderNumber: st
     });
     if (!order) throw new ApiError(404, "NOT_FOUND", "Заказ з таким номером не знайдено");
 
-    const [profiles, services, refusedRows, blockingLocks, matches, customerNotifications] = await Promise.all([
+    const [profiles, services, refusedRows, blockingLocks, matches, customerNotifications, legalProfiles] = await Promise.all([
       prisma.performerProfile.findMany({
         select: {
           userId: true,
@@ -83,6 +83,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderNumber: st
         orderBy: { createdAt: "asc" },
         select: { type: true, title: true, message: true, createdAt: true },
       }),
+      prisma.legalProfile.findMany({ select: { userId: true, vatPayer: true } }),
     ]);
 
     const servicesByUser = new Map<string, string[]>();
@@ -91,6 +92,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderNumber: st
       list.push(s.serviceId);
       servicesByUser.set(s.performerUserId, list);
     }
+    const vatByUser = new Map(legalProfiles.map((lp) => [lp.userId, lp.vatPayer]));
     const refused = new Set(refusedRows.map((r) => r.performerUserId));
     const blocked = new Set(blockingLocks.map((l) => l.userId));
 
@@ -114,6 +116,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderNumber: st
             coverageMode: p.coverageMode,
             coverageRadiusKm: p.coverageRadiusKm,
             services: servicesByUser.get(p.userId) ?? [],
+            vatPayer: vatByUser.get(p.userId) ?? false,
           },
           { refused: refused.has(p.userId), blockedByEscrow: blocked.has(p.userId) }
         )

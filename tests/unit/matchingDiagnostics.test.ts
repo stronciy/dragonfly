@@ -19,6 +19,7 @@ const base = {
   coverageMode: "radius",
   coverageRadiusKm: 150,
   services: ["1"],
+  vatPayer: true,
 };
 const free = { refused: false, blockedByEscrow: false };
 
@@ -61,6 +62,12 @@ test("Заказчик не отримує власний заказ", () => {
   const check = evaluatePerformer(order, { ...base, userId: "customer-1" }, free);
   assert.equal(check.eligible, false);
   assert.equal(check.isCustomer, true);
+});
+
+test("Виконавець без статусу платника ПДВ не проходить підбір", () => {
+  const check = evaluatePerformer(order, { ...base, vatPayer: false }, free);
+  assert.equal(check.eligible, false);
+  assert.match(check.reasons.join(" "), /ПДВ/);
 });
 
 test("відстань Haversine: Київ — Полтава близько 300 км", () => {

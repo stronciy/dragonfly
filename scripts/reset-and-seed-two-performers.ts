@@ -127,7 +127,7 @@ async function seedPerformer(p: TestPerformer, serviceIds: string[]) {
       companyName: `TEST ${p.name}`,
       edrpou: p.edrpou,
       iban: TEST_IBAN,
-      vatPayer: false,
+      vatPayer: true,
     },
   });
   console.log(`legal profile -> ${legal.status}`);

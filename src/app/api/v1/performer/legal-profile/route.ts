@@ -3,6 +3,7 @@ import { ok, fail } from "@/lib/apiResponse";
 import { ApiError } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
+import { enqueueMatchNewExecutor } from "@/shared";
 import { normalizeEdrpou, normalizeUAIban, validateEdrpou, validateUAIban } from "@/lib/validators";
 
 const companyNameSchema = z.preprocess(
@@ -119,6 +120,12 @@ export async function PATCH(req: Request) {
         updatedAt: true,
       },
     });
+
+    // Як і в уніфікованому /users/me/legal-profile: увімкнення ПДВ має одразу
+    // перезапустити підбір уже опублікованих замовлень.
+    if (profile.vatPayer) {
+      await enqueueMatchNewExecutor(user.id).catch(() => {});
+    }
 
     return ok(req, {
       legalProfile: {
