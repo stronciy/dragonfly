@@ -4,6 +4,7 @@ import { ApiError } from "../lib/errors";
 import { CUSTOMER_COUNTER_DEPOSIT_DEADLINE_HOURS, customerPaymentPlan, depositAmountFor, nextDepositDeadline, nextCustomerCounterDepositDeadline } from "../lib/deposit";
 import { SERVICE_FEE_RATE, serviceFeeAmount } from "../lib/fees";
 import { canTransition, type OrderStatus } from "../lib/orderStatus";
+import { PART1_CAPTURED_NOTE } from "../lib/completionConfirmation";
 import { createLiqPayCheckout, getLiqPayCheckoutUrl, liqpayDecodeData, liqpayVerifySignature, captureHold, refundCaptured, reverseHold } from "./liqpay.service";
 import { publishDomainEvent } from "../realtime/publishDomainEvent";
 import type { DomainEventType } from "../realtime/domainEvents";
@@ -468,8 +469,9 @@ export function isIntentCaptured(providerRaw: unknown): boolean {
 
 /**
  * Списання першої частини оплати замовника (30% + комісія) з холду на рахунок
- * компанії. Викликається, коли замовник підтверджує виконання 30% робіт
- * (split-замовлення). Ідемпотентно: вже списаний платіж не списується вдруге.
+ * компанії. Викликається на старті split-замовлення; якщо не вдалося —
+ * повторно на 30% прогресу, підтвердженні 30% і фінальному підтвердженні.
+ * Ідемпотентно: вже списаний платіж не списується вдруге.
  * Помилку LiqPay прокидає далі — підтвердження не має пройти без списання.
  */
 export async function captureCustomerInitialDeposit(
@@ -511,7 +513,7 @@ export async function captureCustomerInitialDeposit(
     data: {
       orderId,
       status: "started",
-      note: "30% оплати Замовника списано на рахунок компанії-гаранта",
+      note: PART1_CAPTURED_NOTE,
     },
   });
   return true;

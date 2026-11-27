@@ -12,7 +12,7 @@ import {
   findPendingIntent,
   serializePaymentIntent,
 } from "@/shared";
-import { COMPLETION_CONFIRMED_NOTE, PART1_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
+import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 
 const schema = z.object({
   part: z.number().int().min(1).max(2).optional(),
@@ -41,6 +41,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (!isPart2 && order.status !== "requires_confirmation" && order.status !== "accepted") {
       throw new ApiError(400, "VALIDATION_ERROR", "Замовлення не потребує застави Замовника");
     }
+    // Замовник вносить свою заставу лише після того, як застава Виконавця
+    // реально заблокована. Інакше кнопка оплати з'являлася б одразу після
+    // взяття замовлення, ще до оплати Виконавця.
+    if (!isPart2) {
+      const performerDeposit = await prisma.escrowLock.findFirst({
+        where: { orderId, role: "performer", status: "held" },
+        select: { id: true },
+      });
+      if (!performerDeposit) {
+        throw new ApiError(409, "CONFLICT", "Спочатку Виконавець має внести гарантійну суму");
+      }
+    }
     // Залишок можна внести і після завершення робіт виконавцем — інакше
     // замовник не зможе підтвердити виконання (confirm-completion вимагає part 2).
     if (isPart2 && order.status !== "started" && order.status !== "completed") {
@@ -65,16 +77,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     if (isPart2 && order.status === "started" && !order.customerPart2Deadline) {
       throw new ApiError(400, "VALIDATION_ERROR", "Доплата 70% доступна лише після фіксації 30% робіт Виконавцем");
     }
-    // Спочатку Замовник підтверджує 30% робіт, і лише потім вносить залишок 70%.
-    if (isPart2) {
-      const part1Confirmed = await prisma.orderStatusEvent.findFirst({
-        where: { orderId, note: PART1_CONFIRMED_NOTE },
-        select: { id: true },
-      });
-      if (!part1Confirmed) {
-        throw new ApiError(409, "CONFLICT", "Спочатку підтвердіть 30% робіт");
-      }
-    }
+    // Залишок 70% можна внести одразу після старту робіт, не чекаючи
+    // прогресу 30% чи підтвердження 30% Замовником.
     if (!order.performerUserId) {
       throw new ApiError(400, "VALIDATION_ERROR", "Виконавця ще не призначено");
     }

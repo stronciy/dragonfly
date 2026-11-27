@@ -1,13 +1,12 @@
 import { z } from "zod";
 import { formatUahAmount } from "@/lib/money";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError, orderRef, customerPaymentPlan, part2DeadlineFor } from "@/shared";
+import { ApiError, orderRef, customerPaymentPlan, part2DeadlineFor, captureCustomerInitialDeposit } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { publishDomainEvent } from "@/shared";
 import { notifyUser } from "@/services/notify";
 import { Prisma } from "@prisma/client";
-import { PART1_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 
 const schema = z.object({
   status: z.enum(["en_route", "started", "completed"]),
@@ -56,14 +55,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       part2Deadline = part2DeadlineFor(new Date());
     }
 
-    // >2 діб: завершити роботу можна лише після підтвердження Замовником
-    // перших 30% і внесення залишку 70%.
+    // >2 діб: завершити роботу можна лише після 100% у звіті та оплати 70%.
+    // Підтвердження 30% Замовником більше не блокує завершення: якщо Виконавець
+    // пропустив етап 30%, 30% і 70% зараховуються разом після фінального підтвердження.
     if (body.status === "completed" && isSplit) {
-      const [part1Confirmed, part2Paid, latestProgress] = await Promise.all([
-        prisma.orderStatusEvent.findFirst({
-          where: { orderId, note: PART1_CONFIRMED_NOTE },
-          select: { id: true },
-        }),
+      const [part2Paid, latestProgress] = await Promise.all([
         prisma.paymentIntent.findFirst({
           where: { orderId, role: "customer", part: 2, status: "paid" },
           select: { id: true },
@@ -74,9 +70,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
           select: { percent: true },
         }),
       ]);
-      if (!part1Confirmed) {
-        throw new ApiError(409, "CONFLICT", "Спочатку Замовник має підтвердити 30% робіт");
-      }
       if (!part2Paid) {
         throw new ApiError(409, "CONFLICT", "Замовник ще не вніс залишок 70%");
       }
@@ -123,6 +116,20 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ orderId: stri
       }
       return { order: u, completedProgress };
     });
+
+    // Старт split-замовлення: одразу списуємо 30% з холду Замовника.
+    // Помилку не блокуємо — повторні спроби будуть на прогресі 30%,
+    // підтвердженні 30% і фінальному підтвердженні.
+    if (body.status === "started" && isSplit) {
+      try {
+        await captureCustomerInitialDeposit(orderId);
+      } catch (e) {
+        console.warn(
+          "[status] customer initial 30% capture failed, will retry",
+          { orderId, error: e instanceof Error ? e.message : String(e) }
+        );
+      }
+    }
 
     // Відправляємо Push та In-App сповіщення замовнику через notifyUser
     const statusTitles: Record<string, string> = {

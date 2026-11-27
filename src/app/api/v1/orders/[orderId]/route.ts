@@ -192,6 +192,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
           part2Paid: isPart2Paid,
           hasPaymentRequest: hasPendingPaymentRequest,
         }),
+        // Потрібно Замовнику, щоб не показувати кнопку застави до блокування
+        // застави Виконавця (і Виконавцю — для власного стану).
+        depositPerformerHeld: performerLock?.status === "held",
         performerDepositDecision: pendingPerformerDeposit
           ? { amount: Number(pendingPerformerDeposit.amount), status: "pending" }
           : null,

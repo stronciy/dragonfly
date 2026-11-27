@@ -31,7 +31,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
     }
 
     const reached30 = await prisma.workProgressUpdate.findFirst({
-      where: { orderId, percent: { gte: 30 } },
+      where: { orderId, percent: 30 },
       select: { id: true },
     });
     if (!reached30) throw new ApiError(409, "CONFLICT", "Виконавець ще не зафіксував 30% робіт");

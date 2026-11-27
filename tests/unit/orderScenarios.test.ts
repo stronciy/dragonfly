@@ -320,6 +320,13 @@ describe("багатоденний заказ (понад 2 дні) — 30% од
     assert.equal(order(id).customerPart2Deadline, null);
   });
 
+  it("Заказчик не може внести заставу, доки не заблокована застава Виконавця", async () => {
+    const id = createOrder({ days: 1, status: "accepted", performerUserId: USERS.performer });
+    const res = await customerPays(id);
+    assert.equal(res.status, 409);
+    assert.match(JSON.stringify(res.body), /Виконавець має внести/);
+  });
+
   it("старт роботи виставляє дедлайн залишку 70% — 24 години від старту", async () => {
     const id = await startedSplitOrder(3);
     const deadline = new Date(order(id).customerPart2Deadline);

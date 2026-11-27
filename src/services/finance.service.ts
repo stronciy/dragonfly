@@ -10,7 +10,7 @@ import {
 } from "../lib/finance/ledger";
 import { normalizeUAIban, validateUAIban } from "../lib/validators";
 import { publishPayoutUpdated } from "./payoutEvents";
-import { PART1_CONFIRMED_NOTE } from "../lib/completionConfirmation";
+import { PART1_CAPTURED_NOTE, PART1_CONFIRMED_NOTE } from "../lib/completionConfirmation";
 
 type Client = Prisma.TransactionClient | typeof prisma;
 
@@ -45,8 +45,8 @@ export async function loadLedgerInput(
       dateFrom: true,
       dateTo: true,
       statusEvents: {
-        where: { note: PART1_CONFIRMED_NOTE },
-        select: { createdAt: true },
+        where: { note: { in: [PART1_CONFIRMED_NOTE, PART1_CAPTURED_NOTE] } },
+        select: { note: true, createdAt: true },
       },
       progressUpdates: {
         select: { percent: true, createdAt: true },
@@ -107,6 +107,10 @@ export async function loadLedgerInput(
       const updates = (o as unknown as { progressUpdates?: Array<{ percent: number | null; createdAt: Date }> }).progressUpdates ?? [];
       const maxPercent = updates.length > 0 ? Math.max(0, ...updates.map((u) => u.percent ?? 0)) : (o.status === "completed" ? 100 : 0);
       const updateAt = updates.find((u) => u.percent === maxPercent)?.createdAt ?? null;
+      const part1ConfirmedAt =
+        o.statusEvents.find((e) => e.note === PART1_CONFIRMED_NOTE)?.createdAt ?? null;
+      const part1CapturedAt =
+        o.statusEvents.find((e) => e.note === PART1_CAPTURED_NOTE)?.createdAt ?? null;
       return {
         id: o.id,
         status: o.status,
@@ -118,7 +122,8 @@ export async function loadLedgerInput(
         dateTo: o.dateTo,
         progressPercent: maxPercent,
         progressCreatedAt: updateAt,
-        part1ConfirmedAt: o.statusEvents[0]?.createdAt ?? null,
+        part1ConfirmedAt,
+        part1CapturedAt,
       };
     }),
     intents: intents.map((i) => ({

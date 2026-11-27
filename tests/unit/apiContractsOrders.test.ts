@@ -295,16 +295,16 @@ describe("прогрес робіт і відгуки", () => {
     assert.match(post100.body.message, /не вніс залишок 70%/);
   });
 
-  it("прогрес: 100% на split-замовленні блокується, доки 30% не підтверджено", async () => {
+  it("прогрес: 100% на split-замовленні доступний без підтвердження 30%, якщо оплачено 70%", async () => {
     const id = createOrder({ days: 3 });
     await performerClaimsAndPays(id);
     await customerPays(id);
     await readResponse(await statusPatch(await call(USERS.performer, "PATCH", { status: "started" }), ctx(id)));
 
     await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 30 }), ctx(id)));
+    assert.equal((await customerPays(id, 2)).status, 200);
     const post100 = await readResponse(await progressPost(await call(USERS.performer, "POST", { percent: 100 }), ctx(id)));
-    assert.equal(post100.status, 409);
-    assert.match(post100.body.message, /підтвердити 30%/);
+    assert.equal(post100.status, 200);
   });
 
   it("відгук Виконавця на Замовника можна лише після завершення робіт", async () => {

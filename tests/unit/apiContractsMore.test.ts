@@ -106,6 +106,8 @@ describe("активна робота і звіти Виконавця", () => {
     const active = await readResponse(await activeWorkGet(await call(USERS.performer, "GET")));
     assert.equal(active.status, 200);
     assert.ok(JSON.stringify(active.body.data).includes(id));
+    const activeItem = active.body.data.items.find((o: any) => o.id === id);
+    assert.equal(typeof activeItem.distanceKm, "number");
 
     const rating = await readResponse(await ratingGet(await call(USERS.performer, "GET")));
     assert.equal(rating.status, 200);

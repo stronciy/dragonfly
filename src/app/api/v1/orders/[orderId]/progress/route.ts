@@ -1,14 +1,13 @@
 import { z } from "zod";
 import { formatUahAmount } from "@/lib/money";
 import { ok, fail, getRequestId } from "@/lib/apiResponse";
-import { ApiError, customerPaymentPlan, part2DeadlineFor, orderRef } from "@/shared";
+import { ApiError, customerPaymentPlan, part2DeadlineFor, orderRef, captureCustomerInitialDeposit } from "@/shared";
 import { prisma } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { notifyUser } from "@/services/notify";
 import { publishWalletChanged } from "@/services/payoutEvents";
 import { publishDomainEvent } from "@/shared";
 import { readFormFilesAsDataUrl } from "@/lib/uploads";
-import { PART1_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
 
 export const runtime = "nodejs";
 
@@ -216,22 +215,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
         })
       : null;
     const isPart2Paid = !isSplit || !!part2PaidIntent;
-    // Для split-замовлення 100% доступні лише після підтвердження Замовником
-    // перших 30% і внесення залишку 70%.
-    const part1ConfirmedEvent = isSplit
-      ? await prisma.orderStatusEvent.findFirst({
-          where: { orderId, note: PART1_CONFIRMED_NOTE },
-          select: { id: true },
-        })
-      : null;
-
-    if (percent === 100 && isSplit && !part1ConfirmedEvent) {
-      throw new ApiError(
-        409,
-        "CONFLICT",
-        "Неможливо зафіксувати 100% виконання: спочатку Замовник має підтвердити 30% робіт. Після цього внесіть залишок 70%."
-      );
-    }
 
     if (percent === 100 && isSplit && !isPart2Paid) {
       throw new ApiError(
@@ -300,6 +283,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ orderId: strin
 
     const hasReached30 = percent >= 30;
     const needsPart2Request = isSplit;
+
+    // Повторна спроба списати 30% (якщо на старті не вдалося).
+    if (hasReached30 && needsPart2Request) {
+      try {
+        await captureCustomerInitialDeposit(orderId);
+      } catch (e) {
+        console.warn(
+          "[progress] customer initial 30% capture failed, will retry",
+          { orderId, error: e instanceof Error ? e.message : String(e) }
+        );
+      }
+    }
 
     console.info(
       `[api] POST /api/v1/orders/${orderId}/progress created requestId=${requestId} progressId=${createdProgress.id} userId=${user.id} percent=${percent} photos=${createdProgress.media.length} first30=${firstTime30} durationMs=${Date.now() - startedAt}`

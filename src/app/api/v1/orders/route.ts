@@ -148,8 +148,8 @@ export async function GET(req: Request) {
           createdAt: true,
           specs: true,
           escrowLocks: {
-            where: { status: { in: [...ESCROW_OPEN_STATUSES] }, role: "customer" },
-            select: { amount: true },
+            where: { status: { in: [...ESCROW_OPEN_STATUSES] } },
+            select: { role: true, status: true, amount: true },
           },
           progressUpdates: {
             orderBy: { createdAt: "desc" },
@@ -208,7 +208,12 @@ export async function GET(req: Request) {
         customerPayableNow:
           Number(customerPaymentPlan(o.budget, o.dateFrom, o.dateTo).immediateAmount) +
           Math.round(Number(o.budget) * 0.085 * 100) / 100,
-        escrowAmount: o.escrowLocks.reduce((sum, l) => sum + Number(l.amount), 0),
+        escrowAmount: o.escrowLocks
+          .filter((l) => l.role === "customer")
+          .reduce((sum, l) => sum + Number(l.amount), 0),
+        depositPerformerHeld: o.escrowLocks.some(
+          (l) => l.role === "performer" && l.status === "held"
+        ),
         specs: o.specs,
         progressUpdates: o.progressUpdates?.map((p) => ({
           id: p.id,

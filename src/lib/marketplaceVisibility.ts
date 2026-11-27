@@ -54,7 +54,7 @@ export interface MarketplaceLocationSource {
 
 /** Fallback shown when an order has neither a region nor a settlement. */
 export const MASKED_LOCATION_LABEL_FALLBACK =
-  "Місце приховано до підтвердження застави";
+  "Місце приховано до оплати від Замовника";
 
 export interface CoarseLocationSource {
   regionName: string | null;

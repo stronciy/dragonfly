@@ -3,7 +3,7 @@ import { ApiError } from "@/shared";
 import { requireUser } from "@/lib/auth/requireAuth";
 import { prisma } from "@/shared";
 import { COMPLETION_CONFIRMED_NOTE } from "@/lib/completionConfirmation";
-import { isPerformerLocationRevealed, maskOrderLocationForMarketplace } from "@/lib/marketplaceVisibility";
+import { isPerformerLocationRevealed, marketplaceDistanceKm, maskOrderLocationForMarketplace } from "@/lib/marketplaceVisibility";
 
 export async function GET(req: Request) {
   try {
@@ -95,12 +95,23 @@ export async function GET(req: Request) {
       select: { id: true, name: true, phone: true },
     });
     const customerMap = new Map(customers.map(c => [c.id, c]));
+    const profile = await prisma.performerProfile.findUnique({
+      where: { userId: user.id },
+      select: { baseLatitude: true, baseLongitude: true },
+    });
 
     const items = orders.map(order => {
       // Адресу і контакти Замовника Виконавець бачить лише після внесення
       // обох застав (статус confirmed і далі), як і в картці замовлення.
       const revealed = isPerformerLocationRevealed(order.status);
       const location = maskOrderLocationForMarketplace(order, { assigned: true });
+      const distanceKm = marketplaceDistanceKm(
+        {
+          baseLatitude: profile?.baseLatitude ?? null,
+          baseLongitude: profile?.baseLongitude ?? null,
+        },
+        { lat: Number(order.lat), lng: Number(order.lng) }
+      );
       const customer = revealed ? customerMap.get(order.customerUserId) : undefined;
       return {
       orderId: order.id,
@@ -112,6 +123,7 @@ export async function GET(req: Request) {
       orderNumber: order.orderNumber,
       budget: Number(order.budget),
       currency: order.currency,
+      distanceKm,
       acceptedAt: order.acceptedAt,
       depositDeadline: order.depositDeadline,
       customerPart2Deadline: order.customerPart2Deadline,

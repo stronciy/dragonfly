@@ -57,8 +57,10 @@ export type LedgerOrder = {
   dateTo: Date | null;
   progressPercent?: number | null;
   progressCreatedAt?: Date | null;
-  /** Замовник підтвердив перші 30% робіт (split): 30% списано на рахунок компанії. */
+  /** Замовник підтвердив перші 30% робіт (split): 30% зараховано Виконавцю. */
   part1ConfirmedAt?: Date | null;
+  /** 30% уже списано з холду Замовника на старті (ще не зараховано Виконавцю). */
+  part1CapturedAt?: Date | null;
 };
 
 export type LedgerIntent = {
@@ -275,10 +277,18 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
         continue;
       }
       const deposit = intent.depositAmount ?? intent.amount - intent.feeAmount;
-      // Підтверджені 30% вже списано на рахунок компанії для Виконавця — це не ескроу.
+      // 30% уже списані з холду Замовника на старті: для Замовника це
+      // «сплачено», навіть якщо Виконавцю ще не зараховано.
       const part1Confirmed = !!order.part1ConfirmedAt;
-      const status = part1Confirmed && !previousCycle ? "completed" : customerStatus();
+      const part1Captured = part1Confirmed || !!order.part1CapturedAt;
+      const status = part1Captured && !previousCycle ? "completed" : customerStatus();
       const { title, reason } = customerDepositTitle(order);
+      const entryReason =
+        part1Captured && !part1Confirmed
+          ? "30% списано на рахунок компанії-гаранта. Виконавцю буде зараховано після фіксації та підтвердження 30% робіт."
+          : status === "in_escrow"
+            ? `${reason} ${customerDepositReason(status)}`
+            : customerDepositReason(status);
       entries.push({
         id: `intent:${intent.id}`,
         occurredAt,
@@ -289,7 +299,7 @@ export function buildLedger(input: LedgerInput): LedgerEntry[] {
         status,
         ...meta,
         title,
-        reason: status === "in_escrow" ? `${reason} ${customerDepositReason(status)}` : customerDepositReason(status),
+        reason: entryReason,
       });
       if (intent.feeAmount > 0) {
         entries.push({
